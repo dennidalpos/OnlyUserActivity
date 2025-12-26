@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Status</title>
+  </head>
+  <body>
+    <h1>Status</h1>
+    <form method="get" action="/">
+      <input name="date" value="<%= date %>" />
+      <input name="status" value="<%= status || '' %>" />
+      <input name="userKey" value="<%= userKey || '' %>" />
+      <button type="submit">Filter</button>
+    </form>
+    <table>
+      <tr>
+        <th>User</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Progress</th>
+      </tr>
+      <% data.items.forEach(function(item){ %>
+        <tr>
+          <td><%= item.userKey %></td>
+          <td><%= item.date %></td>
+          <td><%= item.status %></td>
+          <td><%= item.progressPercent %>%</td>
+        </tr>
+      <% }) %>
+    </table>
+    <div>Open alerts: <%= data.openAlertsCount %></div>
+    <a href="/activity-types">Activity types</a>
+    <a href="/export">Export</a>
+    <a href="/logout">Logout</a>
+  </body>
+</html>

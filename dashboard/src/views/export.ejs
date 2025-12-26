@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Export</title>
+  </head>
+  <body>
+    <h1>Export</h1>
+    <form method="post" action="/export">
+      <div>
+        <label>Date</label>
+        <input name="date" value="<%= new Date().toISOString().slice(0,10) %>" />
+      </div>
+      <div>
+        <label>Mode</label>
+        <select name="mode">
+          <option value="week">Week</option>
+          <option value="month">Month</option>
+        </select>
+      </div>
+      <button type="submit">Download</button>
+    </form>
+    <a href="/">Back</a>
+  </body>
+</html>
