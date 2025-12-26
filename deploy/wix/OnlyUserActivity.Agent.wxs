@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="OnlyUserActivity Agent" Language="1033" Version="0.1.0.0" Manufacturer="OnlyUserActivity" UpgradeCode="11111111-1111-1111-1111-111111111111">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+    <MediaTemplate />
+    <Feature Id="MainFeature" Title="OnlyUserActivity Agent" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="OnlyUserActivity">
+          <Directory Id="AgentFolder" Name="Agent" />
+        </Directory>
+      </Directory>
+      <Directory Id="CommonAppDataFolder">
+        <Directory Id="ProgramDataFolder" Name="OnlyUserActivity">
+          <Directory Id="AgentDataFolder" Name="Agent" />
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="AgentFolder">
+      <Component Id="AgentExe" Guid="*">
+        <File Id="AgentFile" Source="..\..\agent-windows\src\OnlyUserActivity.Agent\bin\Release\OnlyUserActivity.Agent.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="AgentData" Guid="*" Directory="AgentDataFolder">
+        <CreateFolder />
+      </Component>
+      <Component Id="ActiveSetup" Guid="*">
+        <RegistryKey Root="HKLM" Key="Software\Microsoft\Active Setup\Installed Components\OnlyUserActivityAgent">
+          <RegistryValue Name="Version" Type="string" Value="0.1.0.0" />
+          <RegistryValue Name="StubPath" Type="string" Value="[AgentFolder]OnlyUserActivity.Agent.exe" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
