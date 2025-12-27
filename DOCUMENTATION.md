@@ -159,7 +159,7 @@ Il server salva eventi sensibili in `audit/audit.jsonl`, includendo:
 - **INVALID_TIME**: formato orario errato o non in quarti d'ora.
 - **OVERLAP**: attività sovrapposta a intervalli esistenti.
 - **DAY_LIMIT**: oltre 960 minuti per giorno.
-- **Avvisi npm deprecated**: provengono da dipendenze transitive. In ambienti con accesso al registry, valutare l'aggiornamento delle librerie che introducono `rimraf`, `glob` o `inflight` deprecati.
+- **Avvisi npm deprecated**: provengono da dipendenze transitive. In ambienti con accesso al registry, valutare l'aggiornamento delle librerie che introducono `rimraf`, `glob`, `inflight`, `lodash.isequal`, `fstream`, `node-domexception` o `ldapjs` deprecati.
 
 ## Migliorie consigliate
 - Persistenza token su storage condiviso.
