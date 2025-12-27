@@ -221,24 +221,25 @@ async function ensureUserData(userKey: string) {
   }
 }
 
-function parseTime(value: string): number {
+function parseTime(value: string): number | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null
   const [hh, mm] = value.split(":").map(Number)
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null
   return hh * 60 + mm
 }
 
 function isQuarterHour(value: string): boolean {
-  const parts = value.split(":")
-  if (parts.length !== 2) return false
-  const mm = Number(parts[1])
-  return [0, 15, 30, 45].includes(mm)
+  const minutes = parseTime(value)
+  return minutes !== null && minutes % 15 === 0
 }
 
-function minutesBetween(start: string, end: string): number {
-  return parseTime(end) - parseTime(start)
+function minutesBetween(start: number, end: number): number {
+  return end - start
 }
 
-function sameDay(start: string, end: string): boolean {
-  return parseTime(end) > parseTime(start)
+function sameDay(start: number, end: number): boolean {
+  return end > start
 }
 
 function computeDaySummary(activities: any[], targetMinutes: number) {
@@ -301,11 +302,13 @@ app.post("/api/v1/activities", authMiddleware(true), async (req, res) => {
     res.status(400).json(errorResponse("INVALID_REQUEST", "Missing fields"))
     return
   }
-  if (!isQuarterHour(start) || !isQuarterHour(end) || !sameDay(start, end)) {
+  const startMinutes = parseTime(start)
+  const endMinutes = parseTime(end)
+  if (startMinutes === null || endMinutes === null || !isQuarterHour(start) || !isQuarterHour(end) || !sameDay(startMinutes, endMinutes)) {
     res.status(400).json(errorResponse("INVALID_TIME", "Invalid time range"))
     return
   }
-  const minutes = minutesBetween(start, end)
+  const minutes = minutesBetween(startMinutes, endMinutes)
   const monthKey = date.slice(0, 7)
   const userDir = path.join(DATA_ROOT, "users", user.userKey)
   await ensureUserData(user.userKey)
@@ -316,7 +319,12 @@ app.post("/api/v1/activities", authMiddleware(true), async (req, res) => {
     const existing = monthData.activities.find(item => item.idempotencyKey && idempotencyKey && item.idempotencyKey === idempotencyKey)
     if (existing) {
       const summaryPath = path.join(userDir, "daily", `${date}.summary.json`)
-      const summary = await readJson(summaryPath, { schemaVersion: 1, date, activities: dayActivities, totals: computeDaySummary(dayActivities, 480) })
+      const profilePath = path.join(userDir, "profile.json")
+      const profile = await readJson(profilePath, { schemaVersion: 1, targetMinutes: 480 })
+      const types = await loadActivityTypes()
+      const exempt = shouldExempt(types.items, existing.activityTypeId)
+      const targetMinutes = exempt ? 0 : profile.targetMinutes
+      const summary = await readJson(summaryPath, { schemaVersion: 1, date, activities: dayActivities, totals: computeDaySummary(dayActivities, targetMinutes) })
       res.json({ activity: existing, summary })
       return
     }
