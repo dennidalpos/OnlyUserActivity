@@ -126,7 +126,7 @@ function tokenRateLimiter() {
   return rateLimit({
     windowMs: 60000,
     limit: 120,
-    keyGenerator: req => ((req as any).user?.userKey as string) || req.ip
+    keyGenerator: req => ((req as any).user?.userKey as string) || req.ip || "unknown"
   })
 }
 
@@ -179,21 +179,21 @@ async function ldapAuthenticate(username: string, password: string): Promise<{ u
   const client = ldap.createClient({ url: ldapUrl })
   const bindDn = username.includes("@") ? username : `${username}@${process.env.LDAP_DOMAIN || ""}`
   await new Promise<void>((resolve, reject) => {
-    client.bind(bindDn, password, err => {
+    client.bind(bindDn, password, (err: Error | null) => {
       if (err) reject(err)
       else resolve()
     })
   })
   const searchFilter = `(userPrincipalName=${bindDn})`
   const entry = await new Promise<{ displayName?: string }>((resolve, reject) => {
-    client.search(baseDn, { filter: searchFilter, scope: "sub" }, (err, res) => {
+    client.search(baseDn, { filter: searchFilter, scope: "sub" }, (err: Error | null, res: any) => {
       if (err) {
         reject(err)
         return
       }
       let displayName: string | undefined
-      res.on("searchEntry", e => {
-        displayName = e.attributes.find(a => a.type === "displayName")?.values?.[0]
+      res.on("searchEntry", (e: any) => {
+        displayName = e.attributes.find((a: any) => a.type === "displayName")?.values?.[0]
       })
       res.on("error", reject)
       res.on("end", () => resolve({ displayName }))
@@ -443,11 +443,12 @@ app.get("/api/v1/dashboard/status", authMiddleware(true), async (req, res) => {
   await ensureDir(usersDir)
   const entries = await fs.readdir(usersDir)
   const results = [] as any[]
+  type DaySummary = { totals?: { status?: string; progressPercent?: number } }
   for (const entry of entries) {
     if (userKeyFilter && entry !== userKeyFilter) continue
     const summaryPath = date ? path.join(usersDir, entry, "daily", `${date}.summary.json`) : null
     if (!summaryPath) continue
-    const summary = await readJson(summaryPath, null)
+    const summary = await readJson<DaySummary | null>(summaryPath, null)
     if (!summary) continue
     if (statusFilter && summary.totals?.status !== statusFilter) continue
     results.push({ userKey: entry, date, status: summary.totals?.status, progressPercent: summary.totals?.progressPercent })
