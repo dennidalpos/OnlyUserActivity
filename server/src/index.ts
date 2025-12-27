@@ -126,7 +126,7 @@ function tokenRateLimiter() {
   return rateLimit({
     windowMs: 60000,
     limit: 120,
-    keyGenerator: req => ((req as any).user?.userKey as string) || req.ip
+    keyGenerator: req => ((req as any).user?.userKey as string) || req.ip || "unknown"
   })
 }
 
@@ -179,21 +179,21 @@ async function ldapAuthenticate(username: string, password: string): Promise<{ u
   const client = ldap.createClient({ url: ldapUrl })
   const bindDn = username.includes("@") ? username : `${username}@${process.env.LDAP_DOMAIN || ""}`
   await new Promise<void>((resolve, reject) => {
-    client.bind(bindDn, password, err => {
+    client.bind(bindDn, password, (err: Error | null) => {
       if (err) reject(err)
       else resolve()
     })
   })
   const searchFilter = `(userPrincipalName=${bindDn})`
   const entry = await new Promise<{ displayName?: string }>((resolve, reject) => {
-    client.search(baseDn, { filter: searchFilter, scope: "sub" }, (err, res) => {
+    client.search(baseDn, { filter: searchFilter, scope: "sub" }, (err: Error | null, res: any) => {
       if (err) {
         reject(err)
         return
       }
       let displayName: string | undefined
-      res.on("searchEntry", e => {
-        displayName = e.attributes.find(a => a.type === "displayName")?.values?.[0]
+      res.on("searchEntry", (e: any) => {
+        displayName = e.attributes.find((a: any) => a.type === "displayName")?.values?.[0]
       })
       res.on("error", reject)
       res.on("end", () => resolve({ displayName }))
@@ -221,24 +221,25 @@ async function ensureUserData(userKey: string) {
   }
 }
 
-function parseTime(value: string): number {
+function parseTime(value: string): number | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null
   const [hh, mm] = value.split(":").map(Number)
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null
   return hh * 60 + mm
 }
 
 function isQuarterHour(value: string): boolean {
-  const parts = value.split(":")
-  if (parts.length !== 2) return false
-  const mm = Number(parts[1])
-  return [0, 15, 30, 45].includes(mm)
+  const minutes = parseTime(value)
+  return minutes !== null && minutes % 15 === 0
 }
 
-function minutesBetween(start: string, end: string): number {
-  return parseTime(end) - parseTime(start)
+function minutesBetween(start: number, end: number): number {
+  return end - start
 }
 
-function sameDay(start: string, end: string): boolean {
-  return parseTime(end) > parseTime(start)
+function sameDay(start: number, end: number): boolean {
+  return end > start
 }
 
 function computeDaySummary(activities: any[], targetMinutes: number) {
@@ -301,11 +302,13 @@ app.post("/api/v1/activities", authMiddleware(true), async (req, res) => {
     res.status(400).json(errorResponse("INVALID_REQUEST", "Missing fields"))
     return
   }
-  if (!isQuarterHour(start) || !isQuarterHour(end) || !sameDay(start, end)) {
+  const startMinutes = parseTime(start)
+  const endMinutes = parseTime(end)
+  if (startMinutes === null || endMinutes === null || !isQuarterHour(start) || !isQuarterHour(end) || !sameDay(startMinutes, endMinutes)) {
     res.status(400).json(errorResponse("INVALID_TIME", "Invalid time range"))
     return
   }
-  const minutes = minutesBetween(start, end)
+  const minutes = minutesBetween(startMinutes, endMinutes)
   const monthKey = date.slice(0, 7)
   const userDir = path.join(DATA_ROOT, "users", user.userKey)
   await ensureUserData(user.userKey)
@@ -316,7 +319,12 @@ app.post("/api/v1/activities", authMiddleware(true), async (req, res) => {
     const existing = monthData.activities.find(item => item.idempotencyKey && idempotencyKey && item.idempotencyKey === idempotencyKey)
     if (existing) {
       const summaryPath = path.join(userDir, "daily", `${date}.summary.json`)
-      const summary = await readJson(summaryPath, { schemaVersion: 1, date, activities: dayActivities, totals: computeDaySummary(dayActivities, 480) })
+      const profilePath = path.join(userDir, "profile.json")
+      const profile = await readJson(profilePath, { schemaVersion: 1, targetMinutes: 480 })
+      const types = await loadActivityTypes()
+      const exempt = shouldExempt(types.items, existing.activityTypeId)
+      const targetMinutes = exempt ? 0 : profile.targetMinutes
+      const summary = await readJson(summaryPath, { schemaVersion: 1, date, activities: dayActivities, totals: computeDaySummary(dayActivities, targetMinutes) })
       res.json({ activity: existing, summary })
       return
     }
@@ -435,11 +443,12 @@ app.get("/api/v1/dashboard/status", authMiddleware(true), async (req, res) => {
   await ensureDir(usersDir)
   const entries = await fs.readdir(usersDir)
   const results = [] as any[]
+  type DaySummary = { totals?: { status?: string; progressPercent?: number } }
   for (const entry of entries) {
     if (userKeyFilter && entry !== userKeyFilter) continue
     const summaryPath = date ? path.join(usersDir, entry, "daily", `${date}.summary.json`) : null
     if (!summaryPath) continue
-    const summary = await readJson(summaryPath, null)
+    const summary = await readJson<DaySummary | null>(summaryPath, null)
     if (!summary) continue
     if (statusFilter && summary.totals?.status !== statusFilter) continue
     results.push({ userKey: entry, date, status: summary.totals?.status, progressPercent: summary.totals?.progressPercent })
