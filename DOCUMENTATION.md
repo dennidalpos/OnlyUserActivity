@@ -34,6 +34,10 @@ npm run start
 ```bash
 msbuild agent-windows/OnlyUserActivity.Agent.sln /p:Configuration=Release
 ```
+Se `msbuild` non è nel `PATH`, usare il percorso completo fornito da Visual Studio Build Tools, ad esempio:
+```powershell
+"& \"C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe\" agent-windows\\OnlyUserActivity.Agent.sln /p:Configuration=Release"
+```
 
 ## Struttura del progetto
 ```
