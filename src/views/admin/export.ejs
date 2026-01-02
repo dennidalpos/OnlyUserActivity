@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export" class="active">Export</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h2>Export Dati Attività</h2>
+
+    <form method="POST" action="/admin/api/export" id="exportForm">
+      <div class="form-group">
+        <label for="fromDate">Data Inizio:</label>
+        <input type="date" id="fromDate" name="fromDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="toDate">Data Fine:</label>
+        <input type="date" id="toDate" name="toDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="format">Formato:</label>
+        <select id="format" name="format">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Utenti:</label>
+        <p class="help-text">TODO: Implementare selezione utenti (per ora export tutti)</p>
+        <input type="hidden" name="userKeys" value="all">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Esporta Dati</button>
+    </form>
+  </main>
+</body>
+</html>

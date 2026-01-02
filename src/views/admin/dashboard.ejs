@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard" class="active">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h2>Monitoraggio Attività - <%= date %></h2>
+
+    <form method="GET" action="/admin/dashboard" class="filter-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date">Data:</label>
+          <input type="date" id="date" name="date" value="<%= date %>">
+        </div>
+
+        <div class="form-group">
+          <label for="username">Utente:</label>
+          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Cerca username">
+        </div>
+
+        <div class="form-group">
+          <label for="status">Stato:</label>
+          <select id="status" name="status">
+            <option value="">Tutti</option>
+            <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK (>= 8h)</option>
+            <option value="INCOMPLETO" <%= filters.status === 'INCOMPLETO' ? 'selected' : '' %>>Incompleto</option>
+            <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Filtra</button>
+      </div>
+    </form>
+
+    <div class="summary-cards">
+      <div class="card">
+        <h3>Totale Utenti</h3>
+        <p class="big-number"><%= summary.totalUsers %></p>
+      </div>
+      <div class="card card-success">
+        <h3>OK</h3>
+        <p class="big-number"><%= summary.okCount %></p>
+      </div>
+      <div class="card card-warning">
+        <h3>Incompleto</h3>
+        <p class="big-number"><%= summary.incompleteCount %></p>
+      </div>
+      <div class="card card-danger">
+        <h3>Assente</h3>
+        <p class="big-number"><%= summary.absentCount %></p>
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Utente</th>
+          <th>Display Name</th>
+          <th>Ore Totali</th>
+          <th>Completamento</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(user => { %>
+        <tr class="status-<%= user.status.toLowerCase() %>">
+          <td><%= user.username %></td>
+          <td><%= user.displayName %></td>
+          <td><%= user.totalHours.toFixed(2) %> h</td>
+          <td>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: <%= user.completionPercentage %>%"></div>
+              <span class="progress-text"><%= user.completionPercentage.toFixed(0) %>%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-<%= user.status.toLowerCase() %>">
+              <%= user.status %>
+            </span>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
