@@ -1,6 +1,3 @@
-/**
- * Middleware autenticazione admin (session-based)
- */
 function requireAdminAuth(req, res, next) {
   if (!req.session || !req.session.adminUser) {
     if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
@@ -12,17 +9,13 @@ function requireAdminAuth(req, res, next) {
         }
       });
     }
-    return res.redirect('/admin/login');
+    return res.redirect('/admin/auth/login');
   }
 
-  // Aggiungi admin info alla request
   req.adminUser = req.session.adminUser;
   next();
 }
 
-/**
- * Middleware redirect se già autenticato
- */
 function redirectIfAuthenticated(req, res, next) {
   if (req.session && req.session.adminUser) {
     return res.redirect('/admin/dashboard');

@@ -1,9 +1,6 @@
 const rateLimit = require('express-rate-limit');
 const config = require('../config');
 
-/**
- * Rate limiter globale per API
- */
 const apiLimiter = rateLimit({
   windowMs: config.security.rateLimitWindowMs,
   max: config.security.rateLimitMaxRequests,
@@ -17,14 +14,10 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip per health check
     return req.path === '/health';
   }
 });
 
-/**
- * Rate limiter specifico per login
- */
 const loginLimiter = rateLimit({
   windowMs: config.security.rateLimitWindowMs,
   max: config.security.loginRateLimitMax,
@@ -37,7 +30,7 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true // Non conta login riusciti
+  skipSuccessfulRequests: true
 });
 
 module.exports = {

@@ -1,14 +1,7 @@
 const ldap = require('ldapjs');
 const config = require('../../config');
 
-/**
- * Client LDAP per autenticazione e ricerca
- */
 class LDAPClient {
-  /**
-   * Crea connessione LDAP
-   * @returns {Promise<Object>}
-   */
   createClient() {
     return new Promise((resolve, reject) => {
       const client = ldap.createClient({
@@ -21,7 +14,6 @@ class LDAPClient {
         reject(new Error(`LDAP connection error: ${err.message}`));
       });
 
-      // Timeout connessione
       const timeoutId = setTimeout(() => {
         client.destroy();
         reject(new Error('LDAP connection timeout'));
@@ -34,13 +26,6 @@ class LDAPClient {
     });
   }
 
-  /**
-   * Bind al server LDAP
-   * @param {Object} client
-   * @param {string} dn
-   * @param {string} password
-   * @returns {Promise<void>}
-   */
   bind(client, dn, password) {
     return new Promise((resolve, reject) => {
       client.bind(dn, password, (err) => {
@@ -52,12 +37,6 @@ class LDAPClient {
     });
   }
 
-  /**
-   * Cerca utente in LDAP
-   * @param {Object} client
-   * @param {string} username
-   * @returns {Promise<Object|null>}
-   */
   searchUser(client, username) {
     return new Promise((resolve, reject) => {
       const filter = config.ldap.userSearchFilter.replace('{{username}}', username);
@@ -98,21 +77,13 @@ class LDAPClient {
     });
   }
 
-  /**
-   * Verifica membership in gruppo
-   * @param {Array<string>} memberOf - Lista gruppi utente
-   * @param {string} requiredGroup - Nome gruppo richiesto
-   * @returns {boolean}
-   */
   isMemberOfGroup(memberOf, requiredGroup) {
     if (!memberOf || memberOf.length === 0) {
       return false;
     }
 
-    // Cerca gruppo (case-insensitive)
     const groupLower = requiredGroup.toLowerCase();
     return memberOf.some(group => {
-      // Estrai CN dal DN (es. CN=Domain Users,OU=Groups,DC=company,DC=local)
       const cnMatch = group.match(/CN=([^,]+)/i);
       if (cnMatch) {
         return cnMatch[1].toLowerCase() === groupLower;
@@ -121,10 +92,6 @@ class LDAPClient {
     });
   }
 
-  /**
-   * Chiude connessione
-   * @param {Object} client
-   */
   unbind(client) {
     if (client) {
       client.unbind();

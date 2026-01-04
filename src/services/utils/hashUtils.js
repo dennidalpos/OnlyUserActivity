@@ -1,10 +1,5 @@
 const crypto = require('crypto');
 
-/**
- * Genera hash SHA-256 del payload normalizzato
- * @param {Object} payload - Payload da hashare
- * @returns {string} Hash in formato "sha256:hexdigest"
- */
 function generatePayloadHash(payload) {
   if (!payload || typeof payload !== 'object') {
     return 'sha256:empty';
@@ -21,14 +16,6 @@ function generatePayloadHash(payload) {
   return `sha256:${hash}`;
 }
 
-/**
- * Normalizza payload per hashing deterministico
- * - Ordina chiavi alfabeticamente
- * - Rimuove campi temporali variabili
- * - Gestisce ricorsivamente oggetti annidati
- * @param {*} obj
- * @returns {*}
- */
 function normalizePayload(obj) {
   if (obj === null || obj === undefined) {
     return null;
@@ -42,13 +29,12 @@ function normalizePayload(obj) {
     return obj.map(normalizePayload);
   }
 
-  // Campi da escludere dall'hash (variabili temporalmente)
   const excludeKeys = [
     'createdAt',
     'updatedAt',
     'timestamp',
     'requestId',
-    'id', // UUID varia tra creazioni
+    'id',
     'iat',
     'exp'
   ];
@@ -62,19 +48,10 @@ function normalizePayload(obj) {
     }, {});
 }
 
-/**
- * Genera ID univoco
- * @returns {string}
- */
 function generateId() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-/**
- * Genera token sicuro
- * @param {number} length - Lunghezza in byte
- * @returns {string}
- */
 function generateSecureToken(length = 32) {
   return crypto.randomBytes(length).toString('hex');
 }

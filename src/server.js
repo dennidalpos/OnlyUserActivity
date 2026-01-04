@@ -11,7 +11,6 @@ const logger = pino({
 
 let server;
 
-// Crea server HTTP o HTTPS
 if (config.https.enabled) {
   try {
     const httpsOptions = {
@@ -29,7 +28,6 @@ if (config.https.enabled) {
   logger.info('HTTP mode (consider using reverse proxy with HTTPS in production)');
 }
 
-// Gestione errori server
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
     logger.error(`Porta ${config.server.port} già in uso`);
@@ -39,7 +37,6 @@ server.on('error', (error) => {
   process.exit(1);
 });
 
-// Avvio server
 server.listen(config.server.port, config.server.host, () => {
   logger.info({
     host: config.server.host,
@@ -51,7 +48,6 @@ server.listen(config.server.port, config.server.host, () => {
   logger.info(`Access application at: ${config.https.enabled ? 'https' : 'http'}://${config.server.host}:${config.server.port}`);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, closing server...');
   server.close(() => {
@@ -68,7 +64,6 @@ process.on('SIGINT', () => {
   });
 });
 
-// Uncaught exceptions
 process.on('uncaughtException', (error) => {
   logger.error({ err: error }, 'Uncaught exception');
   process.exit(1);

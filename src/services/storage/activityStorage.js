@@ -4,32 +4,17 @@ const config = require('../../config');
 const fileStorage = require('./fileStorage');
 const { extractYearMonth } = require('../utils/dateUtils');
 
-/**
- * Servizio per gestione attività su filesystem
- */
 class ActivityStorage {
   constructor() {
     this.activitiesPath = path.join(config.storage.rootPath, 'activities');
   }
 
-  /**
-   * Genera path file attività mensile
-   * @param {string} userKey
-   * @param {string} dateString - YYYY-MM-DD
-   * @returns {string}
-   */
   getMonthFilePath(userKey, dateString) {
     const { year, month } = extractYearMonth(dateString);
     const monthStr = String(month).padStart(2, '0');
     return path.join(this.activitiesPath, userKey, String(year), `${monthStr}.json`);
   }
 
-  /**
-   * Carica attività mensili
-   * @param {string} userKey
-   * @param {string} dateString
-   * @returns {Object}
-   */
   async loadMonthData(userKey, dateString) {
     const filePath = this.getMonthFilePath(userKey, dateString);
     const data = await fileStorage.readJSON(filePath);
@@ -48,53 +33,26 @@ class ActivityStorage {
     return data;
   }
 
-  /**
-   * Salva attività mensili
-   * @param {string} userKey
-   * @param {string} dateString
-   * @param {Object} monthData
-   */
   async saveMonthData(userKey, dateString, monthData) {
     const filePath = this.getMonthFilePath(userKey, dateString);
     monthData.updatedAt = new Date().toISOString();
     await fileStorage.writeJSON(filePath, monthData);
   }
 
-  /**
-   * Trova attività per data
-   * @param {string} userKey
-   * @param {string} dateString - YYYY-MM-DD
-   * @returns {Array<Object>}
-   */
   async findByDate(userKey, dateString) {
     const monthData = await this.loadMonthData(userKey, dateString);
     return monthData.activities.filter(act => act.date === dateString);
   }
 
-  /**
-   * Trova attività per ID
-   * @param {string} userKey
-   * @param {string} activityId
-   * @param {string} dateString - Per ottimizzazione (opzionale)
-   * @returns {Object|null}
-   */
   async findById(userKey, activityId, dateString = null) {
     if (dateString) {
       const monthData = await this.loadMonthData(userKey, dateString);
       return monthData.activities.find(act => act.id === activityId) || null;
     }
 
-    // Se data non fornita, cerca in tutti i mesi (lento)
-    // TODO: implementare se necessario
     throw new Error('findById richiede dateString per performance');
   }
 
-  /**
-   * Crea nuova attività
-   * @param {string} userKey
-   * @param {Object} activityData
-   * @returns {Object}
-   */
   async create(userKey, activityData) {
     const now = new Date().toISOString();
     const activity = {
@@ -111,14 +69,6 @@ class ActivityStorage {
     return activity;
   }
 
-  /**
-   * Aggiorna attività esistente
-   * @param {string} userKey
-   * @param {string} activityId
-   * @param {string} dateString
-   * @param {Object} updates
-   * @returns {Object}
-   */
   async update(userKey, activityId, dateString, updates) {
     const monthData = await this.loadMonthData(userKey, dateString);
     const index = monthData.activities.findIndex(act => act.id === activityId);
@@ -131,9 +81,9 @@ class ActivityStorage {
     monthData.activities[index] = {
       ...activity,
       ...updates,
-      id: activity.id, // Non modificabile
-      date: activity.date, // Non modificabile
-      createdAt: activity.createdAt, // Non modificabile
+      id: activity.id,
+      date: activity.date,
+      createdAt: activity.createdAt,
       updatedAt: new Date().toISOString()
     };
 
@@ -141,13 +91,6 @@ class ActivityStorage {
     return monthData.activities[index];
   }
 
-  /**
-   * Elimina attività
-   * @param {string} userKey
-   * @param {string} activityId
-   * @param {string} dateString
-   * @returns {boolean}
-   */
   async delete(userKey, activityId, dateString) {
     const monthData = await this.loadMonthData(userKey, dateString);
     const index = monthData.activities.findIndex(act => act.id === activityId);
@@ -161,16 +104,7 @@ class ActivityStorage {
     return true;
   }
 
-  /**
-   * Trova attività in intervallo date
-   * @param {string} userKey
-   * @param {string} fromDate - YYYY-MM-DD
-   * @param {string} toDate - YYYY-MM-DD
-   * @returns {Array<Object>}
-   */
   async findByRange(userKey, fromDate, toDate) {
-    // TODO: implementazione completa richiede iterazione mesi
-    // Per semplicità, assumiamo stesso mese
     const monthData = await this.loadMonthData(userKey, fromDate);
 
     return monthData.activities.filter(act => {

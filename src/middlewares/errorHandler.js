@@ -1,7 +1,3 @@
-/**
- * Middleware per gestione errori centralizzata
- */
-
 class AppError extends Error {
   constructor(message, statusCode, code = null, details = null) {
     super(message);
@@ -17,30 +13,21 @@ function errorHandler(logger) {
   return (err, req, res, next) => {
     const requestId = req.id || 'unknown';
 
-    // Default error
     let statusCode = err.statusCode || 500;
     let code = err.code || 'INTERNAL_ERROR';
     let message = err.message || 'Errore interno del server';
     let details = err.details || null;
 
-    // Log error
     if (statusCode >= 500) {
       req.log.error({
         err,
         requestId,
         url: req.url,
-        method: req.method
+        method: req.method,
+        stack: err.stack
       }, 'Server error');
-    } else {
-      req.log.warn({
-        code,
-        message,
-        requestId,
-        url: req.url
-      }, 'Client error');
     }
 
-    // Response
     res.status(statusCode).json({
       success: false,
       error: {

@@ -5,17 +5,11 @@ const fileStorage = require('../storage/fileStorage');
 
 const SALT_ROUNDS = 10;
 
-/**
- * Servizio autenticazione admin locale
- */
 class AdminAuthService {
   constructor() {
     this.credentialsPath = path.join(config.storage.rootPath, 'admin', 'credentials.json');
   }
 
-  /**
-   * Inizializza credenziali admin di default
-   */
   async initialize() {
     const credentials = await this.loadCredentials();
 
@@ -33,41 +27,23 @@ class AdminAuthService {
     }
   }
 
-  /**
-   * Carica credenziali
-   */
   async loadCredentials() {
     const data = await fileStorage.readJSON(this.credentialsPath);
     return data || { users: [] };
   }
 
-  /**
-   * Salva credenziali
-   */
   async saveCredentials(data) {
     await fileStorage.writeJSON(this.credentialsPath, data);
   }
 
-  /**
-   * Hash password
-   */
   async hashPassword(plainPassword) {
     return await bcrypt.hash(plainPassword, SALT_ROUNDS);
   }
 
-  /**
-   * Verifica password
-   */
   async verifyPassword(plainPassword, hash) {
     return await bcrypt.compare(plainPassword, hash);
   }
 
-  /**
-   * Autentica admin
-   * @param {string} username
-   * @param {string} password
-   * @returns {Object} Admin user
-   */
   async authenticate(username, password) {
     const credentials = await this.loadCredentials();
     const adminUser = credentials.users.find(u => u.username === username);
@@ -88,11 +64,6 @@ class AdminAuthService {
     };
   }
 
-  /**
-   * Cambia password admin
-   * @param {string} username
-   * @param {string} newPassword
-   */
   async changePassword(username, newPassword) {
     const credentials = await this.loadCredentials();
     const userIndex = credentials.users.findIndex(u => u.username === username);

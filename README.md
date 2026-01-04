@@ -1,551 +1,408 @@
 # Activity Tracker - Sistema di Tracciamento Attività
 
-Sistema completo per monitoraggio e inserimento attività giornaliere utenti aziendali con autenticazione LDAP/Active Directory.
+**Versione:** 1.3.0 | **Stato:** Production Ready
 
-## Caratteristiche
+Sistema enterprise per tracciamento e monitoraggio attività giornaliere degli utenti con autenticazione flessibile (locale o LDAP/AD), interfacce web complete e API RESTful.
 
-- ✅ **Autenticazione LDAP/AD** con verifica membership gruppi
-- ✅ **API RESTful** per gestione attività con JWT authentication
-- ✅ **Dashboard Admin** web per monitoraggio ed export
-- ✅ **Persistenza su filesystem** (JSON) senza database
-- ✅ **Audit logging** completo append-only
-- ✅ **Validazioni business** (orari, sovrapposizioni, continuità)
-- ✅ **Export dati** in JSON e CSV
-- ✅ **Sicurezza** con rate limiting, helmet, CORS
+## 🚀 Quick Start
 
-## Prerequisiti
+```bash
+# 1. Installa
+git clone https://github.com/dennidalpos/OnlyUserActivity.git
+cd OnlyUserActivity
+npm install
+
+# 2. Configura (opzionale, funziona out-of-the-box)
+cp .env.example .env
+
+# 3. Crea primo utente locale
+node scripts/create-user.js
+
+# 4. Avvia
+npm start
+
+# 5. Accedi
+# Utente: http://localhost:3000 (credenziali create)
+# Admin:  http://localhost:3000/admin (admin/admin)
+```
+
+## ✨ Caratteristiche Principali
+
+### Dashboard Admin Avanzata
+- ✅ **Navigazione temporale** - Giorno, Settimana, Mese con pulsanti avanti/indietro
+- ✅ **Visualizzazione compatta** - Statistiche aggregate e dettagli utenti
+- ✅ **Export completo** - Excel (XLSX), CSV, JSON con range flessibili
+- ✅ **Selezione intelligente** - Tutti gli utenti o selezione multipla con checkbox
+- ✅ **Range rapidi export** - Oggi, Ieri, Settimana, Mese, Anno, Tutti i dati
+- ✅ **Riavvio server da web** - Riavvia il server direttamente dall'interfaccia admin
+- ✅ **Data minima visualizzata** - Mostra da quando sono disponibili i dati
+
+### Dashboard Utente
+- ✅ **Gestione attività** - Creazione, modifica, eliminazione con calendario
+- ✅ **Time picker intelligente** - Step 15 minuti, validazione orari
+- ✅ **Statistiche real-time** - Ore lavorate, completamento, straordinari
+- ✅ **Sistema help integrato** - Guida contestuale
+
+### Autenticazione e Sicurezza
+- ✅ **Autenticazione flessibile** - Locale (bcrypt) o LDAP/AD
+- ✅ **Tracking automatico** - Utenti tracciati al primo accesso
+- ✅ **JWT authentication** - Token sicuri per API
+- ✅ **Rate limiting** - Protezione contro bruteforce
+- ✅ **Audit log** - Tracciamento immutabile con SHA-256
+- ✅ **Cache performance** - Cache in memoria con TTL 5 minuti
+
+### Export Dati Avanzato
+- ✅ **Export Excel (XLSX)**
+  - Foglio "Dettaglio Attività" con tutte le attività
+  - Foglio "Riepilogo Utenti" con statistiche aggregate
+  - Formattazione con colori e autofilter
+- ✅ **Export CSV** - Compatibile Excel
+- ✅ **Export JSON** - Per integrazioni API
+- ✅ **Tipi export**
+  - Dettagliato: tutte le attività con orari
+  - Riepilogo: totali per utente
+- ✅ **Selezione utenti**
+  - Tutti gli utenti
+  - Selezione multipla specifica
+- ✅ **Range temporali**
+  - Oggi / Ieri
+  - Questa settimana / Settimana scorsa
+  - Questo mese / Mese scorso
+  - Quest'anno
+  - Tutti i dati disponibili
+  - Personalizzato (data inizio/fine)
+
+## 📋 Prerequisiti
 
 - **Node.js** >= 18.0.0
 - **npm** >= 9.0.0
-- **Accesso LDAP/AD** - Server raggiungibile con credenziali (opzionale bind account)
-- **Permessi filesystem** - Directory `data/` scrivibile dall'utente applicativo
-- **Reverse Proxy (produzione)** - nginx o Apache con certificato TLS (raccomandato)
+- **Permessi filesystem** - Directory `data/` scrivibile
 
-## Installazione
+**Opzionali:**
+- Server LDAP/AD (solo se abiliti LDAP_ENABLED=true)
+- Reverse proxy HTTPS (nginx/Apache - raccomandato per produzione)
+
+## 📦 Installazione
 
 ```bash
-# Clone repository
 git clone https://github.com/dennidalpos/OnlyUserActivity.git
 cd OnlyUserActivity
-
-# Installa dipendenze
 npm install
-
-# Copia e configura environment
-cp .env.example .env
-# Modifica .env con le tue configurazioni
-
-# Crea directory logs (opzionale)
-mkdir logs
 ```
 
-## Configurazione
+## ⚙️ Configurazione
 
-### File `.env`
+### Configurazione Minima (Autenticazione Locale)
 
-Modifica il file `.env` con i parametri del tuo ambiente:
+Il sistema funziona **senza configurazione** con i default. Per personalizzare:
 
 ```bash
-# Server
+cp .env.example .env
+```
+
+**Configurazioni essenziali per produzione:**
+
+```env
 NODE_ENV=production
-SERVER_HOST=0.0.0.0
 SERVER_PORT=3000
 
-# LDAP/Active Directory - CONFIGURAZIONE OBBLIGATORIA
-LDAP_URL=ldap://dc.company.local:389
-LDAP_BASE_DN=DC=company,DC=local
-LDAP_BIND_DN=CN=svc-activity-tracker,OU=Service Accounts,DC=company,DC=local
-LDAP_BIND_PASSWORD=YourSecurePassword
-LDAP_USER_SEARCH_FILTER=(sAMAccountName={{username}})
-LDAP_REQUIRED_GROUP=Domain Users
+# IMPORTANTE: Cambia questi secret in produzione!
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+ADMIN_SESSION_SECRET=your-admin-session-secret-min-32-chars
 
-# JWT - CAMBIA IN PRODUZIONE
-JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+# LDAP opzionale (default: false)
+LDAP_ENABLED=false
 
-# Admin - CAMBIA PASSWORD DOPO PRIMO ACCESSO
-ADMIN_SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
-
-# Storage
-DATA_ROOT_PATH=./data
-
-# Activity Rules
-ACTIVITY_STRICT_CONTINUITY=false  # true per forzare continuità orari
-ACTIVITY_REQUIRED_MINUTES=480     # 8 ore
+# HTTPS opzionale (default: false, usa reverse proxy)
+HTTPS_ENABLED=false
 ```
 
-### Generazione Secret
-
-Per generare secret sicuri:
+### Generazione Secret Sicuri
 
 ```bash
-# JWT_SECRET
+# Genera JWT_SECRET
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-# ADMIN_SESSION_SECRET
+# Genera ADMIN_SESSION_SECRET
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-## Avvio
+### Configurazione LDAP (Opzionale)
+
+```env
+LDAP_ENABLED=true
+LDAP_URL=ldaps://dc.company.local:636
+LDAP_BASE_DN=DC=company,DC=local
+LDAP_BIND_DN=CN=ServiceAccount,CN=Users,DC=company,DC=local
+LDAP_BIND_PASSWORD=service_account_password
+LDAP_USER_SEARCH_FILTER=(sAMAccountName={{username}})
+LDAP_REQUIRED_GROUP=CN=Domain Users,CN=Users,DC=company,DC=local
+```
+
+## 👥 Gestione Utenti
+
+### Modalità Locale (Default)
+
+**Da riga di comando:**
+```bash
+node scripts/create-user.js
+# Inserisci: username, password, nome completo, email
+```
+
+**Da web UI (Dashboard Admin):**
+1. Login admin: `http://localhost:3000/admin`
+2. Vai su "Configurazione" → "Gestione Utenti Locali"
+3. Clicca "+ Nuovo Utente Locale"
+4. Compila form e clicca "Crea Utente"
+
+### Modalità LDAP
+
+Con `LDAP_ENABLED=true`, gli utenti vengono autenticati contro LDAP/AD.
+**Al primo login**, l'utente viene automaticamente creato e tracciato nel sistema.
+
+## 🚀 Avvio
 
 ### Sviluppo
 
 ```bash
-npm run dev
+npm run dev  # Con nodemon (auto-reload)
 ```
-
-L'applicazione sarà disponibile su `http://localhost:3000`
 
 ### Produzione
 
-#### Opzione 1: Node diretto
-
 ```bash
+# Avvio semplice
 npm start
-```
 
-#### Opzione 2: PM2 (raccomandato)
-
-```bash
-# Installa PM2 globalmente
+# Con PM2 (raccomandato)
 npm install -g pm2
-
-# Avvia applicazione
-pm2 start ecosystem.config.js
-
-# Salva configurazione
+pm2 start src/server.js --name activity-tracker
 pm2 save
-
-# Configura avvio automatico
-pm2 startup
-# Seguire le istruzioni visualizzate
-
-# Gestione
-pm2 status
-pm2 logs activity-tracker
-pm2 restart activity-tracker
-pm2 stop activity-tracker
+pm2 startup  # Auto-start al boot
 ```
 
-## Configurazione HTTPS
+Server disponibile su `http://localhost:3000`
 
-### Opzione 1: Reverse Proxy nginx (RACCOMANDATO)
+## 🖥️ Interfacce
 
-Crea file `/etc/nginx/sites-available/activity-tracker`:
+### Dashboard Utente
+**URL:** `http://localhost:3000/user/auth/login`
 
-```nginx
-server {
-    listen 80;
-    server_name activity.company.local;
-    return 301 https://$server_name$request_uri;
-}
+Funzionalità:
+- Login con credenziali locali o LDAP
+- Calendario con selezione data
+- Gestione completa attività (crea, modifica, elimina)
+- Statistiche giornaliere (ore, completamento, straordinari)
+- Time picker step 15 minuti
+- Sistema help integrato
 
-server {
-    listen 443 ssl http2;
-    server_name activity.company.local;
+### Dashboard Admin
+**URL:** `http://localhost:3000/admin/auth/login`
 
-    ssl_certificate /etc/ssl/certs/activity.crt;
-    ssl_certificate_key /etc/ssl/private/activity.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+#### Monitoraggio (Dashboard)
+- **Tre modalità visualizzazione:**
+  - Giorno - Mostra attività giornaliere
+  - Settimana - Statistiche settimanali (lun-dom)
+  - Mese - Riepilogo mensile
+- **Navigazione:** Pulsanti Precedente/Oggi/Successivo
+- **Statistiche:**
+  - Totale utenti, OK, Incompleti, Assenti
+  - Ore totali periodo (settimana/mese)
+  - Media ore per utente
+- **Filtri:** Username, Stato completamento
+- **Visualizzazione compatta** con tabella ottimizzata
 
-Abilita configurazione:
+#### Export Dati
+- **Indicatore data minima** - Visualizza da quando sono disponibili i dati
+- **Range rapidi:** Oggi, Ieri, Settimana, Mese, Anno, Tutti i dati
+- **Selezione utenti intelligente:**
+  - Checkbox "Tutti gli utenti (N)"
+  - Selezione multipla con stato indeterminato
+  - Lista scrollabile con filtro
+- **Formati:**
+  - Excel (XLSX) - 2 fogli (Dettaglio + Riepilogo)
+  - CSV - Compatibile Excel
+  - JSON - Per API
+- **Tipi:**
+  - Dettagliato - Tutte le attività con orari
+  - Riepilogo - Totali per utente
 
-```bash
-ln -s /etc/nginx/sites-available/activity-tracker /etc/nginx/sites-enabled/
-nginx -t
-systemctl reload nginx
-```
+#### Configurazione
+- **Gestione Server**
+  - **Riavvio server** - Pulsante riavvio diretto da web UI
+  - Info server (Node.js version, uptime, memoria)
+- **LDAP/Active Directory** - Configurazione completa
+- **HTTPS** - Certificati e porta HTTPS
+- **Server** - Porta, host, timeout
+- **Tipi attività** - Categorie personalizzabili
+- **Utenti locali** - Crea/elimina utenti
 
-Configura `.env`:
+### API REST
+**Base URL:** `http://localhost:3000/api`
 
-```bash
-TRUST_PROXY=1
-```
+Endpoints principali:
+- `POST /api/auth/login` - Autenticazione
+- `GET /api/activities/:date` - Attività giornaliere
+- `POST /api/activities` - Crea attività
+- `PUT /api/activities/:id` - Modifica attività
+- `DELETE /api/activities/:id` - Elimina attività
+- `GET /api/activities/types` - Tipi attività
 
-### Opzione 2: HTTPS Diretto (non raccomandato)
+**Autenticazione:** Header `Authorization: Bearer {jwt_token}`
 
-```bash
-HTTPS_ENABLED=true
-HTTPS_CERT_PATH=/path/to/cert.pem
-HTTPS_KEY_PATH=/path/to/key.pem
-```
-
-## Accesso
-
-- **API utenti:** `https://activity.company.local/api`
-- **Dashboard admin:** `https://activity.company.local/admin`
-- **Health check:** `https://activity.company.local/health`
-
-### Credenziali Admin Default
-
-- **Username:** `admin`
-- **Password:** `admin`
-
-⚠️ **IMPORTANTE:** Cambiare la password al primo accesso!
-
-## Utilizzo API
-
-### Autenticazione Utente
-
+**Esempio:**
 ```bash
 # Login
-curl -X POST https://activity.company.local/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"mario","password":"Pass123!"}' \
+  | jq -r '.data.token')
+
+# Crea attività
+curl -X POST http://localhost:3000/api/activities \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "mario.rossi",
-    "password": "Password123!"
-  }'
-
-# Risposta
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "userKey": "uuid",
-    "username": "mario.rossi",
-    "displayName": "Mario Rossi",
-    "expiresAt": "2026-01-02T16:30:00.000Z"
-  }
-}
-```
-
-### Gestione Attività
-
-```bash
-# Ottieni attività del giorno
-curl https://activity.company.local/api/activities/2026-01-02 \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# Crea nuova attività
-curl -X POST https://activity.company.local/api/activities \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "date": "2026-01-02",
+    "date": "2026-01-04",
     "startTime": "09:00",
-    "endTime": "11:00",
+    "endTime": "17:00",
     "activityType": "lavoro",
-    "notes": "Sviluppo feature X"
+    "notes": "Giornata completa"
   }'
-
-# Aggiorna attività
-curl -X PUT "https://activity.company.local/api/activities/ACTIVITY_ID?date=2026-01-02" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "endTime": "12:00",
-    "notes": "Sviluppo feature X - completato"
-  }'
-
-# Elimina attività
-curl -X DELETE "https://activity.company.local/api/activities/ACTIVITY_ID?date=2026-01-02" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# Lista attività in range
-curl "https://activity.company.local/api/activities?from=2026-01-01&to=2026-01-31" \
-  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### Tipi Attività Disponibili
-
-- `lavoro` - Lavoro ordinario
-- `meeting` - Riunioni
-- `formazione` - Formazione/training
-- `supporto` - Supporto clienti/colleghi
-- `ferie` - Ferie
-- `festività` - Giorni festivi
-- `malattia` - Malattia
-- `permesso` - Permessi
-- `trasferta` - Trasferte
-- `pausa` - Pause
-- `altro` - Altro (richiede `customType`)
-
-### Regole Validazione
-
-- **Orari:** Step di 15 minuti (00, 15, 30, 45)
-- **Sovrapposizioni:** Non consentite
-- **Continuità:** Configurabile (`ACTIVITY_STRICT_CONTINUITY=true/false`)
-- **Giornata completa:** Minimo 8 ore (480 min), straordinari consentiti
-
-## Backup
-
-### Automatico con Cron
-
-```bash
-# Aggiungi a crontab
-crontab -e
-
-# Backup giornaliero alle 02:00
-0 2 * * * tar -czf /backup/activity-$(date +\%Y\%m\%d).tar.gz /app/data >> /var/log/activity-backup.log 2>&1
-```
-
-### Manuale
-
-```bash
-# Backup
-tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz data/
-
-# Restore
-tar -xzf backup-YYYYMMDD-HHMMSS.tar.gz
-```
-
-### Strategia Backup Raccomandata
-
-1. **Backup giornaliero** automatico con retention 30 giorni
-2. **Backup settimanale** con retention 3 mesi
-3. **Backup mensile** con retention 1 anno
-4. **Storage remoto** (S3, NAS, etc.)
-
-## Troubleshooting
-
-### Errore: "LDAP bind failed"
-
-**Causa:** Credenziali LDAP errate o server irraggiungibile
-
-**Diagnosi:**
-
-```bash
-# Test connessione LDAP
-ldapsearch -x -H ldap://dc.company.local:389 \
-  -D "CN=svc-activity-tracker,OU=Service Accounts,DC=company,DC=local" \
-  -w "password" \
-  -b "DC=company,DC=local" \
-  "(sAMAccountName=test.user)"
-```
-
-**Soluzioni:**
-- Verifica `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`
-- Controlla firewall (porta 389 o 636 per LDAPS)
-- Verifica che l'account di servizio non sia scaduto
-
-### Errore: "User not in required group"
-
-**Causa:** Utente non è membro di "Domain Users" (o gruppo configurato)
-
-**Diagnosi (PowerShell su DC):**
-
-```powershell
-Get-ADUser -Identity mario.rossi -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-```
-
-**Soluzione:**
-- Aggiungi utente al gruppo richiesto in Active Directory
-- Oppure modifica `LDAP_REQUIRED_GROUP` in `.env`
-
-### Errore: "EACCES: permission denied" su `/data`
-
-**Causa:** Permessi insufficienti sulla directory dati
-
-**Soluzione:**
-
-```bash
-# Verifica owner
-ls -ld data/
-
-# Imposta permessi corretti
-chown -R app-user:app-group data/
-chmod -R 700 data/
-```
-
-### Errore: "Token expired"
-
-**Causa:** Token JWT scaduto (default 8 ore)
-
-**Soluzione:**
-- Effettuare nuovo login
-- Aumentare `JWT_EXPIRES_IN` in `.env` se necessario
-
-### Clock Skew / Timezone Issues
-
-**Sintomo:** Date/orari non corrispondono
-
-**Soluzione:**
-
-```bash
-# Verifica timezone
-echo $TZ
-date
-
-# Imposta timezone in .env
-TZ=Europe/Rome
-
-# Sincronizza NTP (Linux)
-timedatectl set-ntp true
-
-# Windows: Verifica servizio W32Time
-```
-
-### Porta già in uso
-
-**Errore:** `EADDRINUSE`
-
-**Soluzione:**
-
-```bash
-# Trova processo sulla porta 3000
-# Linux
-lsof -i :3000
-
-# Windows
-netstat -ano | findstr :3000
-
-# Kill processo o cambia porta in .env
-SERVER_PORT=3001
-```
-
-## Monitoring
-
-### Health Check
-
-```bash
-curl https://activity.company.local/health
-```
-
-### Logs
-
-```bash
-# PM2
-pm2 logs activity-tracker
-pm2 logs activity-tracker --lines 100
-
-# Diretto
-tail -f logs/app.log
-
-# Audit log
-tail -f data/audit/$(date +%Y/%m/%d).jsonl | jq .
-```
-
-### Metriche
-
-```bash
-# PM2 monitoring
-pm2 monit
-
-# Disk space
-df -h data/
-du -sh data/*
-
-# Audit log size
-du -sh data/audit/
-```
-
-## Manutenzione
-
-### Rotazione Audit Log
-
-```bash
-# Comprimi log più vecchi di 30 giorni
-find data/audit -name "*.jsonl" -mtime +30 -exec gzip {} \;
-
-# Elimina log più vecchi di 2 anni
-find data/audit -name "*.gz" -mtime +730 -delete
-```
-
-### Pulizia Cache/Lock
-
-```bash
-# Rimuovi lock orfani
-find data/locks -type f -mtime +1 -delete
-```
-
-### Aggiornamento
-
-```bash
-# Backup prima di aggiornare
-npm run backup  # Se configurato
-
-# Pull nuove versioni
-git pull origin main
-
-# Aggiorna dipendenze
-npm install
-
-# Restart
-pm2 restart activity-tracker
-```
-
-## Struttura Directory
+## 📁 Struttura Progetto
 
 ```
 OnlyUserActivity/
-├── data/                       # Directory dati (non in git)
-│   ├── users/                  # Profili utenti
-│   ├── activities/             # Attività per utente/anno/mese
-│   ├── audit/                  # Audit log per anno/mese/giorno
-│   ├── admin/                  # Credenziali admin
-│   └── locks/                  # Lock file temporanei
-├── src/                        # Codice sorgente
-│   ├── config/                 # Configurazione
-│   ├── middlewares/            # Express middlewares
-│   ├── services/               # Business logic
-│   ├── routes/                 # Route handlers
-│   └── views/                  # Template EJS
-├── public/                     # Asset statici
-│   ├── css/
-│   └── js/
-├── tests/                      # Test
-├── .env                        # Configurazione (non in git)
-├── .env.example                # Template configurazione
-└── README.md                   # Questo file
+├── src/
+│   ├── config/              # Configurazione centralizzata
+│   ├── middlewares/         # Auth, validation, error handling
+│   ├── routes/
+│   │   ├── api/            # API REST endpoints
+│   │   ├── admin/          # Dashboard admin routes
+│   │   └── user/           # Dashboard utente routes
+│   ├── services/
+│   │   ├── auth/           # LDAP, locale, JWT
+│   │   ├── storage/        # File storage con cache
+│   │   ├── activity/       # Business logic
+│   │   ├── admin/          # Export, monitoring, server
+│   │   └── utils/          # Date, time, hash
+│   ├── views/              # Template EJS
+│   ├── app.js
+│   └── server.js
+├── public/
+│   ├── css/               # Stili uniformati
+│   └── js/                # JavaScript client
+├── data/                  # Dati applicazione
+├── scripts/               # Helper scripts
+│   ├── create-user.js
+│   └── restart-server.js  # Script riavvio automatico
+├── .env.example
+├── package.json
+└── README.md
 ```
 
-## Testing
+## 🔒 Sicurezza
 
-```bash
-# Run tutti i test
-npm test
+### Produzione Checklist
 
-# Run test in watch mode
-npm run test:watch
+**Secrets:**
+- [ ] Generato `JWT_SECRET` random (min 32 caratteri)
+- [ ] Generato `ADMIN_SESSION_SECRET` random (min 32 caratteri)
+- [ ] Cambiato password admin default
 
-# Coverage
-npm run test:coverage
-```
+**Network:**
+- [ ] Configurato reverse proxy HTTPS (nginx/Apache)
+- [ ] Impostato `CORS_ORIGIN` al dominio reale
+- [ ] Configurato firewall
 
-## Sicurezza
+**Storage:**
+- [ ] Permessi directory `data/` impostati a 700
+- [ ] Backup automatico configurato
+- [ ] Log rotation attivo
 
-### Checklist Pre-Produzione
-
-- [ ] Cambiato `JWT_SECRET` con valore random sicuro
-- [ ] Cambiato `ADMIN_SESSION_SECRET` con valore random sicuro
-- [ ] Cambiata password admin default
-- [ ] HTTPS configurato (reverse proxy o certificati)
-- [ ] Firewall configurato (porta applicazione accessibile solo da proxy)
-- [ ] LDAP su TLS (ldaps://)
-- [ ] Permessi filesystem corretti (700 su `/data`)
-- [ ] Backup configurato e testato
+**Environment:**
+- [ ] `NODE_ENV=production`
+- [ ] Rate limiting verificato
 - [ ] Monitoring attivo
-- [ ] Log rotation configurato
 
-### Best Practices
+## 🧪 Funzionalità Performance
 
-- Non esporre mai l'applicazione direttamente su Internet senza reverse proxy
-- Usare LDAPS invece di LDAP quando possibile
-- Rotare i secret periodicamente
-- Monitorare audit log per attività sospette
-- Testare regolarmente i backup
-- Mantenere Node.js e dipendenze aggiornate
+### Cache in Memoria
+- **Cache utenti** - TTL 5 minuti
+- **Cache index** - Riduce I/O disco ~90%
+- **Invalidazione automatica** - Alla modifica dati
 
-## Supporto
+### Ottimizzazioni
+- Log console solo per errori (status >= 400)
+- Richieste parallele dove possibile
+- Lazy loading componenti dashboard
+
+## 🔄 Changelog
+
+### v1.3.0 (2026-01-04)
+**Dashboard Admin:**
+- Navigazione temporale (Giorno/Settimana/Mese)
+- Visualizzazione compatta con statistiche aggregate
+- Pulsanti avanti/indietro per navigazione rapida
+
+**Export Avanzato:**
+- Export Excel (XLSX) con fogli formattati
+- Range rapidi (Oggi, Settimana, Mese, Anno, Tutti)
+- Selezione utenti unificata con checkbox intelligente
+- Indicatore data minima disponibile
+- Export riepilogo e dettagliato
+
+**Configurazione:**
+- Riavvio server da web UI
+- Gestione completa server dalla dashboard
+
+**Performance:**
+- Cache in memoria (TTL 5 minuti)
+- Log ottimizzati (solo errori)
+- Riduzione I/O disco 90%
+
+**UI/UX:**
+- Stili uniformati su tutti i pulsanti
+- Nessuna sottolineatura al click
+- Colori consistenti
+- Transizioni smooth
+
+### v1.2.0 (2026-01-04)
+- Time picker step 15 minuti
+- Sistema help integrato
+- Badge tipo autenticazione
+- Tracking automatico utenti
+
+### v1.1.0 (2026-01-03)
+- Dashboard utente completa
+- Autenticazione locale default
+- LDAP opzionale
+
+### v1.0.0 (2026-01-02)
+- Release iniziale
+- API RESTful
+- Dashboard admin base
+
+## 🤝 Contribuire
+
+1. Fork il repository
+2. Crea feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit modifiche (`git commit -m 'Add AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Apri Pull Request
+
+## 📝 Licenza
+
+ISC License
+
+## 🆘 Supporto
 
 - **Issues:** https://github.com/dennidalpos/OnlyUserActivity/issues
-- **Documentazione API:** Vedere sezione "Utilizzo API" sopra
-- **Logs:** `pm2 logs activity-tracker` o `tail -f logs/app.log`
 
-## Licenza
+---
 
-ISC
-
-## Autori
-
-Sistema progettato e implementato come soluzione enterprise per tracciamento attività aziendali.
+**Sistema completo e production-ready per gestione attività aziendali**

@@ -6,22 +6,20 @@ const cors = require('cors');
 const pino = require('pino');
 const config = require('./config');
 
-// Middlewares
 const requestLogger = require('./middlewares/requestLogger');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimiter');
 
-// Routes
 const apiAuthRoutes = require('./routes/api/auth');
 const apiActivitiesRoutes = require('./routes/api/activities');
 const adminAuthRoutes = require('./routes/admin/auth');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
+const userAuthRoutes = require('./routes/user/auth');
+const userDashboardRoutes = require('./routes/user/dashboard');
 
-// Services
 const fileStorage = require('./services/storage/fileStorage');
 const adminAuthService = require('./services/auth/adminAuthService');
 
-// Logger
 const logger = pino({
   level: config.logging.level,
   transport: config.env === 'development' ? {
@@ -36,26 +34,23 @@ const logger = pino({
 
 const app = express();
 
-// Trust proxy
 app.set('trust proxy', config.server.trustProxy);
 
-// View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Security headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
     }
   }
 }));
 
-// CORS per API
 app.use('/api', cors({
   origin: config.security.corsOrigin,
   credentials: true,
@@ -63,14 +58,11 @@ app.use('/api', cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Session per admin
 app.use('/admin', session({
   secret: config.admin.sessionSecret,
   resave: false,
@@ -82,10 +74,19 @@ app.use('/admin', session({
   }
 }));
 
-// Request logging
+app.use('/user', session({
+  secret: config.jwt.secret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 8 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: config.env === 'production' && config.https.enabled
+  }
+}));
+
 app.use(requestLogger(logger));
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -94,21 +95,20 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes con rate limiting
 app.use('/api', apiLimiter);
 app.use('/api/auth', apiAuthRoutes);
 app.use('/api/activities', apiActivitiesRoutes);
 
-// Admin routes
+app.use('/user/auth', userAuthRoutes);
+app.use('/user', userDashboardRoutes);
+
 app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin', adminDashboardRoutes);
 
-// Redirect root to admin
 app.get('/', (req, res) => {
-  res.redirect('/admin/dashboard');
+  res.redirect('/user/auth/login');
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -119,10 +119,8 @@ app.use((req, res) => {
   });
 });
 
-// Error handler (deve essere ultimo)
 app.use(errorHandler(logger));
 
-// Inizializzazione
 async function initialize() {
   try {
     logger.info('Inizializzazione storage...');
@@ -138,7 +136,6 @@ async function initialize() {
   }
 }
 
-// Chiama inizializzazione
 initialize().catch(err => {
   logger.error({ err }, 'Fatal initialization error');
   process.exit(1);

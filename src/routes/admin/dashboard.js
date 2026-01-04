@@ -2,86 +2,154 @@ const express = require('express');
 const router = express.Router();
 const monitoringService = require('../../services/admin/monitoringService');
 const exportService = require('../../services/admin/exportService');
+const settingsService = require('../../services/admin/settingsService');
+const activityTypesService = require('../../services/admin/activityTypesService');
+const serverService = require('../../services/admin/serverService');
 const auditLogger = require('../../services/storage/auditLogger');
+const userStorage = require('../../services/storage/userStorage');
+const activityStorage = require('../../services/storage/activityStorage');
 const { requireAdminAuth } = require('../../middlewares/adminAuth');
 const { getCurrentDate } = require('../../services/utils/dateUtils');
+const { reloadActivityTypes } = require('../../middlewares/validation');
 
-// Tutte le route richiedono autenticazione admin
 router.use(requireAdminAuth);
 
-/**
- * GET /admin/dashboard
- * Dashboard principale con monitoraggio giornaliero
- */
 router.get('/dashboard', async (req, res) => {
   try {
+    const viewMode = req.query.viewMode || 'day';
     const date = req.query.date || getCurrentDate();
     const filters = {
       username: req.query.username || '',
       status: req.query.status || ''
     };
 
-    const data = await monitoringService.getDailyStatus(date, filters);
+    let data;
+    let viewData = { viewMode, date, filters };
+
+    if (viewMode === 'day') {
+      data = await monitoringService.getDailyStatus(date, filters);
+      viewData.users = data.users;
+      viewData.summary = data.summary;
+    } else {
+      const { fromDate, toDate } = calculateDateRange(date, viewMode);
+      data = await monitoringService.getRangeStatus(fromDate, toDate, filters);
+      viewData.fromDate = fromDate;
+      viewData.toDate = toDate;
+      viewData.users = data.users;
+      viewData.summary = data.summary;
+    }
 
     res.render('admin/dashboard', {
       title: 'Dashboard Monitoraggio',
-      date,
-      filters,
-      users: data.users,
-      summary: data.summary
+      ...viewData
     });
 
   } catch (error) {
-    res.render('error', {
+    res.render('errors/error', {
       title: 'Errore',
       error: error.message
     });
   }
 });
 
-/**
- * GET /admin/export
- * Pagina export dati
- */
-router.get('/export', (req, res) => {
-  res.render('admin/export', {
-    title: 'Export Dati'
-  });
+function calculateDateRange(date, viewMode) {
+  const d = new Date(date);
+  let fromDate, toDate;
+
+  if (viewMode === 'week') {
+    const dayOfWeek = d.getDay();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - diff);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    fromDate = monday.toISOString().split('T')[0];
+    toDate = sunday.toISOString().split('T')[0];
+  } else if (viewMode === 'month') {
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const lastDay = new Date(year, month, 0).getDate();
+
+    fromDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    toDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  } else {
+    fromDate = toDate = date;
+  }
+
+  return { fromDate, toDate };
+}
+
+router.get('/export', async (req, res) => {
+  try {
+    const users = await userStorage.listAll();
+
+    let minDate = getCurrentDate();
+    const today = getCurrentDate();
+
+    for (const user of users) {
+      try {
+        const activities = await activityStorage.findByRange(user.userKey, '2020-01-01', today);
+        if (activities.length > 0) {
+          const userMinDate = activities[0].date;
+          if (userMinDate < minDate) {
+            minDate = userMinDate;
+          }
+        }
+      } catch (err) {
+      }
+    }
+
+    res.render('admin/export', {
+      title: 'Export Dati',
+      users,
+      minDate
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
 });
 
-/**
- * POST /admin/api/export
- * Esegue export
- */
 router.post('/api/export', async (req, res) => {
   try {
-    const { userKeys, fromDate, toDate, format } = req.body;
+    const { userKeys, fromDate, toDate, format, exportType, rangeType } = req.body;
 
-    if (!userKeys || !fromDate || !toDate) {
+    if (!fromDate || !toDate) {
       return res.status(400).json({
         success: false,
         error: 'Parametri mancanti'
       });
     }
 
+    let finalUserKeys = userKeys;
+    if (!userKeys || userKeys === 'all' || (Array.isArray(userKeys) && userKeys.length === 0)) {
+      finalUserKeys = ['all'];
+    } else if (!Array.isArray(userKeys)) {
+      finalUserKeys = [userKeys];
+    }
+
     const result = await exportService.exportActivities(
-      Array.isArray(userKeys) ? userKeys : [userKeys],
+      finalUserKeys,
       fromDate,
       toDate,
-      format || 'csv'
+      format || 'csv',
+      exportType || 'detailed'
     );
 
-    // Audit log
     await auditLogger.log(
       'EXPORT',
       'admin',
-      { userKeys, fromDate, toDate, format },
+      { userKeys: finalUserKeys, fromDate, toDate, format, exportType, rangeType },
       req.id,
       req.ip,
       req.adminUser.username
     );
 
-    const filename = `export_${fromDate}_${toDate}.${format === 'json' ? 'json' : 'csv'}`;
+    const ext = format === 'xlsx' ? 'xlsx' : format === 'json' ? 'json' : 'csv';
+    const filename = `export_${rangeType || 'custom'}_${fromDate}_${toDate}.${ext}`;
 
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -95,10 +163,6 @@ router.post('/api/export', async (req, res) => {
   }
 });
 
-/**
- * GET /admin/api/monitoring
- * API per dati monitoraggio (per AJAX)
- */
 router.get('/api/monitoring', async (req, res) => {
   try {
     const date = req.query.date || getCurrentDate();
@@ -114,6 +178,303 @@ router.get('/api/monitoring', async (req, res) => {
       data
     });
 
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/settings', async (req, res) => {
+  try {
+    const settings = await settingsService.getCurrentSettings();
+    const activityTypes = await activityTypesService.getActivityTypes();
+    const users = await settingsService.listLocalUsers();
+
+    res.render('admin/settings', {
+      title: 'Configurazione Server',
+      settings,
+      activityTypes,
+      users
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/ldap', async (req, res) => {
+  try {
+    const result = await settingsService.updateLdapSettings(req.body);
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'ldap', changes: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/https', async (req, res) => {
+  try {
+    const result = await settingsService.updateHttpsSettings(req.body);
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'https', changes: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/server', async (req, res) => {
+  try {
+    const result = await settingsService.updateServerSettings(req.body);
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'server', changes: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/settings/activity-types', async (req, res) => {
+  try {
+    const types = await activityTypesService.getActivityTypes();
+    res.json({
+      success: true,
+      data: types
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/activity-types', async (req, res) => {
+  try {
+    const { activityTypes } = req.body;
+    const result = await activityTypesService.setActivityTypes(activityTypes);
+    await reloadActivityTypes();
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'activity-types', activityTypes: result },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/activity-types/add', async (req, res) => {
+  try {
+    const { activityType } = req.body;
+    const result = await activityTypesService.addActivityType(activityType);
+    await reloadActivityTypes();
+
+    await auditLogger.log(
+      'ACTIVITY_TYPE_ADD',
+      'admin',
+      { activityType },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/api/settings/activity-types/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const result = await activityTypesService.removeActivityType(type);
+    await reloadActivityTypes();
+
+    await auditLogger.log(
+      'ACTIVITY_TYPE_REMOVE',
+      'admin',
+      { activityType: type },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/users', async (req, res) => {
+  try {
+    const users = await settingsService.listLocalUsers();
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/users', async (req, res) => {
+  try {
+    const user = await settingsService.createLocalUser(req.body);
+
+    await auditLogger.log(
+      'USER_CREATE',
+      'admin',
+      { username: user.username },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/api/users/:userKey', async (req, res) => {
+  try {
+    const { userKey } = req.params;
+    const result = await settingsService.deleteLocalUser(userKey);
+
+    await auditLogger.log(
+      'USER_DELETE',
+      'admin',
+      { userKey },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/server/info', async (req, res) => {
+  try {
+    const info = serverService.getServerInfo();
+    res.json({
+      success: true,
+      data: info
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/server/restart', async (req, res) => {
+  try {
+    await auditLogger.log(
+      'SERVER_RESTART',
+      'admin',
+      {},
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    const result = await serverService.restartServer();
+
+    res.json({
+      success: true,
+      message: 'Server riavvio in corso. Ricarica la pagina tra 5 secondi.'
+    });
   } catch (error) {
     res.status(500).json({
       success: false,

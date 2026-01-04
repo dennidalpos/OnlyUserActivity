@@ -3,17 +3,11 @@ const path = require('path');
 const config = require('../../config');
 const lockManager = require('./lockManager');
 
-/**
- * Servizio base per operazioni filesystem con locking
- */
 class FileStorage {
   constructor() {
     this.rootPath = config.storage.rootPath;
   }
 
-  /**
-   * Inizializza struttura directory
-   */
   async initialize() {
     const dirs = [
       'users',
@@ -30,9 +24,6 @@ class FileStorage {
     await lockManager.initialize();
   }
 
-  /**
-   * Assicura che directory esista
-   */
   async ensureDir(dirPath) {
     try {
       await fs.mkdir(dirPath, { recursive: true });
@@ -43,21 +34,15 @@ class FileStorage {
     }
   }
 
-  /**
-   * Legge file JSON in modo sicuro
-   * @param {string} filePath
-   * @returns {Object|null}
-   */
   async readJSON(filePath) {
     try {
       const content = await fs.readFile(filePath, 'utf8');
       return JSON.parse(content);
     } catch (error) {
       if (error.code === 'ENOENT') {
-        return null; // File non esiste
+        return null;
       }
 
-      // Tentativo recovery da backup
       const backupPath = `${filePath}.bak`;
       try {
         const backupContent = await fs.readFile(backupPath, 'utf8');
@@ -68,26 +53,17 @@ class FileStorage {
     }
   }
 
-  /**
-   * Scrive file JSON con lock e backup
-   * @param {string} filePath
-   * @param {Object} data
-   */
   async writeJSON(filePath, data) {
     let release;
 
     try {
-      // Acquisisce lock
       release = await lockManager.acquireLock(filePath);
 
-      // Backup file esistente
       try {
         await fs.copyFile(filePath, `${filePath}.bak`);
       } catch (error) {
-        // File non esiste ancora, ok
       }
 
-      // Scrittura atomica: temp + rename
       const dir = path.dirname(filePath);
       await this.ensureDir(dir);
 
@@ -103,11 +79,6 @@ class FileStorage {
     }
   }
 
-  /**
-   * Append line a file (per audit log)
-   * @param {string} filePath
-   * @param {string} line
-   */
   async appendLine(filePath, line) {
     const dir = path.dirname(filePath);
     await this.ensureDir(dir);
@@ -115,11 +86,6 @@ class FileStorage {
     await fs.appendFile(filePath, line + '\n', 'utf8');
   }
 
-  /**
-   * Lista file in directory
-   * @param {string} dirPath
-   * @returns {Array<string>}
-   */
   async listFiles(dirPath) {
     try {
       return await fs.readdir(dirPath);
@@ -131,11 +97,6 @@ class FileStorage {
     }
   }
 
-  /**
-   * Verifica esistenza file
-   * @param {string} filePath
-   * @returns {boolean}
-   */
   async fileExists(filePath) {
     try {
       await fs.access(filePath);
@@ -145,10 +106,6 @@ class FileStorage {
     }
   }
 
-  /**
-   * Elimina file
-   * @param {string} filePath
-   */
   async deleteFile(filePath) {
     try {
       await fs.unlink(filePath);

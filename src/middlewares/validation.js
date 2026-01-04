@@ -1,10 +1,8 @@
 const Joi = require('joi');
 const { AppError } = require('./errorHandler');
+const activityTypesService = require('../services/admin/activityTypesService');
 
-/**
- * Activity types consentiti
- */
-const ACTIVITY_TYPES = [
+let ACTIVITY_TYPES = [
   'lavoro',
   'meeting',
   'formazione',
@@ -18,9 +16,16 @@ const ACTIVITY_TYPES = [
   'altro'
 ];
 
-/**
- * Schema validazione login
- */
+async function loadActivityTypes() {
+  try {
+    ACTIVITY_TYPES = await activityTypesService.getActivityTypes();
+  } catch (error) {
+    console.error('Error loading activity types, using defaults:', error);
+  }
+}
+
+loadActivityTypes();
+
 const loginSchema = Joi.object({
   username: Joi.string()
     .alphanum()
@@ -40,9 +45,6 @@ const loginSchema = Joi.object({
     })
 });
 
-/**
- * Schema validazione attività
- */
 const activitySchema = Joi.object({
   date: Joi.string()
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
@@ -86,9 +88,6 @@ const activitySchema = Joi.object({
     })
 });
 
-/**
- * Schema validazione update attività (campi opzionali)
- */
 const activityUpdateSchema = Joi.object({
   startTime: Joi.string()
     .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
@@ -111,11 +110,8 @@ const activityUpdateSchema = Joi.object({
   notes: Joi.string()
     .max(500)
     .allow('')
-}).min(1); // Almeno un campo deve essere presente
+}).min(1);
 
-/**
- * Middleware factory per validazione con Joi
- */
 function validate(schema) {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
@@ -138,14 +134,24 @@ function validate(schema) {
       ));
     }
 
-    // Sostituisce body con valore validato e sanitizzato
     req.body = value;
     next();
   };
 }
 
+async function getActivityTypes() {
+  return ACTIVITY_TYPES;
+}
+
+async function reloadActivityTypes() {
+  await loadActivityTypes();
+  return ACTIVITY_TYPES;
+}
+
 module.exports = {
   ACTIVITY_TYPES,
+  getActivityTypes,
+  reloadActivityTypes,
   loginSchema,
   activitySchema,
   activityUpdateSchema,

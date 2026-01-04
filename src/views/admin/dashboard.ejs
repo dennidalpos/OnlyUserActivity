@@ -5,6 +5,133 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    * {
+      outline: none !important;
+    }
+
+    a, button {
+      text-decoration: none !important;
+    }
+
+    a:focus, a:active, a:visited, a:hover,
+    button:focus, button:active, button:visited {
+      text-decoration: none !important;
+      outline: none !important;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    .nav-btn {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      color: #333 !important;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: all 0.2s;
+      text-decoration: none !important;
+    }
+    .nav-btn:hover {
+      background: #007bff;
+      color: white !important;
+      border-color: #007bff;
+      text-decoration: none !important;
+    }
+    .nav-btn:active, .nav-btn:focus {
+      background: #0056b3;
+      color: white !important;
+      border-color: #0056b3;
+      text-decoration: none !important;
+      outline: none !important;
+    }
+    .view-mode-selector {
+      display: flex;
+      gap: 5px;
+      margin-left: auto;
+    }
+    .view-mode-btn {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      color: #333 !important;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      text-decoration: none !important;
+      transition: all 0.2s;
+    }
+    .view-mode-btn:hover {
+      background: #e9ecef;
+      text-decoration: none !important;
+    }
+    .view-mode-btn.active {
+      background: #007bff;
+      color: white !important;
+      border-color: #007bff;
+      text-decoration: none !important;
+    }
+    .view-mode-btn:active, .view-mode-btn:focus {
+      outline: none !important;
+      text-decoration: none !important;
+    }
+    .btn {
+      text-decoration: none !important;
+      outline: none !important;
+    }
+    .btn:focus, .btn:active, .btn:visited, .btn:hover {
+      text-decoration: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .compact-table {
+      font-size: 13px;
+    }
+    .compact-table td, .compact-table th {
+      padding: 8px 10px;
+    }
+    .mini-badge {
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 3px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stat-card h4 {
+      margin: 0 0 5px 0;
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
   <nav class="navbar">
@@ -13,84 +140,166 @@
       <ul class="nav-menu">
         <li><a href="/admin/dashboard" class="active">Dashboard</a></li>
         <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
         <li><a href="/admin/auth/logout">Logout</a></li>
       </ul>
     </div>
   </nav>
 
   <main class="container">
-    <h2>Monitoraggio Attività - <%= date %></h2>
+    <h2>Dashboard Monitoraggio</h2>
 
-    <form method="GET" action="/admin/dashboard" class="filter-form">
+    <div class="nav-controls">
+      <div class="nav-buttons">
+        <%
+        const currentViewMode = viewMode || 'day';
+        const currentDate = date;
+
+        function getNavUrl(direction) {
+          const d = new Date(currentDate);
+          let newDate;
+
+          if (currentViewMode === 'day') {
+            d.setDate(d.getDate() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'week') {
+            d.setDate(d.getDate() + (direction === 'prev' ? -7 : 7));
+            newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'month') {
+            d.setMonth(d.getMonth() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
+          }
+
+          return `/admin/dashboard?viewMode=${currentViewMode}&date=${newDate}&username=${filters.username}&status=${filters.status}`;
+        }
+        %>
+
+        <a href="<%= getNavUrl('prev') %>" class="nav-btn">&larr; Precedente</a>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn">Oggi</a>
+        <a href="<%= getNavUrl('next') %>" class="nav-btn">Successivo &rarr;</a>
+      </div>
+
+      <div class="view-mode-selector">
+        <a href="/admin/dashboard?viewMode=day&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>">Giorno</a>
+        <a href="/admin/dashboard?viewMode=week&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>">Settimana</a>
+        <a href="/admin/dashboard?viewMode=month&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>">Mese</a>
+      </div>
+    </div>
+
+    <div style="background: #e9ecef; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
+      <strong>
+        <% if (currentViewMode === 'day') { %>
+          <%= currentDate %>
+        <% } else if (fromDate && toDate) { %>
+          Dal <%= fromDate %> al <%= toDate %>
+        <% } %>
+      </strong>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h4>Totale Utenti</h4>
+        <div class="value"><%= summary.totalUsers %></div>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid #28a745;">
+        <h4>OK</h4>
+        <div class="value" style="color: #28a745;"><%= summary.okCount %></div>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid #ffc107;">
+        <h4>Incompleto</h4>
+        <div class="value" style="color: #ffc107;"><%= summary.incompleteCount %></div>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid #dc3545;">
+        <h4>Assente</h4>
+        <div class="value" style="color: #dc3545;"><%= summary.absentCount %></div>
+      </div>
+      <% if (currentViewMode !== 'day' && summary.totalHours !== undefined) { %>
+      <div class="stat-card" style="border-left: 4px solid #007bff;">
+        <h4>Ore Totali</h4>
+        <div class="value" style="color: #007bff;"><%= summary.totalHours.toFixed(1) %>h</div>
+      </div>
+      <div class="stat-card" style="border-left: 4px solid #6c757d;">
+        <h4>Media Ore/Utente</h4>
+        <div class="value" style="color: #6c757d;"><%= summary.avgHoursPerUser.toFixed(1) %>h</div>
+      </div>
+      <% } %>
+    </div>
+
+    <form method="GET" action="/admin/dashboard" class="filter-form" style="margin-bottom: 15px;">
+      <input type="hidden" name="viewMode" value="<%= currentViewMode %>">
+      <input type="hidden" name="date" value="<%= currentDate %>">
       <div class="form-row">
         <div class="form-group">
-          <label for="date">Data:</label>
-          <input type="date" id="date" name="date" value="<%= date %>">
+          <label for="username">Cerca Utente:</label>
+          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username">
         </div>
-
-        <div class="form-group">
-          <label for="username">Utente:</label>
-          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Cerca username">
-        </div>
-
         <div class="form-group">
           <label for="status">Stato:</label>
           <select id="status" name="status">
             <option value="">Tutti</option>
-            <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK (>= 8h)</option>
+            <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK</option>
             <option value="INCOMPLETO" <%= filters.status === 'INCOMPLETO' ? 'selected' : '' %>>Incompleto</option>
             <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
           </select>
         </div>
-
         <button type="submit" class="btn btn-primary">Filtra</button>
+        <% if (filters.username || filters.status) { %>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn">Reset</a>
+        <% } %>
       </div>
     </form>
 
-    <div class="summary-cards">
-      <div class="card">
-        <h3>Totale Utenti</h3>
-        <p class="big-number"><%= summary.totalUsers %></p>
-      </div>
-      <div class="card card-success">
-        <h3>OK</h3>
-        <p class="big-number"><%= summary.okCount %></p>
-      </div>
-      <div class="card card-warning">
-        <h3>Incompleto</h3>
-        <p class="big-number"><%= summary.incompleteCount %></p>
-      </div>
-      <div class="card card-danger">
-        <h3>Assente</h3>
-        <p class="big-number"><%= summary.absentCount %></p>
-      </div>
-    </div>
-
-    <table class="data-table">
+    <table class="data-table compact-table">
       <thead>
         <tr>
           <th>Utente</th>
-          <th>Display Name</th>
-          <th>Ore Totali</th>
-          <th>Completamento</th>
-          <th>Stato</th>
+          <th>Nome</th>
+          <th style="text-align: center;">Tipo</th>
+          <% if (currentViewMode === 'day') { %>
+          <th style="text-align: right;">Ore</th>
+          <th style="text-align: center;">Completamento</th>
+          <% } else { %>
+          <th style="text-align: right;">Ore Tot.</th>
+          <th style="text-align: right;">Media/Giorno</th>
+          <th style="text-align: center;">Giorni OK</th>
+          <th style="text-align: center;">Completamento</th>
+          <% } %>
+          <th style="text-align: center;">Stato</th>
         </tr>
       </thead>
       <tbody>
-        <% users.forEach(user => { %>
-        <tr class="status-<%= user.status.toLowerCase() %>">
-          <td><%= user.username %></td>
+        <% users.forEach(user => {
+          const status = user.status || user.overallStatus;
+        %>
+        <tr>
+          <td><strong><%= user.username %></strong></td>
           <td><%= user.displayName %></td>
-          <td><%= user.totalHours.toFixed(2) %> h</td>
-          <td>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: <%= user.completionPercentage %>%"></div>
-              <span class="progress-text"><%= user.completionPercentage.toFixed(0) %>%</span>
-            </div>
+          <td style="text-align: center;">
+            <span class="mini-badge" style="background: <%= user.userType === 'ad' ? '#007bff' : '#6c757d' %>; color: white;">
+              <%= user.userType === 'ad' ? 'AD' : 'Local' %>
+            </span>
           </td>
-          <td>
-            <span class="badge badge-<%= user.status.toLowerCase() %>">
-              <%= user.status %>
+          <% if (currentViewMode === 'day') { %>
+          <td style="text-align: right;"><%= user.totalHours.toFixed(2) %></td>
+          <td style="text-align: center;">
+            <span style="font-size: 12px;"><%= user.completionPercentage.toFixed(0) %>%</span>
+          </td>
+          <% } else { %>
+          <td style="text-align: right;"><%= user.totalHours.toFixed(1) %></td>
+          <td style="text-align: right;"><%= user.avgHoursPerDay.toFixed(1) %></td>
+          <td style="text-align: center;">
+            <span style="font-size: 12px;"><%= user.completeDays %>/<%= user.totalDays %></span>
+          </td>
+          <td style="text-align: center;">
+            <span style="font-size: 12px;"><%= user.completionRate.toFixed(0) %>%</span>
+          </td>
+          <% } %>
+          <td style="text-align: center;">
+            <span class="mini-badge" style="background: <%= status === 'OK' ? '#28a745' : status === 'INCOMPLETO' ? '#ffc107' : '#dc3545' %>; color: <%= status === 'INCOMPLETO' ? '#000' : '#fff' %>;">
+              <%= status %>
             </span>
           </td>
         </tr>
@@ -98,7 +307,5 @@
       </tbody>
     </table>
   </main>
-
-  <script src="/js/admin.js"></script>
 </body>
 </html>

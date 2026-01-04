@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/help.js"></script>
+  <script src="/js/timepicker.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <h1>Activity Tracker</h1>
+    </div>
+    <div class="navbar-user">
+      <span>
+        Benvenuto, <strong><%= user.displayName %></strong>
+        <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>" style="margin-left: 8px; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+          <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
+        </span>
+      </span>
+      <a href="/user/auth/logout" class="btn btn-sm">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header">
+      <h2>Le Tue Attività</h2>
+      <div class="date-selector">
+        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control">
+        <button onclick="loadActivities()" class="btn btn-primary">Carica</button>
+        <button onclick="setToday()" class="btn">Oggi</button>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card">
+        <h3>Ore Lavorate</h3>
+        <p class="stat" id="totalHours">-</p>
+      </div>
+      <div class="card">
+        <h3>Straordinari</h3>
+        <p class="stat" id="overtime">-</p>
+      </div>
+      <div class="card">
+        <h3>Attività</h3>
+        <p class="stat" id="activityCount">-</p>
+      </div>
+      <div class="card">
+        <h3>Completamento Giornata</h3>
+        <p class="stat" id="dayStatus">-</p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+          <span class="progress-text" id="progressText">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="activity-section">
+      <div class="section-header">
+        <h3>Gestione Attività</h3>
+        <button onclick="showAddActivity()" class="btn btn-primary">+ Nuova Attività</button>
+      </div>
+
+      <div id="addActivityForm" class="activity-form" style="display: none;">
+        <h4>Aggiungi Attività</h4>
+        <form onsubmit="addActivity(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ora Inizio</label>
+              <input type="time" id="startTime" required step="900">
+            </div>
+            <div class="form-group">
+              <label>Ora Fine</label>
+              <input type="time" id="endTime" required step="900">
+            </div>
+            <div class="form-group">
+              <label>Tipo Attività</label>
+              <select id="activityType" required>
+                <!-- Popolato dinamicamente -->
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Note</label>
+            <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salva</button>
+            <button type="button" onclick="cancelAdd()" class="btn">Annulla</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="activitiesList" class="activities-list">
+        <p class="loading">Caricamento...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = '<%= token %>';
+    let currentDate = '<%= currentDate %>';
+    let editingActivityId = null;
+    let activityTypes = [];
+
+    console.log('Dashboard script loaded. Token:', token ? 'present' : 'missing');
+
+    async function loadActivityTypes() {
+      try {
+        const response = await fetch('/api/activities/types', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (result.success) {
+          activityTypes = result.data;
+          populateActivityTypeSelect();
+        }
+      } catch (error) {
+        console.error('Error loading activity types:', error);
+        activityTypes = ['lavoro', 'meeting', 'formazione'];
+        populateActivityTypeSelect();
+      }
+    }
+
+    function populateActivityTypeSelect() {
+      const select = document.getElementById('activityType');
+      select.innerHTML = '';
+      activityTypes.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+        select.appendChild(option);
+      });
+    }
+
+    function setToday() {
+      console.log('setToday called');
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('activityDate').value = today;
+      loadActivities();
+    }
+
+    async function loadActivities() {
+      console.log('loadActivities called for date:', document.getElementById('activityDate')?.value);
+      const date = document.getElementById('activityDate').value;
+      currentDate = date;
+
+      try {
+        console.log('Fetching activities from API...');
+        const response = await fetch(`/api/activities/${date}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('API response status:', response.status);
+        const result = await response.json();
+        console.log('API result:', result);
+
+        if (result.success) {
+          displayActivities(result.data);
+        } else {
+          showError(result.error.message);
+        }
+      } catch (error) {
+        console.error('Error loading activities:', error);
+        showError('Errore nel caricamento delle attività');
+      }
+    }
+
+    function displayActivities(data) {
+      const activities = data.activities || [];
+      const summary = data.summary || {};
+
+      // Update summary
+      document.getElementById('totalHours').textContent =
+        `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m`;
+
+      // Calculate and display overtime
+      const requiredMinutes = 480; // 8 ore
+      const overtimeMinutes = summary.totalMinutes > requiredMinutes ? summary.totalMinutes - requiredMinutes : 0;
+      const overtimeHours = Math.floor(overtimeMinutes / 60);
+      const overtimeMins = overtimeMinutes % 60;
+      document.getElementById('overtime').textContent = overtimeMinutes > 0
+        ? `${overtimeHours}h ${overtimeMins}m`
+        : '-';
+      document.getElementById('overtime').style.color = overtimeMinutes > 0 ? '#28a745' : '#999';
+
+      document.getElementById('activityCount').textContent = activities.length;
+      document.getElementById('dayStatus').textContent = summary.isComplete ? 'Completa' : 'Incompleta';
+
+      // Update progress bar
+      const requiredMinutesForBar = 480; // 8 ore
+      const completionPercentage = Math.min(100, Math.round((summary.totalMinutes / requiredMinutesForBar) * 100));
+      const progressBarFill = document.getElementById('progressBarFill');
+      const progressText = document.getElementById('progressText');
+
+      progressBarFill.style.width = completionPercentage + '%';
+      progressText.textContent = completionPercentage + '%';
+
+      // Color coding: red < 50%, yellow 50-99%, green >= 100%
+      if (completionPercentage < 50) {
+        progressBarFill.style.backgroundColor = '#dc3545';
+      } else if (completionPercentage < 100) {
+        progressBarFill.style.backgroundColor = '#ffc107';
+      } else {
+        progressBarFill.style.backgroundColor = '#28a745';
+      }
+
+      // Update activities list
+      const list = document.getElementById('activitiesList');
+
+      if (activities.length === 0) {
+        list.innerHTML = '<p class="no-data">Nessuna attività per questa data</p>';
+        return;
+      }
+
+      list.innerHTML = activities.map(activity => {
+        const hours = Math.floor(activity.durationMinutes / 60);
+        const mins = activity.durationMinutes % 60;
+        const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        const activityTypeFormatted = activity.activityType.charAt(0).toUpperCase() + activity.activityType.slice(1);
+
+        // Format date
+        const dateObj = new Date(currentDate + 'T00:00:00');
+        const dateFormatted = dateObj.toLocaleDateString('it-IT', {
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+
+        return `
+          <div class="activity-item" data-activity-id="${activity.id}">
+            <div class="activity-header">
+              <div class="activity-info">
+                <span class="activity-time">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 4px;">
+                    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                  </svg>
+                  ${activity.startTime} - ${activity.endTime}
+                </span>
+                <span class="activity-type badge badge-${activity.activityType}">${activityTypeFormatted}</span>
+                <span class="activity-duration">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
+                    <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0z"/>
+                    <path d="M8 4.5a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3.5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/>
+                  </svg>
+                  ${durationText}
+                </span>
+                <span class="activity-date">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
+                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                  </svg>
+                  ${dateFormatted}
+                </span>
+              </div>
+              <div class="activity-actions">
+                <button onclick="editActivity('${activity.id}')" class="btn btn-sm btn-primary">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                  </svg>
+                  Modifica
+                </button>
+                <button onclick="deleteActivity('${activity.id}')" class="btn btn-sm btn-danger">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                  </svg>
+                  Elimina
+                </button>
+              </div>
+            </div>
+            ${activity.notes ? `<div class="activity-notes">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 4px;">
+                <path d="M5 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H5zm0 1h6a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
+                <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+              ${activity.notes}
+            </div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Store activities for edit function
+      window.currentActivities = activities;
+    }
+
+    function showAddActivity() {
+      console.log('showAddActivity called');
+      editingActivityId = null;
+      document.getElementById('addActivityForm').style.display = 'block';
+      document.getElementById('startTime').value = '';
+      document.getElementById('endTime').value = '';
+      document.getElementById('activityType').value = activityTypes[0] || 'lavoro';
+      document.getElementById('notes').value = '';
+
+      // Update form title and button
+      document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
+      document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Salva';
+
+      if (!window.timePickersInitialized) {
+        timePicker.createAllTimePickers();
+        window.timePickersInitialized = true;
+      }
+    }
+
+    function editActivity(activityId) {
+      console.log('editActivity called for:', activityId);
+
+      const activity = window.currentActivities?.find(a => a.id === activityId);
+      if (!activity) {
+        showError('Attività non trovata');
+        return;
+      }
+
+      // Populate form with existing data
+      editingActivityId = activityId;
+      document.getElementById('addActivityForm').style.display = 'block';
+      document.getElementById('startTime').value = activity.startTime;
+      document.getElementById('endTime').value = activity.endTime;
+      document.getElementById('activityType').value = activity.activityType;
+      document.getElementById('notes').value = activity.notes || '';
+
+      // Update time pickers if they exist
+      if (window.timePickersInitialized) {
+        const startPickers = document.querySelectorAll('#startTime + .time-picker-container');
+        const endPickers = document.querySelectorAll('#endTime + .time-picker-container');
+
+        if (startPickers.length > 0) {
+          const [startH, startM] = activity.startTime.split(':');
+          startPickers[0].querySelector('.time-picker-hour').value = startH;
+          startPickers[0].querySelector('.time-picker-minute').value = startM;
+        }
+
+        if (endPickers.length > 0) {
+          const [endH, endM] = activity.endTime.split(':');
+          endPickers[0].querySelector('.time-picker-hour').value = endH;
+          endPickers[0].querySelector('.time-picker-minute').value = endM;
+        }
+      }
+
+      // Update form title and button
+      document.querySelector('#addActivityForm h4').textContent = 'Modifica Attività';
+      document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Aggiorna';
+
+      // Scroll to form
+      document.getElementById('addActivityForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelAdd() {
+      console.log('cancelAdd called');
+      document.getElementById('addActivityForm').style.display = 'none';
+      editingActivityId = null;
+      document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
+      document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Salva';
+    }
+
+    async function addActivity(event) {
+      console.log('addActivity called', editingActivityId ? '(UPDATE mode)' : '(CREATE mode)');
+      event.preventDefault();
+
+      const data = {
+        startTime: document.getElementById('startTime').value,
+        endTime: document.getElementById('endTime').value,
+        activityType: document.getElementById('activityType').value,
+        notes: document.getElementById('notes').value
+      };
+
+      // Add date only for create
+      if (!editingActivityId) {
+        data.date = currentDate;
+      }
+
+      console.log(editingActivityId ? 'Updating' : 'Creating', 'activity with data:', data);
+
+      try {
+        let url, method;
+
+        if (editingActivityId) {
+          // UPDATE existing activity
+          url = `/api/activities/${editingActivityId}?date=${currentDate}`;
+          method = 'PUT';
+        } else {
+          // CREATE new activity
+          url = '/api/activities';
+          method = 'POST';
+        }
+
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Result:', result);
+
+        if (result.success) {
+          cancelAdd();
+          loadActivities();
+          showSuccess(editingActivityId ? 'Attività aggiornata con successo' : 'Attività aggiunta con successo');
+        } else {
+          showError(result.error?.message || result.error || 'Errore sconosciuto');
+        }
+      } catch (error) {
+        console.error('Error saving activity:', error);
+        showError('Errore nel salvataggio dell\'attività');
+      }
+    }
+
+    async function deleteActivity(activityId) {
+      if (!confirm('Sei sicuro di voler eliminare questa attività?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/activities/${activityId}?date=${currentDate}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          loadActivities();
+          showSuccess('Attività eliminata');
+        } else {
+          showError(result.error.message);
+        }
+      } catch (error) {
+        showError('Errore nell\'eliminazione');
+      }
+    }
+
+    function showError(message) {
+      console.error('showError:', message);
+      alert('Errore: ' + message);
+    }
+
+    function showSuccess(message) {
+      console.log('showSuccess:', message);
+      alert(message);
+    }
+
+    console.log('Calling loadActivityTypes and loadActivities on page load...');
+    loadActivityTypes();
+    loadActivities();
+
+    helpSystem.init(userDashboardHelp);
+  </script>
+</body>
+</html>

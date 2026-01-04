@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/user.css">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <h1>Activity Tracker</h1>
+      <h2>Login Utente</h2>
+
+      <% if (error) { %>
+        <div class="alert alert-error">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/user/auth/login">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            autofocus
+            placeholder="Inserisci username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            placeholder="Inserisci password"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          Accedi
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>Area riservata per utenti registrati</p>
+        <a href="/admin/auth/login">Accesso Admin</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

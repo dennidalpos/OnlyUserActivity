@@ -51,3 +51,9 @@ build/
 *.tmp
 *.temp
 .cache/
+cookies.txt
+token.txt
+nul
+
+# Old documentation (consolidated in DOCUMENTATION.md)
+docs/

@@ -1,13 +1,6 @@
 const { timeToMinutes, calculateDuration } = require('../utils/timeUtils');
 const config = require('../../config');
 
-/**
- * Verifica sovrapposizione orari
- * @param {Object} newActivity - { startTime, endTime }
- * @param {Array} existingActivities
- * @param {string} excludeId - ID da escludere (per update)
- * @returns {Object} { hasOverlap: boolean, conflictingActivity?: Object, error?: string }
- */
 function checkTimeOverlap(newActivity, existingActivities, excludeId = null) {
   const newStart = timeToMinutes(newActivity.startTime);
   const newEnd = timeToMinutes(newActivity.endTime);
@@ -25,7 +18,6 @@ function checkTimeOverlap(newActivity, existingActivities, excludeId = null) {
     const existStart = timeToMinutes(activity.startTime);
     const existEnd = timeToMinutes(activity.endTime);
 
-    // Sovrapposizione: [newStart, newEnd) interseca [existStart, existEnd)
     if (newStart < existEnd && newEnd > existStart) {
       return {
         hasOverlap: true,
@@ -41,13 +33,6 @@ function checkTimeOverlap(newActivity, existingActivities, excludeId = null) {
   return { hasOverlap: false };
 }
 
-/**
- * Verifica continuità orari (strict mode)
- * @param {Object} newActivity
- * @param {Array} existingActivities
- * @param {string} excludeId
- * @returns {Object} { isContiguous: boolean, expectedStartTime?: string }
- */
 function checkContinuity(newActivity, existingActivities, excludeId = null) {
   const strictMode = config.activity.strictContinuity;
 
@@ -55,7 +40,6 @@ function checkContinuity(newActivity, existingActivities, excludeId = null) {
     return { isContiguous: true };
   }
 
-  // Filtra escluso e ordina per startTime
   const filtered = existingActivities
     .filter(act => !excludeId || act.id !== excludeId)
     .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
@@ -78,11 +62,6 @@ function checkContinuity(newActivity, existingActivities, excludeId = null) {
   return { isContiguous: true };
 }
 
-/**
- * Calcola riassunto giornaliero
- * @param {Array} activities
- * @returns {Object}
- */
 function calculateDailySummary(activities) {
   const REQUIRED_MINUTES = config.activity.requiredMinutes;
 
@@ -107,12 +86,6 @@ function calculateDailySummary(activities) {
   };
 }
 
-/**
- * Valida tipo attività
- * @param {string} activityType
- * @param {string} customType
- * @returns {Object} { valid: boolean, error?: string }
- */
 function validateActivityType(activityType, customType) {
   const { ACTIVITY_TYPES } = require('../../middlewares/validation');
 

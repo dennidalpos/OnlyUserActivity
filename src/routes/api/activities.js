@@ -3,23 +3,29 @@ const router = express.Router();
 const activityService = require('../../services/activity/activityService');
 const auditLogger = require('../../services/storage/auditLogger');
 const authenticateToken = require('../../middlewares/auth');
-const { validate, activitySchema, activityUpdateSchema } = require('../../middlewares/validation');
+const { validate, activitySchema, activityUpdateSchema, getActivityTypes } = require('../../middlewares/validation');
 const { AppError } = require('../../middlewares/errorHandler');
 const { validateDateFormat } = require('../../services/utils/timeUtils');
 
-// Tutte le route richiedono autenticazione
 router.use(authenticateToken);
 
-/**
- * GET /api/activities/:date
- * Ottiene attività di un giorno specifico
- */
+router.get('/types', async (req, res, next) => {
+  try {
+    const types = await getActivityTypes();
+    res.json({
+      success: true,
+      data: types
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/:date', async (req, res, next) => {
   try {
     const { date } = req.params;
     const userKey = req.user.userKey;
 
-    // Valida data
     const dateValidation = validateDateFormat(date);
     if (!dateValidation.valid) {
       throw new AppError(dateValidation.error, 400, 'INVALID_DATE');
@@ -37,16 +43,11 @@ router.get('/:date', async (req, res, next) => {
   }
 });
 
-/**
- * POST /api/activities
- * Crea nuova attività
- */
 router.post('/', validate(activitySchema), async (req, res, next) => {
   try {
     const userKey = req.user.userKey;
     const activity = await activityService.createActivity(userKey, req.body);
 
-    // Audit log
     await auditLogger.log(
       'CREATE_ACTIVITY',
       userKey,
@@ -77,16 +78,11 @@ router.post('/', validate(activitySchema), async (req, res, next) => {
   }
 });
 
-/**
- * PUT /api/activities/:id
- * Aggiorna attività esistente
- */
 router.put('/:id', validate(activityUpdateSchema), async (req, res, next) => {
   try {
     const { id } = req.params;
     const userKey = req.user.userKey;
 
-    // Richiede date in query per performance
     const date = req.query.date;
     if (!date) {
       throw new AppError('Query parameter "date" richiesto', 400, 'MISSING_DATE');
@@ -94,7 +90,6 @@ router.put('/:id', validate(activityUpdateSchema), async (req, res, next) => {
 
     const activity = await activityService.updateActivity(userKey, id, date, req.body);
 
-    // Audit log
     await auditLogger.log(
       'UPDATE_ACTIVITY',
       userKey,
@@ -122,10 +117,6 @@ router.put('/:id', validate(activityUpdateSchema), async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /api/activities/:id
- * Elimina attività
- */
 router.delete('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -142,7 +133,6 @@ router.delete('/:id', async (req, res, next) => {
       throw new AppError('Attività non trovata', 404, 'NOT_FOUND');
     }
 
-    // Audit log
     await auditLogger.log(
       'DELETE_ACTIVITY',
       userKey,
@@ -165,10 +155,6 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/activities
- * Lista attività in range (query params: from, to)
- */
 router.get('/', async (req, res, next) => {
   try {
     const { from, to } = req.query;
@@ -178,7 +164,6 @@ router.get('/', async (req, res, next) => {
       throw new AppError('Query parameters "from" e "to" richiesti', 400, 'MISSING_PARAMS');
     }
 
-    // Valida date
     const fromValidation = validateDateFormat(from);
     const toValidation = validateDateFormat(to);
 

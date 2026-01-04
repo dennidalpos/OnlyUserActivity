@@ -3,35 +3,44 @@ const { v4: uuidv4 } = require('uuid');
 const config = require('../../config');
 const fileStorage = require('./fileStorage');
 
-/**
- * Servizio per gestione utenti su filesystem
- */
 class UserStorage {
   constructor() {
     this.usersPath = path.join(config.storage.rootPath, 'users');
     this.indexPath = path.join(this.usersPath, 'index.json');
+    this.userCache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000;
+    this.indexCache = null;
+    this.indexCacheTime = 0;
   }
 
-  /**
-   * Carica o crea indice username -> userKey
-   */
   async loadIndex() {
+    const now = Date.now();
+    if (this.indexCache && (now - this.indexCacheTime) < this.cacheTimeout) {
+      return this.indexCache;
+    }
+
     const index = await fileStorage.readJSON(this.indexPath);
-    return index || {};
+    this.indexCache = index || {};
+    this.indexCacheTime = now;
+    return this.indexCache;
   }
 
-  /**
-   * Salva indice
-   */
   async saveIndex(index) {
     await fileStorage.writeJSON(this.indexPath, index);
+    this.indexCache = index;
+    this.indexCacheTime = Date.now();
   }
 
-  /**
-   * Trova utente per username
-   * @param {string} username
-   * @returns {Object|null}
-   */
+  invalidateCache(userKey) {
+    this.userCache.delete(userKey);
+  }
+
+  invalidateAllCache() {
+    this.userCache.clear();
+    this.indexCache = null;
+    this.indexCacheTime = 0;
+  }
+
   async findByUsername(username) {
     const index = await this.loadIndex();
     const userKey = index[username.toLowerCase()];
@@ -43,21 +52,22 @@ class UserStorage {
     return await this.findByUserKey(userKey);
   }
 
-  /**
-   * Trova utente per userKey
-   * @param {string} userKey
-   * @returns {Object|null}
-   */
   async findByUserKey(userKey) {
+    const cached = this.userCache.get(userKey);
+    if (cached && (Date.now() - cached.time) < this.cacheTimeout) {
+      return cached.user;
+    }
+
     const userPath = path.join(this.usersPath, `${userKey}.json`);
-    return await fileStorage.readJSON(userPath);
+    const user = await fileStorage.readJSON(userPath);
+
+    if (user) {
+      this.userCache.set(userKey, { user, time: Date.now() });
+    }
+
+    return user;
   }
 
-  /**
-   * Crea nuovo utente
-   * @param {Object} userData - { username, displayName, email, department }
-   * @returns {Object}
-   */
   async create(userData) {
     const userKey = uuidv4();
     const now = new Date().toISOString();
@@ -68,29 +78,28 @@ class UserStorage {
       displayName: userData.displayName || userData.username,
       email: userData.email || null,
       department: userData.department || null,
+      userType: userData.userType || 'local',
       createdAt: now,
       lastLoginAt: now,
       metadata: userData.metadata || {}
     };
 
-    // Salva file utente
+    if (userData.passwordHash) {
+      user.passwordHash = userData.passwordHash;
+    }
+
     const userPath = path.join(this.usersPath, `${userKey}.json`);
     await fileStorage.writeJSON(userPath, user);
 
-    // Aggiorna indice
     const index = await this.loadIndex();
     index[userData.username.toLowerCase()] = userKey;
     await this.saveIndex(index);
 
+    this.userCache.set(userKey, { user, time: Date.now() });
+
     return user;
   }
 
-  /**
-   * Aggiorna utente esistente
-   * @param {string} userKey
-   * @param {Object} updates
-   * @returns {Object}
-   */
   async update(userKey, updates) {
     const user = await this.findByUserKey(userKey);
 
@@ -101,32 +110,26 @@ class UserStorage {
     const updatedUser = {
       ...user,
       ...updates,
-      userKey, // Non modificabile
-      username: user.username, // Non modificabile
-      createdAt: user.createdAt, // Non modificabile
+      userKey,
+      username: user.username,
+      createdAt: user.createdAt,
       updatedAt: new Date().toISOString()
     };
 
     const userPath = path.join(this.usersPath, `${userKey}.json`);
     await fileStorage.writeJSON(userPath, updatedUser);
 
+    this.userCache.set(userKey, { user: updatedUser, time: Date.now() });
+
     return updatedUser;
   }
 
-  /**
-   * Aggiorna timestamp ultimo login
-   * @param {string} userKey
-   */
   async updateLastLogin(userKey) {
     return await this.update(userKey, {
       lastLoginAt: new Date().toISOString()
     });
   }
 
-  /**
-   * Lista tutti gli utenti
-   * @returns {Array<Object>}
-   */
   async listAll() {
     const index = await this.loadIndex();
     const users = [];

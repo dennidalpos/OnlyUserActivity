@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const config = {
-  // Server
   env: process.env.NODE_ENV || 'development',
   server: {
     host: process.env.SERVER_HOST || '0.0.0.0',
@@ -9,20 +8,18 @@ const config = {
     trustProxy: parseInt(process.env.TRUST_PROXY, 10) || 0
   },
 
-  // HTTPS
   https: {
     enabled: process.env.HTTPS_ENABLED === 'true',
     certPath: process.env.HTTPS_CERT_PATH,
     keyPath: process.env.HTTPS_KEY_PATH
   },
 
-  // Logging
   logging: {
     level: process.env.LOG_LEVEL || 'info'
   },
 
-  // LDAP
   ldap: {
+    enabled: process.env.LDAP_ENABLED === 'true',
     url: process.env.LDAP_URL || 'ldap://localhost:389',
     baseDN: process.env.LDAP_BASE_DN || 'DC=example,DC=com',
     bindDN: process.env.LDAP_BIND_DN || '',
@@ -33,21 +30,18 @@ const config = {
     timeout: parseInt(process.env.LDAP_TIMEOUT, 10) || 5000
   },
 
-  // JWT
   jwt: {
     secret: process.env.JWT_SECRET || 'change-me-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
     refreshEnabled: process.env.JWT_REFRESH_ENABLED === 'true'
   },
 
-  // Storage
   storage: {
     rootPath: process.env.DATA_ROOT_PATH || './data',
     auditRetentionDays: parseInt(process.env.AUDIT_LOG_RETENTION_DAYS, 10) || 730,
-    auditPayloadMode: process.env.AUDIT_PAYLOAD_MODE || 'partial' // full | partial | redacted
+    auditPayloadMode: process.env.AUDIT_PAYLOAD_MODE || 'partial'
   },
 
-  // Admin
   admin: {
     sessionSecret: process.env.ADMIN_SESSION_SECRET || 'change-me-in-production',
     sessionMaxAge: parseInt(process.env.ADMIN_SESSION_MAX_AGE, 10) || 3600000,
@@ -55,7 +49,6 @@ const config = {
     defaultPassword: process.env.ADMIN_DEFAULT_PASSWORD || 'admin'
   },
 
-  // Security
   security: {
     rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000,
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
@@ -64,14 +57,12 @@ const config = {
     corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000'
   },
 
-  // Activity Rules
   activity: {
     strictContinuity: process.env.ACTIVITY_STRICT_CONTINUITY === 'true',
     requiredMinutes: parseInt(process.env.ACTIVITY_REQUIRED_MINUTES, 10) || 480
   }
 };
 
-// Validazione configurazione critica
 function validateConfig() {
   const errors = [];
 
@@ -84,12 +75,13 @@ function validateConfig() {
     }
   }
 
-  if (!config.ldap.url) {
-    errors.push('LDAP_URL is required');
-  }
-
-  if (!config.ldap.baseDN) {
-    errors.push('LDAP_BASE_DN is required');
+  if (config.ldap.enabled) {
+    if (!config.ldap.url) {
+      errors.push('LDAP_URL is required when LDAP_ENABLED=true');
+    }
+    if (!config.ldap.baseDN) {
+      errors.push('LDAP_BASE_DN is required when LDAP_ENABLED=true');
+    }
   }
 
   if (errors.length > 0) {
@@ -97,7 +89,6 @@ function validateConfig() {
   }
 }
 
-// Valida solo in produzione o se esplicitamente richiesto
 if (config.env === 'production' || process.env.VALIDATE_CONFIG === 'true') {
   try {
     validateConfig();

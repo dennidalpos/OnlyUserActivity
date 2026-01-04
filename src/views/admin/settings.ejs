@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
+  <style>
+    .settings-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .settings-section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .settings-section h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 8px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #555;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .form-group input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+    .activity-types-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .activity-type-tag {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .activity-type-tag button {
+      background: rgba(255,255,255,0.3);
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .users-table th,
+    .users-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .users-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+    .alert {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .alert-danger {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/settings" class="active">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container settings-container">
+    <h2><%= title %></h2>
+
+    <div id="alertContainer"></div>
+
+    <div class="settings-section">
+      <h3>Gestione Server</h3>
+      <div class="alert alert-info">
+        Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
+      </div>
+      <div style="margin-bottom: 20px;">
+        <button type="button" onclick="restartServer()" class="btn btn-danger" style="background: #dc3545; border-color: #dc3545;">
+          🔄 Riavvia Server
+        </button>
+        <span style="margin-left: 10px; font-size: 14px; color: #666;">
+          Tutti gli utenti verranno temporaneamente disconnessi
+        </span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione Server</h3>
+      <div class="alert alert-info">
+        Le modifiche alla configurazione server richiedono il riavvio del server per essere applicate.
+      </div>
+      <form id="serverForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="serverPort">Porta Server:</label>
+            <input type="number" id="serverPort" value="<%= settings.server.port %>" placeholder="3000" min="1" max="65535">
+          </div>
+          <div class="form-group">
+            <label for="serverHost">Host Server:</label>
+            <input type="text" id="serverHost" value="<%= settings.server.host %>" placeholder="0.0.0.0">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione LDAP/Active Directory</h3>
+      <div class="alert alert-info">
+        Le modifiche alla configurazione LDAP richiedono il riavvio del server per essere applicate.
+        <br><strong>LDAPS:</strong> Usa <code>ldaps://</code> invece di <code>ldap://</code> per connessioni sicure (porta 636).
+      </div>
+      <form id="ldapForm">
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="ldapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
+            Abilita autenticazione LDAP/AD
+          </label>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="ldapUrl">URL LDAP/LDAPS:</label>
+            <input type="text" id="ldapUrl" value="<%= settings.ldap.url %>" placeholder="ldaps://dc.company.local:636">
+          </div>
+          <div class="form-group">
+            <label for="ldapBaseDN">Base DN:</label>
+            <input type="text" id="ldapBaseDN" value="<%= settings.ldap.baseDN %>" placeholder="DC=company,DC=local">
+          </div>
+          <div class="form-group">
+            <label for="ldapUserSearchFilter">User Search Filter:</label>
+            <input type="text" id="ldapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>" placeholder="(sAMAccountName={{username}})">
+          </div>
+          <div class="form-group">
+            <label for="ldapRequiredGroup">Gruppo Richiesto:</label>
+            <input type="text" id="ldapRequiredGroup" value="<%= settings.ldap.requiredGroup %>" placeholder="Domain Users">
+          </div>
+          <div class="form-group">
+            <label for="ldapTimeout">Timeout (ms):</label>
+            <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione HTTPS</h3>
+      <div class="alert alert-info">
+        Raccomandato usare un reverse proxy (nginx/Apache) invece di HTTPS diretto. Le modifiche richiedono il riavvio del server.
+      </div>
+      <form id="httpsForm">
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="httpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
+            Abilita HTTPS diretto
+          </label>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="httpsCertPath">Percorso Certificato:</label>
+            <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || '' %>" placeholder="/path/to/cert.pem">
+          </div>
+          <div class="form-group">
+            <label for="httpsKeyPath">Percorso Chiave Privata:</label>
+            <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || '' %>" placeholder="/path/to/key.pem">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva Configurazione HTTPS</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Categorie Attività</h3>
+      <p>Gestisci le categorie disponibili nel menu a tendina per l'inserimento delle attività.</p>
+
+      <div class="activity-types-list" id="activityTypesList">
+        <% activityTypes.forEach(type => { %>
+        <div class="activity-type-tag">
+          <%= type %>
+          <button onclick="removeActivityType('<%= type %>')" title="Rimuovi">&times;</button>
+        </div>
+        <% }); %>
+      </div>
+
+      <form id="addActivityTypeForm" style="display: flex; gap: 8px; margin-top: 16px;">
+        <input type="text" id="newActivityType" placeholder="Nuova categoria..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <button type="submit" class="btn btn-success">Aggiungi</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Gestione Utenti Locali</h3>
+      <p>Crea o elimina utenti con autenticazione locale. Gli utenti AD vengono gestiti automaticamente.</p>
+
+      <button onclick="showCreateUserForm()" class="btn btn-success" style="margin-bottom: 16px;">+ Nuovo Utente Locale</button>
+
+      <div id="createUserForm" style="display: none; background: #f8f9fa; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+        <h4>Crea Nuovo Utente</h4>
+        <form id="userCreateForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="newUsername">Username:</label>
+              <input type="text" id="newUsername" required>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Password:</label>
+              <input type="password" id="newPassword" required>
+            </div>
+            <div class="form-group">
+              <label for="newDisplayName">Nome Completo:</label>
+              <input type="text" id="newDisplayName">
+            </div>
+            <div class="form-group">
+              <label for="newEmail">Email:</label>
+              <input type="text" id="newEmail">
+            </div>
+            <div class="form-group">
+              <label for="newDepartment">Reparto:</label>
+              <input type="text" id="newDepartment">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary">Crea Utente</button>
+            <button type="button" onclick="hideCreateUserForm()" class="btn">Annulla</button>
+          </div>
+        </form>
+      </div>
+
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Nome Completo</th>
+            <th>Tipo</th>
+            <th>Email</th>
+            <th>Ultimo Login</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <% users.forEach(user => { %>
+          <tr data-user-key="<%= user.userKey %>">
+            <td><%= user.username %></td>
+            <td><%= user.displayName %></td>
+            <td>
+              <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>">
+                <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
+              </span>
+            </td>
+            <td><%= user.email || '-' %></td>
+            <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
+            <td>
+              <% if (user.userType !== 'ad') { %>
+              <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-danger btn-sm">Elimina</button>
+              <% } else { %>
+              <span style="color: #999;">-</span>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    function showAlert(message, type = 'success') {
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      alertContainer.appendChild(alert);
+
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    document.getElementById('serverForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        port: document.getElementById('serverPort').value,
+        host: document.getElementById('serverHost').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/server', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione server', 'danger');
+      }
+    });
+
+    document.getElementById('ldapForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        enabled: document.getElementById('ldapEnabled').checked,
+        url: document.getElementById('ldapUrl').value,
+        baseDN: document.getElementById('ldapBaseDN').value,
+        userSearchFilter: document.getElementById('ldapUserSearchFilter').value,
+        requiredGroup: document.getElementById('ldapRequiredGroup').value,
+        timeout: document.getElementById('ldapTimeout').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/ldap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione LDAP', 'danger');
+      }
+    });
+
+    document.getElementById('httpsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        enabled: document.getElementById('httpsEnabled').checked,
+        certPath: document.getElementById('httpsCertPath').value,
+        keyPath: document.getElementById('httpsKeyPath').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/https', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione HTTPS', 'danger');
+      }
+    });
+
+    document.getElementById('addActivityTypeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const newType = document.getElementById('newActivityType').value.trim();
+      if (!newType) return;
+
+      try {
+        const response = await fetch('/admin/api/settings/activity-types/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activityType: newType })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Categoria aggiunta con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'aggiunta della categoria', 'danger');
+      }
+    });
+
+    async function removeActivityType(type) {
+      if (!confirm(`Sei sicuro di voler rimuovere la categoria "${type}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/settings/activity-types/${encodeURIComponent(type)}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Categoria rimossa con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nella rimozione della categoria', 'danger');
+      }
+    }
+
+    function showCreateUserForm() {
+      document.getElementById('createUserForm').style.display = 'block';
+    }
+
+    function hideCreateUserForm() {
+      document.getElementById('createUserForm').style.display = 'none';
+      document.getElementById('userCreateForm').reset();
+    }
+
+    document.getElementById('userCreateForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        username: document.getElementById('newUsername').value,
+        password: document.getElementById('newPassword').value,
+        displayName: document.getElementById('newDisplayName').value,
+        email: document.getElementById('newEmail').value,
+        department: document.getElementById('newDepartment').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Utente creato con successo', 'success');
+          hideCreateUserForm();
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nella creazione dell\'utente', 'danger');
+      }
+    });
+
+    async function deleteUser(userKey, username) {
+      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Utente eliminato con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'eliminazione dell\'utente', 'danger');
+      }
+    }
+
+    async function restartServer() {
+      if (!confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/api/server/restart', {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Server in riavvio... Ricarica la pagina tra 5 secondi.', 'success');
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Server in riavvio... Ricarica la pagina tra 5 secondi.', 'info');
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      }
+    }
+  </script>
+  <script>
+    helpSystem.init(adminSettingsHelp);
+  </script>
+</body>
+</html>
