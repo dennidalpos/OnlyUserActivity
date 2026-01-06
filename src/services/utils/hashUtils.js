@@ -1,4 +1,7 @@
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 10;
 
 function generatePayloadHash(payload) {
   if (!payload || typeof payload !== 'object') {
@@ -56,9 +59,14 @@ function generateSecureToken(length = 32) {
   return crypto.randomBytes(length).toString('hex');
 }
 
+async function hashPassword(password) {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
 module.exports = {
   generatePayloadHash,
   normalizePayload,
   generateId,
-  generateSecureToken
+  generateSecureToken,
+  hashPassword
 };
