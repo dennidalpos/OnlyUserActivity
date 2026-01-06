@@ -1,4 +1,3 @@
-// Sistema di Help Modale
 class HelpSystem {
   constructor() {
     this.modalHTML = `
@@ -9,9 +8,7 @@ class HelpSystem {
             <h2>Guida all'utilizzo</h2>
             <button class="help-modal-close" onclick="helpSystem.closeHelp()">&times;</button>
           </div>
-          <div class="help-modal-body" id="helpModalBody">
-            <!-- Contenuto dinamico -->
-          </div>
+          <div class="help-modal-body" id="helpModalBody"></div>
         </div>
       </div>
     `;

@@ -42,6 +42,16 @@
           >
         </div>
 
+        <% if (ldapEnabled) { %>
+        <div class="form-group">
+          <label for="authMethod">Metodo di accesso</label>
+          <select id="authMethod" name="authMethod">
+            <option value="local" selected>Locale</option>
+            <option value="ldap">LDAP</option>
+          </select>
+        </div>
+        <% } %>
+
         <button type="submit" class="btn btn-primary btn-block">
           Accedi
         </button>

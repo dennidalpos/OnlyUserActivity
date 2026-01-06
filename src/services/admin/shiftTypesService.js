@@ -43,13 +43,11 @@ class ShiftTypesService {
   async addShiftType(shiftType) {
     const shiftTypes = await this.getShiftTypes();
 
-    // Verifica che non esista già un turno con lo stesso ID
     const existingIndex = shiftTypes.findIndex(st => st.id === shiftType.id);
     if (existingIndex !== -1) {
       throw new Error(`Tipo di turno con ID "${shiftType.id}" già esistente`);
     }
 
-    // Valida i campi obbligatori
     if (!shiftType.id || !shiftType.name) {
       throw new Error('ID e nome sono obbligatori');
     }
@@ -76,7 +74,6 @@ class ShiftTypesService {
       throw new Error(`Tipo di turno "${id}" non trovato`);
     }
 
-    // Non permettere di cambiare l'ID
     const updatedShiftType = {
       ...shiftTypes[index],
       name: updates.name !== undefined ? updates.name : shiftTypes[index].name,

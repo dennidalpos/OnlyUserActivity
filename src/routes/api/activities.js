@@ -3,7 +3,7 @@ const router = express.Router();
 const activityService = require('../../services/activity/activityService');
 const auditLogger = require('../../services/storage/auditLogger');
 const authenticateToken = require('../../middlewares/auth');
-const { validate, activitySchema, activityUpdateSchema, getActivityTypes } = require('../../middlewares/validation');
+const { validate, getActivitySchema, getActivityUpdateSchema, getActivityTypes } = require('../../middlewares/validation');
 const { AppError } = require('../../middlewares/errorHandler');
 const { validateDateFormat } = require('../../services/utils/timeUtils');
 
@@ -43,7 +43,7 @@ router.get('/:date', async (req, res, next) => {
   }
 });
 
-router.post('/', validate(activitySchema), async (req, res, next) => {
+router.post('/', validate(getActivitySchema), async (req, res, next) => {
   try {
     const userKey = req.user.userKey;
     const activity = await activityService.createActivity(userKey, req.body);
@@ -78,7 +78,7 @@ router.post('/', validate(activitySchema), async (req, res, next) => {
   }
 });
 
-router.put('/:id', validate(activityUpdateSchema), async (req, res, next) => {
+router.put('/:id', validate(getActivityUpdateSchema), async (req, res, next) => {
   try {
     const { id } = req.params;
     const userKey = req.user.userKey;

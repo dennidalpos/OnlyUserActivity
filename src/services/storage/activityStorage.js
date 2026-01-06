@@ -132,7 +132,13 @@ class ActivityStorage {
       }
     }
 
-    return allActivities;
+    return allActivities.sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+      return a.startTime.localeCompare(b.startTime);
+    });
   }
 }
 

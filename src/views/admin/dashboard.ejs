@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
   <style>
     * {
       outline: none !important;
@@ -308,5 +309,8 @@
       </tbody>
     </table>
   </main>
+  <script>
+    helpSystem.init(adminDashboardHelp);
+  </script>
 </body>
 </html>

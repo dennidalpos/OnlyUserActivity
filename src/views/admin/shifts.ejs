@@ -269,7 +269,6 @@
     </div>
   </main>
 
-  <!-- Modal Aggiungi/Modifica Turno -->
   <div id="shiftModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -371,14 +370,12 @@
       try {
         let response;
         if (editingId) {
-          // Modifica
           response = await fetch(`/admin/api/shift-types/${editingId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(shiftData)
           });
         } else {
-          // Aggiungi
           response = await fetch('/admin/api/shift-types', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

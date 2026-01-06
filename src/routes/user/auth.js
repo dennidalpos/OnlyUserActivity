@@ -10,7 +10,8 @@ const { redirectIfUserAuthenticated } = require('../../middlewares/userAuth');
 router.get('/login', redirectIfUserAuthenticated, (req, res) => {
   res.render('user/login', {
     title: 'Login Utente',
-    error: null
+    error: null,
+    ldapEnabled: config.ldap.enabled
   });
 });
 
@@ -19,25 +20,20 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     let user;
+    const authMethod = config.ldap.enabled && req.body.authMethod === 'ldap' ? 'ldap' : 'local';
 
-    if (config.ldap.enabled) {
-      try {
+    try {
+      if (authMethod === 'ldap') {
         user = await ldapAuth.authenticate(username, password);
-      } catch (error) {
-        return res.render('user/login', {
-          title: 'Login Utente',
-          error: 'Username o password non validi'
-        });
-      }
-    } else {
-      try {
+      } else {
         user = await localAuth.authenticate(username, password);
-      } catch (error) {
-        return res.render('user/login', {
-          title: 'Login Utente',
-          error: 'Username o password non validi'
-        });
       }
+    } catch (error) {
+      return res.render('user/login', {
+        title: 'Login Utente',
+        error: 'Username o password non validi',
+        ldapEnabled: config.ldap.enabled
+      });
     }
 
     const { token } = tokenService.generateToken(user);
@@ -52,7 +48,7 @@ router.post('/login', async (req, res) => {
     await auditLogger.log(
       'USER_LOGIN',
       user.userKey,
-      { username, authMethod: config.ldap.enabled ? 'ldap' : 'local' },
+      { username, authMethod },
       req.id,
       req.ip,
       username
@@ -63,7 +59,8 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     res.render('user/login', {
       title: 'Login Utente',
-      error: 'Errore durante il login'
+      error: 'Errore durante il login',
+      ldapEnabled: config.ldap.enabled
     });
   }
 });

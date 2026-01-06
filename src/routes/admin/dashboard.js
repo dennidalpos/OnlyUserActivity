@@ -12,6 +12,7 @@ const activityStorage = require('../../services/storage/activityStorage');
 const { requireAdminAuth } = require('../../middlewares/adminAuth');
 const { getCurrentDate } = require('../../services/utils/dateUtils');
 const { reloadActivityTypes } = require('../../middlewares/validation');
+const adminAuthService = require('../../services/auth/adminAuthService');
 
 router.use(requireAdminAuth);
 
@@ -601,6 +602,67 @@ router.delete('/api/users/:userKey', async (req, res) => {
     res.json({
       success: true,
       data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/users/:userKey/reset-password', async (req, res) => {
+  try {
+    const { userKey } = req.params;
+    const { newPassword } = req.body;
+    const result = await settingsService.resetLocalUserPassword(userKey, newPassword);
+
+    await auditLogger.log(
+      'USER_PASSWORD_RESET',
+      'admin',
+      { userKey },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/admin/reset-password', async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nuova password obbligatoria'
+      });
+    }
+
+    await adminAuthService.changePassword(req.adminUser.username, newPassword);
+
+    await auditLogger.log(
+      'ADMIN_PASSWORD_RESET',
+      'admin',
+      { username: req.adminUser.username },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      message: 'Password admin aggiornata con successo'
     });
   } catch (error) {
     res.status(500).json({
