@@ -105,11 +105,34 @@ class ActivityStorage {
   }
 
   async findByRange(userKey, fromDate, toDate) {
-    const monthData = await this.loadMonthData(userKey, fromDate);
+    const fromParts = fromDate.split('-');
+    const toParts = toDate.split('-');
+    const fromYear = parseInt(fromParts[0], 10);
+    const fromMonth = parseInt(fromParts[1], 10);
+    const toYear = parseInt(toParts[0], 10);
+    const toMonth = parseInt(toParts[1], 10);
 
-    return monthData.activities.filter(act => {
-      return act.date >= fromDate && act.date <= toDate;
-    });
+    const allActivities = [];
+
+    for (let year = fromYear; year <= toYear; year++) {
+      const startMonth = year === fromYear ? fromMonth : 1;
+      const endMonth = year === toYear ? toMonth : 12;
+
+      for (let month = startMonth; month <= endMonth; month++) {
+        const dateInMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+        try {
+          const monthData = await this.loadMonthData(userKey, dateInMonth);
+          const filtered = monthData.activities.filter(act => {
+            return act.date >= fromDate && act.date <= toDate;
+          });
+          allActivities.push(...filtered);
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+
+    return allActivities;
   }
 }
 

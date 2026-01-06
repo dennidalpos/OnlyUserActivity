@@ -4,6 +4,7 @@ const monitoringService = require('../../services/admin/monitoringService');
 const exportService = require('../../services/admin/exportService');
 const settingsService = require('../../services/admin/settingsService');
 const activityTypesService = require('../../services/admin/activityTypesService');
+const shiftTypesService = require('../../services/admin/shiftTypesService');
 const serverService = require('../../services/admin/serverService');
 const auditLogger = require('../../services/storage/auditLogger');
 const userStorage = require('../../services/storage/userStorage');
@@ -186,17 +187,127 @@ router.get('/api/monitoring', async (req, res) => {
   }
 });
 
+router.get('/shifts', async (req, res) => {
+  try {
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+
+    res.render('admin/shifts', {
+      title: 'Configurazione Turni',
+      shiftTypes
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/shift-types', async (req, res) => {
+  try {
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    res.json({
+      success: true,
+      data: shiftTypes
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/shift-types', async (req, res) => {
+  try {
+    const shiftType = await shiftTypesService.addShiftType(req.body);
+
+    await auditLogger.log(
+      'SHIFT_TYPE_ADD',
+      'admin',
+      { shiftType },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: shiftType
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.put('/api/shift-types/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const shiftType = await shiftTypesService.updateShiftType(id, req.body);
+
+    await auditLogger.log(
+      'SHIFT_TYPE_UPDATE',
+      'admin',
+      { id, updates: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: shiftType
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/api/shift-types/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await shiftTypesService.removeShiftType(id);
+
+    await auditLogger.log(
+      'SHIFT_TYPE_DELETE',
+      'admin',
+      { id },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 router.get('/settings', async (req, res) => {
   try {
     const settings = await settingsService.getCurrentSettings();
     const activityTypes = await activityTypesService.getActivityTypes();
     const users = await settingsService.listLocalUsers();
+    const shiftTypes = await shiftTypesService.getShiftTypes();
 
     res.render('admin/settings', {
       title: 'Configurazione Server',
       settings,
       activityTypes,
-      users
+      users,
+      shiftTypes
     });
   } catch (error) {
     res.render('errors/error', {
@@ -408,6 +519,62 @@ router.post('/api/users', async (req, res) => {
     res.json({
       success: true,
       data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.put('/api/users/:userKey/shift', async (req, res) => {
+  try {
+    const { userKey } = req.params;
+    const { shift } = req.body;
+
+    const result = await settingsService.updateUserShift(userKey, shift);
+
+    await auditLogger.log(
+      'USER_SHIFT_UPDATE',
+      'admin',
+      { userKey, shift },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.put('/api/users/:userKey', async (req, res) => {
+  try {
+    const { userKey } = req.params;
+    const updates = req.body;
+
+    const result = await settingsService.updateUser(userKey, updates);
+
+    await auditLogger.log(
+      'USER_UPDATE',
+      'admin',
+      { userKey, updates },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
     });
   } catch (error) {
     res.status(500).json({

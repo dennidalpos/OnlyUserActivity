@@ -28,12 +28,12 @@ loadActivityTypes();
 
 const loginSchema = Joi.object({
   username: Joi.string()
-    .alphanum()
+    .pattern(/^[a-zA-Z0-9._-]+$/)
     .min(3)
     .max(50)
     .required()
     .messages({
-      'string.alphanum': 'Username deve contenere solo caratteri alfanumerici',
+      'string.pattern.base': 'Username può contenere solo lettere, numeri, punti, trattini e underscore',
       'string.min': 'Username deve essere lungo almeno 3 caratteri',
       'any.required': 'Username è obbligatorio'
     }),

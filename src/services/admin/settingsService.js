@@ -18,10 +18,11 @@ class SettingsService {
     let envSettings = {};
     try {
       const envContent = await fs.readFile(this.envPath, 'utf-8');
-      const lines = envContent.split('\n');
+      const lines = envContent.split(/\r?\n/);
 
       for (const line of lines) {
-        const match = line.match(/^([A-Z_]+)=(.*)$/);
+        const trimmedLine = line.trim();
+        const match = trimmedLine.match(/^([A-Z_]+)=(.*)$/);
         if (match) {
           envSettings[match[1]] = match[2];
         }
@@ -65,16 +66,26 @@ class SettingsService {
     console.log('[SETTINGS] Modifiche da applicare:', JSON.stringify(updates, null, 2));
 
     let envContent = '';
+    let fileExists = true;
 
     try {
       envContent = await fs.readFile(this.envPath, 'utf-8');
       console.log('[SETTINGS] File .env letto con successo');
     } catch (error) {
-      console.log('[SETTINGS] File .env non trovato, verrà creato');
-      envContent = '';
+      console.log('[SETTINGS] File .env non trovato, provo a copiare da .env.example');
+      fileExists = false;
+
+      try {
+        const examplePath = path.join(process.cwd(), '.env.example');
+        envContent = await fs.readFile(examplePath, 'utf-8');
+        console.log('[SETTINGS] Template .env.example caricato');
+      } catch (exampleError) {
+        console.log('[SETTINGS] .env.example non trovato, creo file vuoto');
+        envContent = '';
+      }
     }
 
-    const lines = envContent.split('\n');
+    const lines = envContent.split(/\r?\n/);
     const updatedLines = [];
     const processedKeys = new Set();
 
@@ -82,24 +93,24 @@ class SettingsService {
       const trimmed = line.trim();
 
       if (trimmed === '' || trimmed.startsWith('#')) {
-        updatedLines.push(line);
+        updatedLines.push(trimmed);
         continue;
       }
 
-      const match = line.match(/^([A-Z_]+)=/);
+      const match = trimmed.match(/^([A-Z_]+)=/);
       if (match) {
         const key = match[1];
         if (updates.hasOwnProperty(key)) {
-          const oldValue = line.split('=')[1];
+          const oldValue = trimmed.split('=')[1];
           const newValue = updates[key];
           console.log(`[SETTINGS] Aggiornamento ${key}: "${oldValue}" -> "${newValue}"`);
           updatedLines.push(`${key}=${updates[key]}`);
           processedKeys.add(key);
         } else {
-          updatedLines.push(line);
+          updatedLines.push(trimmed);
         }
       } else {
-        updatedLines.push(line);
+        updatedLines.push(trimmed);
       }
     }
 
@@ -110,9 +121,14 @@ class SettingsService {
       }
     }
 
-    await fs.writeFile(this.envPath, updatedLines.join('\n'), 'utf-8');
+    const finalContent = updatedLines.join('\n');
+    await fs.writeFile(this.envPath, finalContent, 'utf-8');
     console.log('[SETTINGS] File .env salvato con successo');
     console.log('[SETTINGS] Path: ' + this.envPath);
+
+    if (!fileExists) {
+      console.log('[SETTINGS] IMPORTANTE: File .env creato per la prima volta. Riavviare il server per applicare le modifiche.');
+    }
   }
 
   async updateLdapSettings(ldapSettings) {
@@ -215,6 +231,7 @@ class SettingsService {
       displayName: user.displayName,
       email: user.email,
       department: user.department,
+      shift: user.shift,
       userType: user.userType || 'local',
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt
@@ -251,6 +268,69 @@ class SettingsService {
       email: user.email,
       department: user.department,
       userType: user.userType
+    };
+  }
+
+  async updateUserShift(userKey, shift) {
+    const user = await userStorage.findByUserKey(userKey);
+
+    if (!user) {
+      throw new Error('Utente non trovato');
+    }
+
+    const updatedUser = await userStorage.update(userKey, { shift });
+
+    return {
+      success: true,
+      user: {
+        userKey: updatedUser.userKey,
+        username: updatedUser.username,
+        displayName: updatedUser.displayName,
+        shift: updatedUser.shift
+      },
+      message: 'Turno aggiornato con successo'
+    };
+  }
+
+  async updateUser(userKey, updates) {
+    const user = await userStorage.findByUserKey(userKey);
+
+    if (!user) {
+      throw new Error('Utente non trovato');
+    }
+
+    // Solo gli utenti locali possono modificare department ed email
+    if (user.userType === 'ad' && (updates.department || updates.email)) {
+      throw new Error('Non è possibile modificare reparto ed email per utenti AD');
+    }
+
+    const allowedUpdates = {
+      shift: updates.shift
+    };
+
+    // Aggiungi department ed email solo per utenti locali
+    if (user.userType !== 'ad') {
+      if (updates.hasOwnProperty('department')) {
+        allowedUpdates.department = updates.department;
+      }
+      if (updates.hasOwnProperty('email')) {
+        allowedUpdates.email = updates.email;
+      }
+    }
+
+    const updatedUser = await userStorage.update(userKey, allowedUpdates);
+
+    return {
+      success: true,
+      user: {
+        userKey: updatedUser.userKey,
+        username: updatedUser.username,
+        displayName: updatedUser.displayName,
+        shift: updatedUser.shift,
+        department: updatedUser.department,
+        email: updatedUser.email
+      },
+      message: 'Informazioni utente aggiornate con successo'
     };
   }
 

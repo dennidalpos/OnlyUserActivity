@@ -1,8 +1,8 @@
 # Activity Tracker - Sistema di Tracciamento Attività
 
-**Versione:** 1.3.0 | **Stato:** Production Ready
+**Versione:** 2.0.0 | **Stato:** Production Ready
 
-Sistema enterprise per tracciamento e monitoraggio attività giornaliere degli utenti con autenticazione flessibile (locale o LDAP/AD), interfacce web complete e API RESTful.
+Sistema enterprise per tracciamento e monitoraggio attività giornaliere degli utenti con autenticazione flessibile (locale o LDAP/AD), gestione turni configurabile, interfacce web complete e API RESTful.
 
 ## 🚀 Quick Start
 
@@ -28,49 +28,40 @@ npm start
 
 ## ✨ Caratteristiche Principali
 
-### Dashboard Admin Avanzata
+### 🔄 Gestione Turni Configurabile (NUOVO v2.0)
+- ✅ **Configurazione turni da web** - Crea, modifica ed elimina tipi di turno personalizzati
+- ✅ **Opzioni flessibili** - Include weekend (sab/dom), include festività
+- ✅ **Turni illimitati** - Nessun limite al numero di turni configurabili
+- ✅ **Assegnazione dinamica** - Dropdown automaticamente popolato con turni configurati
+- ✅ **Turni default** - 24/7 e Feriali preconfigurati
+
+### 👥 Gestione Utenti Avanzata
+- ✅ **Utenti locali** - Gestione completa con reparto, email, turno
+- ✅ **Utenti LDAP/AD** - Sincronizzazione automatica reparto/email da Active Directory
+- ✅ **Assegnazione turni** - Menu a tendina con turni configurabili
+- ✅ **Pulsante Imposta** - Salvataggio simultaneo di reparto, email e turno
+
+### 📊 Dashboard Admin Avanzata
 - ✅ **Navigazione temporale** - Giorno, Settimana, Mese con pulsanti avanti/indietro
 - ✅ **Visualizzazione compatta** - Statistiche aggregate e dettagli utenti
 - ✅ **Export completo** - Excel (XLSX), CSV, JSON con range flessibili
 - ✅ **Selezione intelligente** - Tutti gli utenti o selezione multipla con checkbox
 - ✅ **Range rapidi export** - Oggi, Ieri, Settimana, Mese, Anno, Tutti i dati
 - ✅ **Riavvio server da web** - Riavvia il server direttamente dall'interfaccia admin
-- ✅ **Data minima visualizzata** - Mostra da quando sono disponibili i dati
 
-### Dashboard Utente
+### 🖥️ Dashboard Utente
 - ✅ **Gestione attività** - Creazione, modifica, eliminazione con calendario
 - ✅ **Time picker intelligente** - Step 15 minuti, validazione orari
 - ✅ **Statistiche real-time** - Ore lavorate, completamento, straordinari
 - ✅ **Sistema help integrato** - Guida contestuale
 
-### Autenticazione e Sicurezza
+### 🔐 Autenticazione e Sicurezza
 - ✅ **Autenticazione flessibile** - Locale (bcrypt) o LDAP/AD
 - ✅ **Tracking automatico** - Utenti tracciati al primo accesso
 - ✅ **JWT authentication** - Token sicuri per API
 - ✅ **Rate limiting** - Protezione contro bruteforce
 - ✅ **Audit log** - Tracciamento immutabile con SHA-256
 - ✅ **Cache performance** - Cache in memoria con TTL 5 minuti
-
-### Export Dati Avanzato
-- ✅ **Export Excel (XLSX)**
-  - Foglio "Dettaglio Attività" con tutte le attività
-  - Foglio "Riepilogo Utenti" con statistiche aggregate
-  - Formattazione con colori e autofilter
-- ✅ **Export CSV** - Compatibile Excel
-- ✅ **Export JSON** - Per integrazioni API
-- ✅ **Tipi export**
-  - Dettagliato: tutte le attività con orari
-  - Riepilogo: totali per utente
-- ✅ **Selezione utenti**
-  - Tutti gli utenti
-  - Selezione multipla specifica
-- ✅ **Range temporali**
-  - Oggi / Ieri
-  - Questa settimana / Settimana scorsa
-  - Questo mese / Mese scorso
-  - Quest'anno
-  - Tutti i dati disponibili
-  - Personalizzato (data inizio/fine)
 
 ## 📋 Prerequisiti
 
@@ -146,19 +137,51 @@ LDAP_REQUIRED_GROUP=CN=Domain Users,CN=Users,DC=company,DC=local
 **Da riga di comando:**
 ```bash
 node scripts/create-user.js
-# Inserisci: username, password, nome completo, email
+# Inserisci: username, password, nome completo, email, reparto
 ```
 
 **Da web UI (Dashboard Admin):**
 1. Login admin: `http://localhost:3000/admin`
 2. Vai su "Configurazione" → "Gestione Utenti Locali"
 3. Clicca "+ Nuovo Utente Locale"
-4. Compila form e clicca "Crea Utente"
+4. Compila form (username, password, nome, email, reparto)
+5. Clicca "Crea Utente"
+6. Seleziona turno dal dropdown e clicca "Imposta"
 
 ### Modalità LDAP
 
 Con `LDAP_ENABLED=true`, gli utenti vengono autenticati contro LDAP/AD.
-**Al primo login**, l'utente viene automaticamente creato e tracciato nel sistema.
+**Al primo login**, l'utente viene automaticamente creato con:
+- Reparto ed email sincronizzati da Active Directory
+- Possibilità di assegnare un turno dall'interfaccia admin
+
+## 🔄 Gestione Turni
+
+### Configurazione Tipi di Turno
+
+1. Login admin: `http://localhost:3000/admin`
+2. Vai su "Turni" nel menu principale
+3. Clicca "+ Aggiungi Nuovo Turno"
+4. Compila:
+   - **ID Turno**: identificatore univoco (es: `turno-mattina`)
+   - **Nome Turno**: nome visualizzato (es: "Turno Mattina")
+   - **Descrizione**: descrizione opzionale
+   - **Includi Weekend**: checkbox per sabato/domenica
+   - **Includi Festività**: checkbox per giorni festivi
+5. Salva
+
+### Turni Preconfigurati
+
+Il sistema include 2 turni di default:
+- **24/7**: 24 ore su 24, 7 giorni su 7 (weekend ✅, festività ✅)
+- **Feriali**: Solo giorni feriali (weekend ❌, festività ❌)
+
+### Assegnazione Turni agli Utenti
+
+1. Vai su "Configurazione" → "Gestione Utenti Locali"
+2. Per ogni utente, seleziona il turno dal dropdown
+3. Clicca "Imposta" per salvare
+4. Il turno viene salvato insieme a reparto ed email
 
 ## 🚀 Avvio
 
@@ -201,6 +224,13 @@ Funzionalità:
 
 Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 
+#### Menu Principale
+- **Dashboard** - Monitoraggio attività
+- **Export** - Esportazione dati
+- **Turni** - Configurazione tipi di turno (NUOVO)
+- **Configurazione** - Impostazioni server e utenti
+- **Logout**
+
 #### Monitoraggio (Dashboard)
 - **Tre modalità visualizzazione:**
   - Giorno - Mostra attività giornaliere
@@ -214,13 +244,20 @@ Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 - **Filtri:** Username, Stato completamento
 - **Visualizzazione compatta** con tabella ottimizzata
 
+#### Turni (NUOVO)
+- **Lista tipi di turno** - Card con nome, ID, descrizione
+- **Opzioni visualizzate** - Weekend (✅/❌), Festività (✅/❌)
+- **Aggiungi turno** - Modal con form completo
+- **Modifica turno** - Modifica nome, descrizione, opzioni
+- **Elimina turno** - Rimozione con conferma
+- **Validazione ID** - Solo lowercase, numeri, trattini
+
 #### Export Dati
 - **Indicatore data minima** - Visualizza da quando sono disponibili i dati
 - **Range rapidi:** Oggi, Ieri, Settimana, Mese, Anno, Tutti i dati
 - **Selezione utenti intelligente:**
   - Checkbox "Tutti gli utenti (N)"
   - Selezione multipla con stato indeterminato
-  - Lista scrollabile con filtro
 - **Formati:**
   - Excel (XLSX) - 2 fogli (Dettaglio + Riepilogo)
   - CSV - Compatibile Excel
@@ -231,28 +268,49 @@ Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 
 #### Configurazione
 - **Gestione Server**
-  - **Riavvio server** - Pulsante riavvio diretto da web UI
+  - Riavvio server da web UI
   - Info server (Node.js version, uptime, memoria)
 - **LDAP/Active Directory** - Configurazione completa
 - **HTTPS** - Certificati e porta HTTPS
 - **Server** - Porta, host, timeout
 - **Tipi attività** - Categorie personalizzabili
-- **Utenti locali** - Crea/elimina utenti
+- **Utenti locali** - Crea/elimina utenti, gestisci reparto/email/turno
 
 ### API REST
 **Base URL:** `http://localhost:3000/api`
 
-Endpoints principali:
-- `POST /api/auth/login` - Autenticazione
+#### Endpoints Principali
+
+**Autenticazione:**
+- `POST /api/auth/login` - Login utente
+  ```json
+  {
+    "username": "mario",
+    "password": "Pass123!"
+  }
+  ```
+
+**Attività:**
 - `GET /api/activities/:date` - Attività giornaliere
+- `GET /api/activities/range?from=YYYY-MM-DD&to=YYYY-MM-DD` - Range attività
 - `POST /api/activities` - Crea attività
 - `PUT /api/activities/:id` - Modifica attività
 - `DELETE /api/activities/:id` - Elimina attività
-- `GET /api/activities/types` - Tipi attività
+- `GET /api/activities/types` - Tipi attività disponibili
+
+**Admin:**
+- `GET /admin/api/users` - Lista utenti
+- `POST /admin/api/users` - Crea utente locale
+- `PUT /admin/api/users/:userKey` - Aggiorna utente (shift, department, email)
+- `DELETE /admin/api/users/:userKey` - Elimina utente locale
+- `GET /admin/api/shift-types` - Lista tipi di turno
+- `POST /admin/api/shift-types` - Crea tipo di turno
+- `PUT /admin/api/shift-types/:id` - Modifica tipo di turno
+- `DELETE /admin/api/shift-types/:id` - Elimina tipo di turno
 
 **Autenticazione:** Header `Authorization: Bearer {jwt_token}`
 
-**Esempio:**
+**Esempio Completo:**
 ```bash
 # Login
 TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
@@ -265,12 +323,16 @@ curl -X POST http://localhost:3000/api/activities \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "date": "2026-01-04",
+    "date": "2026-01-06",
     "startTime": "09:00",
     "endTime": "17:00",
     "activityType": "lavoro",
     "notes": "Giornata completa"
   }'
+
+# Get attività range
+curl -X GET "http://localhost:3000/api/activities/range?from=2026-01-01&to=2026-01-31" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 📁 Struttura Progetto
@@ -287,19 +349,27 @@ OnlyUserActivity/
 │   ├── services/
 │   │   ├── auth/           # LDAP, locale, JWT
 │   │   ├── storage/        # File storage con cache
-│   │   ├── activity/       # Business logic
-│   │   ├── admin/          # Export, monitoring, server
+│   │   ├── activity/       # Business logic attività
+│   │   ├── admin/          # Export, monitoring, server, shift types
 │   │   └── utils/          # Date, time, hash
 │   ├── views/              # Template EJS
-│   ├── app.js
-│   └── server.js
+│   │   ├── admin/         # Dashboard admin (dashboard, export, shifts, settings)
+│   │   ├── user/          # Dashboard utente
+│   │   └── errors/        # Pagine errore
+│   ├── app.js             # Express app setup
+│   └── server.js          # Server HTTP/HTTPS
 ├── public/
 │   ├── css/               # Stili uniformati
 │   └── js/                # JavaScript client
-├── data/                  # Dati applicazione
+├── data/                  # Dati applicazione (auto-generato)
+│   ├── users/            # File utenti JSON
+│   ├── activities/       # Attività per utente/mese
+│   ├── audit/            # Log audit immutabili
+│   ├── admin/            # Credenziali admin
+│   └── shift-types.json  # Configurazione turni
 ├── scripts/               # Helper scripts
 │   ├── create-user.js
-│   └── restart-server.js  # Script riavvio automatico
+│   └── restart-server.js
 ├── .env.example
 ├── package.json
 └── README.md
@@ -334,66 +404,13 @@ OnlyUserActivity/
 ### Cache in Memoria
 - **Cache utenti** - TTL 5 minuti
 - **Cache index** - Riduce I/O disco ~90%
+- **Cache shift types** - Configurazioni turni
 - **Invalidazione automatica** - Alla modifica dati
 
 ### Ottimizzazioni
 - Log console solo per errori (status >= 400)
 - Richieste parallele dove possibile
 - Lazy loading componenti dashboard
-
-## 🔄 Changelog
-
-### v1.3.0 (2026-01-04)
-**Dashboard Admin:**
-- Navigazione temporale (Giorno/Settimana/Mese)
-- Visualizzazione compatta con statistiche aggregate
-- Pulsanti avanti/indietro per navigazione rapida
-
-**Export Avanzato:**
-- Export Excel (XLSX) con fogli formattati
-- Range rapidi (Oggi, Settimana, Mese, Anno, Tutti)
-- Selezione utenti unificata con checkbox intelligente
-- Indicatore data minima disponibile
-- Export riepilogo e dettagliato
-
-**Configurazione:**
-- Riavvio server da web UI
-- Gestione completa server dalla dashboard
-
-**Performance:**
-- Cache in memoria (TTL 5 minuti)
-- Log ottimizzati (solo errori)
-- Riduzione I/O disco 90%
-
-**UI/UX:**
-- Stili uniformati su tutti i pulsanti
-- Nessuna sottolineatura al click
-- Colori consistenti
-- Transizioni smooth
-
-### v1.2.0 (2026-01-04)
-- Time picker step 15 minuti
-- Sistema help integrato
-- Badge tipo autenticazione
-- Tracking automatico utenti
-
-### v1.1.0 (2026-01-03)
-- Dashboard utente completa
-- Autenticazione locale default
-- LDAP opzionale
-
-### v1.0.0 (2026-01-02)
-- Release iniziale
-- API RESTful
-- Dashboard admin base
-
-## 🤝 Contribuire
-
-1. Fork il repository
-2. Crea feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit modifiche (`git commit -m 'Add AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri Pull Request
 
 ## 📝 Licenza
 
@@ -405,4 +422,4 @@ ISC License
 
 ---
 
-**Sistema completo e production-ready per gestione attività aziendali**
+**Sistema completo e production-ready per gestione attività aziendali con turni configurabili**

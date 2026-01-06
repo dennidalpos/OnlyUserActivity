@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .shifts-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .shifts-section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .shifts-section h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 8px;
+    }
+    .shift-types-list {
+      display: grid;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .shift-type-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      background: #f8f9fa;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+    }
+    .shift-type-info {
+      flex: 1;
+    }
+    .shift-type-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .shift-type-id {
+      font-size: 12px;
+      color: #666;
+      font-family: monospace;
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .shift-type-description {
+      color: #666;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .shift-type-options {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .shift-option {
+      font-size: 13px;
+      color: #495057;
+    }
+    .shift-option-icon {
+      margin-right: 4px;
+    }
+    .shift-type-actions {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #218838;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #555;
+    }
+    .form-group input[type="text"],
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: normal;
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .alert-success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .alert-danger {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .alert-info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #007bff;
+    }
+    .modal-header h3 {
+      margin: 0;
+      color: #333;
+    }
+    .modal-footer {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts" class="active">Turni</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container shifts-container">
+    <h2><%= title %></h2>
+
+    <div id="alertContainer"></div>
+
+    <div class="shifts-section">
+      <h3>Tipi di Turno</h3>
+      <div class="alert alert-info">
+        Configura i tipi di turno disponibili nel sistema. I turni configurati qui saranno disponibili per l'assegnazione agli utenti.
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <button type="button" onclick="showAddShiftModal()" class="btn btn-success">
+          ➕ Aggiungi Nuovo Turno
+        </button>
+      </div>
+
+      <div class="shift-types-list" id="shiftTypesList">
+        <% shiftTypes.forEach(shiftType => { %>
+        <div class="shift-type-card" data-shift-id="<%= shiftType.id %>">
+          <div class="shift-type-info">
+            <div class="shift-type-name"><%= shiftType.name %></div>
+            <div class="shift-type-id">ID: <%= shiftType.id %></div>
+            <% if (shiftType.description) { %>
+            <div class="shift-type-description"><%= shiftType.description %></div>
+            <% } %>
+            <div class="shift-type-options">
+              <div class="shift-option">
+                <span class="shift-option-icon"><%= shiftType.includeWeekends ? '✅' : '❌' %></span>
+                Weekend
+              </div>
+              <div class="shift-option">
+                <span class="shift-option-icon"><%= shiftType.includeHolidays ? '✅' : '❌' %></span>
+                Festività
+              </div>
+            </div>
+          </div>
+          <div class="shift-type-actions">
+            <button onclick="editShiftType('<%= shiftType.id %>')" class="btn btn-primary btn-sm">Modifica</button>
+            <button onclick="deleteShiftType('<%= shiftType.id %>')" class="btn btn-danger btn-sm">Elimina</button>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Aggiungi/Modifica Turno -->
+  <div id="shiftModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Aggiungi Turno</h3>
+      </div>
+      <form id="shiftForm">
+        <input type="hidden" id="editingShiftId" value="">
+
+        <div class="form-group">
+          <label for="shiftId">ID Turno (univoco, no spazi):</label>
+          <input type="text" id="shiftId" required pattern="[a-z0-9-_]+"
+                 placeholder="es: turno-mattina">
+          <small style="color: #666; font-size: 12px;">Solo lettere minuscole, numeri, trattini e underscore</small>
+        </div>
+
+        <div class="form-group">
+          <label for="shiftName">Nome Turno:</label>
+          <input type="text" id="shiftName" required placeholder="es: Turno Mattina">
+        </div>
+
+        <div class="form-group">
+          <label for="shiftDescription">Descrizione (opzionale):</label>
+          <textarea id="shiftDescription" placeholder="Descrizione del turno..."></textarea>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="includeWeekends">
+          <label for="includeWeekends">Includi Weekend (Sabato e Domenica)</label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="includeHolidays">
+          <label for="includeHolidays">Includi Festività</label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" onclick="closeShiftModal()" class="btn">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let shiftTypesData = <%- JSON.stringify(shiftTypes) %>;
+
+    function showAlert(message, type = 'success') {
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      alertContainer.appendChild(alert);
+
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    function showAddShiftModal() {
+      document.getElementById('modalTitle').textContent = 'Aggiungi Turno';
+      document.getElementById('editingShiftId').value = '';
+      document.getElementById('shiftForm').reset();
+      document.getElementById('shiftId').disabled = false;
+      document.getElementById('shiftModal').style.display = 'flex';
+    }
+
+    function editShiftType(id) {
+      const shiftType = shiftTypesData.find(st => st.id === id);
+      if (!shiftType) return;
+
+      document.getElementById('modalTitle').textContent = 'Modifica Turno';
+      document.getElementById('editingShiftId').value = id;
+      document.getElementById('shiftId').value = shiftType.id;
+      document.getElementById('shiftId').disabled = true;
+      document.getElementById('shiftName').value = shiftType.name;
+      document.getElementById('shiftDescription').value = shiftType.description || '';
+      document.getElementById('includeWeekends').checked = shiftType.includeWeekends;
+      document.getElementById('includeHolidays').checked = shiftType.includeHolidays;
+      document.getElementById('shiftModal').style.display = 'flex';
+    }
+
+    function closeShiftModal() {
+      document.getElementById('shiftModal').style.display = 'none';
+      document.getElementById('shiftForm').reset();
+    }
+
+    document.getElementById('shiftForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const editingId = document.getElementById('editingShiftId').value;
+      const shiftData = {
+        id: document.getElementById('shiftId').value.toLowerCase().trim(),
+        name: document.getElementById('shiftName').value.trim(),
+        description: document.getElementById('shiftDescription').value.trim(),
+        includeWeekends: document.getElementById('includeWeekends').checked,
+        includeHolidays: document.getElementById('includeHolidays').checked
+      };
+
+      try {
+        let response;
+        if (editingId) {
+          // Modifica
+          response = await fetch(`/admin/api/shift-types/${editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(shiftData)
+          });
+        } else {
+          // Aggiungi
+          response = await fetch('/admin/api/shift-types', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(shiftData)
+          });
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(editingId ? 'Turno aggiornato con successo' : 'Turno aggiunto con successo', 'success');
+          closeShiftModal();
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio del turno', 'danger');
+      }
+    });
+
+    async function deleteShiftType(id) {
+      const shiftType = shiftTypesData.find(st => st.id === id);
+      if (!confirm(`Sei sicuro di voler eliminare il turno "${shiftType.name}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/shift-types/${id}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Turno eliminato con successo', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'eliminazione del turno', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -78,6 +78,7 @@ class UserStorage {
       displayName: userData.displayName || userData.username,
       email: userData.email || null,
       department: userData.department || null,
+      shift: userData.shift || null,
       userType: userData.userType || 'local',
       createdAt: now,
       lastLoginAt: now,

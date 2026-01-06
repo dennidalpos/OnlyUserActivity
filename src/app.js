@@ -123,6 +123,8 @@ app.use(errorHandler(logger));
 
 async function initialize() {
   try {
+    await ensureEnvFile();
+
     logger.info('Inizializzazione storage...');
     await fileStorage.initialize();
 
@@ -133,6 +135,26 @@ async function initialize() {
   } catch (error) {
     logger.error({ err: error }, 'Errore durante inizializzazione');
     process.exit(1);
+  }
+}
+
+async function ensureEnvFile() {
+  const fs = require('fs').promises;
+  const envPath = path.join(process.cwd(), '.env');
+  const examplePath = path.join(process.cwd(), '.env.example');
+
+  try {
+    await fs.access(envPath);
+  } catch (error) {
+    logger.warn('.env file non trovato, copio da .env.example');
+    try {
+      const content = await fs.readFile(examplePath, 'utf-8');
+      await fs.writeFile(envPath, content, 'utf-8');
+      logger.info('.env file creato con successo da .env.example');
+    } catch (copyError) {
+      logger.error({ err: copyError }, 'Impossibile creare .env da .env.example');
+      logger.warn('Continuazione con valori di default dalla configurazione');
+    }
   }
 }
 

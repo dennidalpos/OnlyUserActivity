@@ -174,6 +174,10 @@ router.get('/', async (req, res, next) => {
       throw new AppError(`Data "to" non valida: ${toValidation.error}`, 400, 'INVALID_DATE');
     }
 
+    if (from > to) {
+      throw new AppError('La data "from" deve essere precedente o uguale a "to"', 400, 'INVALID_DATE_RANGE');
+    }
+
     const result = await activityService.getActivitiesRange(userKey, from, to);
 
     res.json({

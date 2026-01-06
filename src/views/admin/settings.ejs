@@ -140,6 +140,7 @@
       <ul class="nav-menu">
         <li><a href="/admin/dashboard">Dashboard</a></li>
         <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
         <li><a href="/admin/settings" class="active">Configurazione</a></li>
         <li><a href="/admin/auth/logout">Logout</a></li>
       </ul>
@@ -314,6 +315,8 @@
             <th>Username</th>
             <th>Nome Completo</th>
             <th>Tipo</th>
+            <th>Reparto</th>
+            <th>Turno</th>
             <th>Email</th>
             <th>Ultimo Login</th>
             <th>Azioni</th>
@@ -329,13 +332,41 @@
                 <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
               </span>
             </td>
-            <td><%= user.email || '-' %></td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.department || '-' %>
+              <% } else { %>
+                <input type="text"
+                  id="dept-<%= user.userKey %>"
+                  value="<%= user.department || '' %>"
+                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+              <% } %>
+            </td>
+            <td>
+              <select
+                id="shift-<%= user.userKey %>"
+                style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="" <%= !user.shift ? 'selected' : '' %>>- Nessuno -</option>
+                <% shiftTypes.forEach(shiftType => { %>
+                <option value="<%= shiftType.name %>" <%= user.shift === shiftType.name ? 'selected' : '' %>><%= shiftType.name %></option>
+                <% }); %>
+              </select>
+            </td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.email || '-' %>
+              <% } else { %>
+                <input type="email"
+                  id="email-<%= user.userKey %>"
+                  value="<%= user.email || '' %>"
+                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+              <% } %>
+            </td>
             <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
             <td>
+              <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>')" class="btn btn-primary btn-sm" style="margin-right: 4px;">Imposta</button>
               <% if (user.userType !== 'ad') { %>
               <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-danger btn-sm">Elimina</button>
-              <% } else { %>
-              <span style="color: #999;">-</span>
               <% } %>
             </td>
           </tr>
@@ -556,6 +587,38 @@
         }
       } catch (error) {
         showAlert('Errore nell\'eliminazione dell\'utente', 'danger');
+      }
+    }
+
+    async function updateUserInfo(userKey, userType) {
+      const shiftValue = document.getElementById(`shift-${userKey}`).value;
+      const updates = {
+        shift: shiftValue || null
+      };
+
+      // Per utenti locali, aggiorna anche reparto ed email
+      if (userType !== 'ad') {
+        const deptValue = document.getElementById(`dept-${userKey}`).value;
+        const emailValue = document.getElementById(`email-${userKey}`).value;
+        updates.department = deptValue || null;
+        updates.email = emailValue || null;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Informazioni utente aggiornate con successo', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'aggiornamento delle informazioni utente', 'danger');
       }
     }
 
