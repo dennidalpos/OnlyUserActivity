@@ -49,6 +49,7 @@
   },
   "overrides": {
     "glob": "^10.5.0",
+    "rimraf": "^4.4.1",
     "unzipper": "^0.12.3"
   }
 }
