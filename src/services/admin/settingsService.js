@@ -464,7 +464,7 @@ class SettingsService {
       await ldapClient.bind(client, bindDN, bindPassword);
       return { success: true, message: 'Bind LDAP riuscito' };
     } finally {
-      ldapClient.unbind(client);
+      await ldapClient.unbind(client);
     }
   }
 
