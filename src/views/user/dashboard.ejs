@@ -177,11 +177,13 @@
       const activities = data.activities || [];
       const summary = data.summary || {};
 
-      document.getElementById('totalHours').textContent =
-        `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m`;
+      const totalMinutes = Number.isFinite(summary.totalMinutes) ? summary.totalMinutes : 0;
+      const requiredMinutes = Number.isFinite(summary.requiredMinutes) ? summary.requiredMinutes : 480;
 
-      const requiredMinutes = 480;
-      const overtimeMinutes = summary.totalMinutes > requiredMinutes ? summary.totalMinutes - requiredMinutes : 0;
+      document.getElementById('totalHours').textContent =
+        `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+
+      const overtimeMinutes = totalMinutes > requiredMinutes ? totalMinutes - requiredMinutes : 0;
       const overtimeHours = Math.floor(overtimeMinutes / 60);
       const overtimeMins = overtimeMinutes % 60;
       document.getElementById('overtime').textContent = overtimeMinutes > 0
@@ -192,8 +194,9 @@
       document.getElementById('activityCount').textContent = activities.length;
       document.getElementById('dayStatus').textContent = summary.isComplete ? 'Completa' : 'Incompleta';
 
-      const requiredMinutesForBar = 480;
-      const completionPercentage = Math.min(100, Math.round((summary.totalMinutes / requiredMinutesForBar) * 100));
+      const completionPercentage = requiredMinutes > 0
+        ? Math.min(100, Math.round((totalMinutes / requiredMinutes) * 100))
+        : 0;
       const progressBarFill = document.getElementById('progressBarFill');
       const progressText = document.getElementById('progressText');
 
