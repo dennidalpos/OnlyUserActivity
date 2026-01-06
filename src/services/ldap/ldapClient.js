@@ -3,11 +3,15 @@ const config = require('../../config');
 
 class LDAPClient {
   createClient() {
+    return this.createClientWithConfig(config.ldap);
+  }
+
+  createClientWithConfig(ldapConfig) {
     return new Promise((resolve, reject) => {
       const client = ldap.createClient({
-        url: config.ldap.url,
-        timeout: config.ldap.timeout,
-        connectTimeout: config.ldap.timeout
+        url: ldapConfig.url,
+        timeout: ldapConfig.timeout,
+        connectTimeout: ldapConfig.timeout
       });
 
       client.on('error', (err) => {
@@ -17,7 +21,7 @@ class LDAPClient {
       const timeoutId = setTimeout(() => {
         client.destroy();
         reject(new Error('LDAP connection timeout'));
-      }, config.ldap.timeout);
+      }, ldapConfig.timeout);
 
       client.on('connect', () => {
         clearTimeout(timeoutId);

@@ -130,6 +130,95 @@ LDAP_USER_SEARCH_FILTER=(sAMAccountName={{username}})
 LDAP_REQUIRED_GROUP=CN=Domain Users,CN=Users,DC=company,DC=local
 ```
 
+### Configurazione Avanzata da UI (NUOVO)
+
+L'admin può modificare **tutti i parametri server** direttamente dall'interfaccia web, senza intervenire manualmente sul file `.env`.
+
+1. Accedi alla dashboard admin: `http://localhost:3000/admin`
+2. Vai su **Configurazione** → **Impostazioni Avanzate**
+3. Modifica i parametri desiderati
+4. Salva e **riavvia** il server per applicare le modifiche
+
+#### Parametri disponibili nell'interfaccia avanzata
+
+**Server (Configurazione Server)**
+- `SERVER_HOST` (Host)
+- `SERVER_PORT` (Porta)
+- `TRUST_PROXY` (Proxy level)
+
+**HTTPS (Configurazione HTTPS)**
+- `HTTPS_ENABLED`
+- `HTTPS_CERT_PATH`
+- `HTTPS_KEY_PATH`
+
+**Logging (sezione dedicata)**
+- `LOG_LEVEL`
+- `LOG_TO_FILE`
+- `LOG_FILE_PATH`
+
+**LDAP / Active Directory (sezione dedicata)**
+- `LDAP_ENABLED`
+- `LDAP_URL`
+- `LDAP_BASE_DN`
+- `LDAP_BIND_DN`
+- `LDAP_BIND_PASSWORD`
+- `LDAP_USER_SEARCH_FILTER`
+- `LDAP_GROUP_SEARCH_BASE`
+- `LDAP_REQUIRED_GROUP`
+- `LDAP_TIMEOUT`
+
+**JWT**
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `JWT_REFRESH_ENABLED`
+
+**Storage**
+- `DATA_ROOT_PATH`
+- `AUDIT_LOG_RETENTION_DAYS`
+- `AUDIT_PAYLOAD_MODE`
+
+**Admin**
+- `ADMIN_SESSION_SECRET`
+- `ADMIN_SESSION_MAX_AGE`
+- `ADMIN_DEFAULT_USERNAME`
+- `ADMIN_DEFAULT_PASSWORD`
+
+**Sicurezza**
+- `RATE_LIMIT_WINDOW_MS`
+- `RATE_LIMIT_MAX_REQUESTS`
+- `LOGIN_RATE_LIMIT_MAX`
+- `LOGIN_LOCKOUT_DURATION_MS`
+- `CORS_ORIGIN`
+
+**Attività**
+- `ACTIVITY_STRICT_CONTINUITY`
+- `ACTIVITY_REQUIRED_MINUTES`
+
+#### Percorsi certificati precompilati
+
+I campi **Percorso Certificato** e **Percorso Chiave Privata** vengono precompilati
+con il path derivato dalla root del progetto (es: `<root>/certs/cert.pem` e `<root>/certs/key.pem`).
+Su Windows Server 2022 usa percorsi assoluti quando i file si trovano fuori dal progetto.
+
+#### Test di troubleshooting prima del salvataggio
+
+La sezione **Test di Troubleshooting** consente di verificare parametri critici prima di applicare modifiche:
+- **Test permessi storage**: verifica che la directory dati sia scrivibile.
+- **Verifica file HTTPS**: controlla accessibilità certificato/chiave configurati in "Configurazione HTTPS".
+
+#### Test Bind LDAP
+
+Prima di salvare impostazioni LDAP attive, esegui **Test Bind LDAP**:
+- Verifica connettività e credenziali Bind DN.
+- Riduce errori di configurazione prima del riavvio.
+
+#### Logging locale su Windows Server 2022
+
+La UI avanzata consente di scrivere i log su file locale:
+- **LOG_TO_FILE** abilita la scrittura su file.
+- **LOG_FILE_PATH** definisce il percorso assoluto sul server Windows (es: `C:\\OnlyUserActivity\\logs\\activity-tracker.log`).
+Le icone di aiuto (ⓘ) nell'interfaccia mostrano una descrizione rapida di ogni parametro.
+
 ## 👥 Gestione Utenti
 
 ### Modalità Locale (Default)
@@ -275,6 +364,7 @@ Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 - **Server** - Porta, host, timeout
 - **Tipi attività** - Categorie personalizzabili
 - **Utenti locali** - Crea/elimina utenti, gestisci reparto/email/turno
+- **Impostazioni avanzate** - Tutti i parametri server in UI con troubleshooting e test LDAP
 
 ### API REST
 **Base URL:** `http://localhost:3000/api`
