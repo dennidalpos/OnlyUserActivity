@@ -1,3 +1,4 @@
+const path = require('path');
 require('dotenv').config();
 
 const config = {
@@ -15,7 +16,9 @@ const config = {
   },
 
   logging: {
-    level: process.env.LOG_LEVEL || 'info'
+    level: process.env.LOG_LEVEL || 'info',
+    toFile: process.env.LOG_TO_FILE === 'true',
+    filePath: process.env.LOG_FILE_PATH || path.join(process.cwd(), 'logs', 'activity-tracker.log')
   },
 
   ldap: {

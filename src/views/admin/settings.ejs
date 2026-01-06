@@ -47,6 +47,13 @@
       border: 1px solid #ddd;
       border-radius: 4px;
     }
+    .form-group select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+    }
     .form-group input[type="checkbox"] {
       margin-right: 8px;
     }
@@ -163,6 +170,27 @@
       color: #666;
       margin-top: 4px;
     }
+    .help-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #eef4ff;
+      color: #335;
+      font-size: 12px;
+      margin-left: 6px;
+      cursor: help;
+      border: 1px solid #cdd9f7;
+    }
+    .collapsible-summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 18px;
+      color: #333;
+      padding: 8px 0;
+    }
   </style>
 </head>
 <body>
@@ -207,11 +235,15 @@
       <form id="serverForm">
         <div class="form-grid">
           <div class="form-group">
-            <label for="serverPort">Porta Server:</label>
+            <label for="serverPort">Porta Server
+              <span class="help-icon" title="Porta di ascolto HTTP/HTTPS (1-65535). Su Windows Server 2022 usare una porta libera.">ⓘ</span>
+            </label>
             <input type="number" id="serverPort" value="<%= settings.server.port %>" placeholder="3000" min="1" max="65535">
           </div>
           <div class="form-group">
-            <label for="serverHost">Host Server:</label>
+            <label for="serverHost">Host Server
+              <span class="help-icon" title="Interfaccia di ascolto. Usa 0.0.0.0 per tutte le interfacce o 127.0.0.1 per locale.">ⓘ</span>
+            </label>
             <input type="text" id="serverHost" value="<%= settings.server.host %>" placeholder="0.0.0.0">
           </div>
         </div>
@@ -230,40 +262,57 @@
           <label>
             <input type="checkbox" id="ldapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
             Abilita autenticazione LDAP/AD
+            <span class="help-icon" title="Attiva l'autenticazione su Active Directory/LDAP. Richiede riavvio del server.">ⓘ</span>
           </label>
         </div>
         <div class="form-grid">
           <div class="form-group">
-            <label for="ldapUrl">URL LDAP/LDAPS:</label>
+            <label for="ldapUrl">URL LDAP/LDAPS
+              <span class="help-icon" title="Endpoint LDAP. Usa ldaps:// per connessioni sicure (porta 636).">ⓘ</span>
+            </label>
             <input type="text" id="ldapUrl" value="<%= settings.ldap.url %>" placeholder="ldaps://dc.company.local:636">
           </div>
           <div class="form-group">
-            <label for="ldapBaseDN">Base DN:</label>
+            <label for="ldapBaseDN">Base DN
+              <span class="help-icon" title="Base DN per la ricerca utenti (es. DC=company,DC=local).">ⓘ</span>
+            </label>
             <input type="text" id="ldapBaseDN" value="<%= settings.ldap.baseDN %>" placeholder="DC=company,DC=local">
           </div>
           <div class="form-group">
-            <label for="ldapBindDN">Bind DN:</label>
+            <label for="ldapBindDN">Bind DN
+              <span class="help-icon" title="DN dell'account di servizio usato per interrogare LDAP.">ⓘ</span>
+            </label>
             <input type="text" id="ldapBindDN" value="<%= settings.ldap.bindDN %>" placeholder="CN=ServiceAccount,CN=Users,DC=company,DC=local">
           </div>
           <div class="form-group">
-            <label for="ldapBindPassword">Bind Password:</label>
+            <label for="ldapBindPassword">Bind Password
+              <span class="help-icon" title="Password dell'account di servizio per il bind LDAP.">ⓘ</span>
+            </label>
             <input type="password" id="ldapBindPassword" value="<%= settings.ldap.bindPassword %>" placeholder="********">
             <div class="field-help">Usato per il test bind e la ricerca utenti.</div>
           </div>
           <div class="form-group">
-            <label for="ldapUserSearchFilter">User Search Filter:</label>
+            <label for="ldapUserSearchFilter">User Search Filter
+              <span class="help-icon" title="Filtro LDAP per cercare l'utente (es. (sAMAccountName={{username}})).">ⓘ</span>
+            </label>
             <input type="text" id="ldapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>" placeholder="(sAMAccountName={{username}})">
           </div>
           <div class="form-group">
-            <label for="ldapGroupSearchBase">Group Search Base:</label>
+            <label for="ldapGroupSearchBase">Group Search Base
+              <span class="help-icon" title="OU o DN dove cercare i gruppi LDAP (opzionale).">ⓘ</span>
+            </label>
             <input type="text" id="ldapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>" placeholder="OU=Groups,DC=company,DC=local">
           </div>
           <div class="form-group">
-            <label for="ldapRequiredGroup">Gruppo Richiesto:</label>
+            <label for="ldapRequiredGroup">Gruppo Richiesto
+              <span class="help-icon" title="Gruppo richiesto per autorizzare l'accesso (CN o nome gruppo).">ⓘ</span>
+            </label>
             <input type="text" id="ldapRequiredGroup" value="<%= settings.ldap.requiredGroup %>" placeholder="Domain Users">
           </div>
           <div class="form-group">
-            <label for="ldapTimeout">Timeout (ms):</label>
+            <label for="ldapTimeout">Timeout (ms)
+              <span class="help-icon" title="Timeout di connessione e query LDAP in millisecondi.">ⓘ</span>
+            </label>
             <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
           </div>
         </div>
@@ -285,16 +334,29 @@
           <label>
             <input type="checkbox" id="httpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
             Abilita HTTPS diretto
+            <span class="help-icon" title="Abilita HTTPS nativo. Verifica i percorsi dei certificati su Windows Server 2022.">ⓘ</span>
           </label>
         </div>
         <div class="form-grid">
           <div class="form-group">
-            <label for="httpsCertPath">Percorso Certificato:</label>
-            <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || '' %>" placeholder="/path/to/cert.pem">
+            <label for="httpsCertPath">Percorso Certificato
+              <span class="help-icon" title="Percorso assoluto del certificato (.pem). Esempio Windows: C:\\OnlyUserActivity\\certs\\cert.pem">ⓘ</span>
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
+              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsCertPath')">Esplora</button>
+            </div>
+            <div class="field-help">Precompilato dalla root progetto: <code><%= projectRoot %></code></div>
           </div>
           <div class="form-group">
-            <label for="httpsKeyPath">Percorso Chiave Privata:</label>
-            <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || '' %>" placeholder="/path/to/key.pem">
+            <label for="httpsKeyPath">Percorso Chiave Privata
+              <span class="help-icon" title="Percorso assoluto della chiave privata (.pem).">ⓘ</span>
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
+              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsKeyPath')">Esplora</button>
+            </div>
+            <div class="field-help">Inserisci un percorso assoluto valido su Windows Server 2022.</div>
           </div>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione HTTPS</button>
@@ -305,7 +367,9 @@
       <h3>Test di Troubleshooting</h3>
       <div class="alert alert-info">
         Esegui i controlli per verificare connettività e permessi prima di applicare modifiche.
+        I test non cambiano la configurazione: simulano l'accesso a file e cartelle sul server Windows.
       </div>
+      <div class="field-help">I risultati vengono mostrati come alert e confermano che il server può accedere ai percorsi indicati.</div>
       <div class="settings-card-grid">
         <div class="settings-card">
           <h4>Test permessi storage</h4>
@@ -321,24 +385,32 @@
     </div>
 
     <div class="settings-section">
-      <h3>Impostazioni Avanzate</h3>
-      <div class="alert alert-info">
-        Tutti i parametri server sono modificabili da qui. Salva e riavvia il server per applicare le modifiche.
-      </div>
-      <form id="advancedSettingsForm">
+      <details>
+        <summary class="collapsible-summary">Impostazioni Avanzate</summary>
+        <div class="alert alert-info">
+          Tutti i parametri server sono modificabili da qui. Salva e riavvia il server per applicare le modifiche.
+        </div>
+        <div class="field-help">Le impostazioni LDAP/AD rimangono nella sezione dedicata per evitare duplicazioni.</div>
+        <form id="advancedSettingsForm">
         <div class="settings-subsection">
           <h4>Server</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedServerHost">Host:</label>
+              <label for="advancedServerHost">Host
+                <span class="help-icon" title="Interfaccia di ascolto. 0.0.0.0 per tutte le interfacce.">ⓘ</span>
+              </label>
               <input type="text" id="advancedServerHost" value="<%= settings.server.host %>">
             </div>
             <div class="form-group">
-              <label for="advancedServerPort">Porta:</label>
+              <label for="advancedServerPort">Porta
+                <span class="help-icon" title="Porta di ascolto (1-65535).">ⓘ</span>
+              </label>
               <input type="number" id="advancedServerPort" value="<%= settings.server.port %>" min="1" max="65535">
             </div>
             <div class="form-group">
-              <label for="advancedTrustProxy">Trust Proxy:</label>
+              <label for="advancedTrustProxy">Trust Proxy
+                <span class="help-icon" title="Numero di proxy attendibili per ottenere l'IP reale.">ⓘ</span>
+              </label>
               <input type="number" id="advancedTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
             </div>
           </div>
@@ -350,16 +422,27 @@
             <label>
               <input type="checkbox" id="advancedHttpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
               Abilita HTTPS diretto
+              <span class="help-icon" title="Abilita HTTPS nativo con certificati locali.">ⓘ</span>
             </label>
           </div>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedHttpsCertPath">Percorso Certificato:</label>
-              <input type="text" id="advancedHttpsCertPath" value="<%= settings.https.certPath || '' %>">
+              <label for="advancedHttpsCertPath">Percorso Certificato
+                <span class="help-icon" title="Percorso assoluto del certificato .pem.">ⓘ</span>
+              </label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="advancedHttpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>">
+                <button type="button" class="btn btn-sm" onclick="browseHttpsFile('advancedHttpsCertPath')">Esplora</button>
+              </div>
             </div>
             <div class="form-group">
-              <label for="advancedHttpsKeyPath">Percorso Chiave Privata:</label>
-              <input type="text" id="advancedHttpsKeyPath" value="<%= settings.https.keyPath || '' %>">
+              <label for="advancedHttpsKeyPath">Percorso Chiave Privata
+                <span class="help-icon" title="Percorso assoluto della chiave privata .pem.">ⓘ</span>
+              </label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="advancedHttpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>">
+                <button type="button" class="btn btn-sm" onclick="browseHttpsFile('advancedHttpsKeyPath')">Esplora</button>
+              </div>
             </div>
           </div>
         </div>
@@ -368,52 +451,31 @@
           <h4>Logging</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedLogLevel">Livello log:</label>
-              <input type="text" id="advancedLogLevel" value="<%= settings.logging.level %>" placeholder="info">
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-subsection">
-          <h4>LDAP / Active Directory</h4>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="advancedLdapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
-              Abilita LDAP/AD
-            </label>
-          </div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="advancedLdapUrl">URL LDAP:</label>
-              <input type="text" id="advancedLdapUrl" value="<%= settings.ldap.url %>">
+              <label for="advancedLogLevel">Livello log
+                <span class="help-icon" title="Seleziona il livello di logging per il server.">ⓘ</span>
+              </label>
+              <select id="advancedLogLevel">
+                <% ['trace','debug','info','warn','error','fatal'].forEach(level => { %>
+                  <option value="<%= level %>" <%= settings.logging.level === level ? 'selected' : '' %>><%= level %></option>
+                <% }); %>
+              </select>
             </div>
             <div class="form-group">
-              <label for="advancedLdapBaseDN">Base DN:</label>
-              <input type="text" id="advancedLdapBaseDN" value="<%= settings.ldap.baseDN %>">
+              <label>
+                <input type="checkbox" id="advancedLogToFile" <%= settings.logging.toFile ? 'checked' : '' %>>
+                Salva log su file locale
+                <span class="help-icon" title="Salva i log su file nel server Windows (per consultazione locale).">ⓘ</span>
+              </label>
             </div>
             <div class="form-group">
-              <label for="advancedLdapBindDN">Bind DN:</label>
-              <input type="text" id="advancedLdapBindDN" value="<%= settings.ldap.bindDN %>">
-            </div>
-            <div class="form-group">
-              <label for="advancedLdapBindPassword">Bind Password:</label>
-              <input type="password" id="advancedLdapBindPassword" value="<%= settings.ldap.bindPassword %>">
-            </div>
-            <div class="form-group">
-              <label for="advancedLdapUserSearchFilter">User Search Filter:</label>
-              <input type="text" id="advancedLdapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>">
-            </div>
-            <div class="form-group">
-              <label for="advancedLdapGroupSearchBase">Group Search Base:</label>
-              <input type="text" id="advancedLdapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>">
-            </div>
-            <div class="form-group">
-              <label for="advancedLdapRequiredGroup">Gruppo richiesto:</label>
-              <input type="text" id="advancedLdapRequiredGroup" value="<%= settings.ldap.requiredGroup %>">
-            </div>
-            <div class="form-group">
-              <label for="advancedLdapTimeout">Timeout (ms):</label>
-              <input type="number" id="advancedLdapTimeout" value="<%= settings.ldap.timeout %>" min="1000" max="60000">
+              <label for="advancedLogFilePath">Percorso file log
+                <span class="help-icon" title="Percorso assoluto del file log. Esempio: C:\\OnlyUserActivity\\logs\\activity-tracker.log">ⓘ</span>
+              </label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="advancedLogFilePath" value="<%= settings.logging.filePath %>">
+                <button type="button" class="btn btn-sm" onclick="browseHttpsFile('advancedLogFilePath')">Esplora</button>
+              </div>
+              <div class="field-help">Il file verrà creato sul server Windows. Nessuna scrittura sul PC client.</div>
             </div>
           </div>
         </div>
@@ -422,17 +484,22 @@
           <h4>JWT</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedJwtSecret">JWT Secret:</label>
+              <label for="advancedJwtSecret">JWT Secret
+                <span class="help-icon" title="Chiave di firma JWT. Cambiarla invalida i token esistenti.">ⓘ</span>
+              </label>
               <input type="password" id="advancedJwtSecret" value="<%= settings.jwt.secret %>">
             </div>
             <div class="form-group">
-              <label for="advancedJwtExpiresIn">JWT Expires In:</label>
+              <label for="advancedJwtExpiresIn">JWT Expires In
+                <span class="help-icon" title="Durata del token (es. 8h, 1d).">ⓘ</span>
+              </label>
               <input type="text" id="advancedJwtExpiresIn" value="<%= settings.jwt.expiresIn %>">
             </div>
             <div class="form-group">
               <label>
                 <input type="checkbox" id="advancedJwtRefreshEnabled" <%= settings.jwt.refreshEnabled ? 'checked' : '' %>>
                 Abilita refresh token
+                <span class="help-icon" title="Attiva il refresh token per sessioni prolungate.">ⓘ</span>
               </label>
             </div>
           </div>
@@ -442,15 +509,21 @@
           <h4>Storage</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedStorageRootPath">Percorso dati:</label>
+              <label for="advancedStorageRootPath">Percorso dati
+                <span class="help-icon" title="Directory dati. Deve essere scrivibile dal servizio.">ⓘ</span>
+              </label>
               <input type="text" id="advancedStorageRootPath" value="<%= settings.storage.rootPath %>">
             </div>
             <div class="form-group">
-              <label for="advancedAuditRetentionDays">Retention audit (giorni):</label>
+              <label for="advancedAuditRetentionDays">Retention audit (giorni)
+                <span class="help-icon" title="Numero di giorni di conservazione log audit.">ⓘ</span>
+              </label>
               <input type="number" id="advancedAuditRetentionDays" value="<%= settings.storage.auditRetentionDays %>" min="1" max="3650">
             </div>
             <div class="form-group">
-              <label for="advancedAuditPayloadMode">Modalità payload audit:</label>
+              <label for="advancedAuditPayloadMode">Modalità payload audit
+                <span class="help-icon" title="partial per log parziale, full per log completi.">ⓘ</span>
+              </label>
               <input type="text" id="advancedAuditPayloadMode" value="<%= settings.storage.auditPayloadMode %>">
             </div>
           </div>
@@ -460,19 +533,27 @@
           <h4>Admin</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedAdminSessionSecret">Session Secret:</label>
+              <label for="advancedAdminSessionSecret">Session Secret
+                <span class="help-icon" title="Chiave sessione admin. Cambiarla invalida le sessioni attive.">ⓘ</span>
+              </label>
               <input type="password" id="advancedAdminSessionSecret" value="<%= settings.admin.sessionSecret %>">
             </div>
             <div class="form-group">
-              <label for="advancedAdminSessionMaxAge">Session Max Age (ms):</label>
+              <label for="advancedAdminSessionMaxAge">Session Max Age (ms)
+                <span class="help-icon" title="Durata sessione admin in millisecondi.">ⓘ</span>
+              </label>
               <input type="number" id="advancedAdminSessionMaxAge" value="<%= settings.admin.sessionMaxAge %>" min="60000" max="86400000">
             </div>
             <div class="form-group">
-              <label for="advancedAdminDefaultUsername">Username default:</label>
+              <label for="advancedAdminDefaultUsername">Username default
+                <span class="help-icon" title="Username admin di default usato all'avvio iniziale.">ⓘ</span>
+              </label>
               <input type="text" id="advancedAdminDefaultUsername" value="<%= settings.admin.defaultUsername %>">
             </div>
             <div class="form-group">
-              <label for="advancedAdminDefaultPassword">Password default:</label>
+              <label for="advancedAdminDefaultPassword">Password default
+                <span class="help-icon" title="Password admin di default. Cambiare subito dopo l'installazione.">ⓘ</span>
+              </label>
               <input type="password" id="advancedAdminDefaultPassword" value="<%= settings.admin.defaultPassword %>">
             </div>
           </div>
@@ -482,23 +563,33 @@
           <h4>Sicurezza</h4>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedRateLimitWindowMs">Rate limit window (ms):</label>
+              <label for="advancedRateLimitWindowMs">Rate limit window (ms)
+                <span class="help-icon" title="Finestra temporale del rate limit.">ⓘ</span>
+              </label>
               <input type="number" id="advancedRateLimitWindowMs" value="<%= settings.security.rateLimitWindowMs %>" min="1000" max="3600000">
             </div>
             <div class="form-group">
-              <label for="advancedRateLimitMaxRequests">Rate limit max richieste:</label>
+              <label for="advancedRateLimitMaxRequests">Rate limit max richieste
+                <span class="help-icon" title="Numero massimo di richieste per finestra.">ⓘ</span>
+              </label>
               <input type="number" id="advancedRateLimitMaxRequests" value="<%= settings.security.rateLimitMaxRequests %>" min="1" max="10000">
             </div>
             <div class="form-group">
-              <label for="advancedLoginRateLimitMax">Login max tentativi:</label>
+              <label for="advancedLoginRateLimitMax">Login max tentativi
+                <span class="help-icon" title="Numero massimo di tentativi di login prima del blocco.">ⓘ</span>
+              </label>
               <input type="number" id="advancedLoginRateLimitMax" value="<%= settings.security.loginRateLimitMax %>" min="1" max="50">
             </div>
             <div class="form-group">
-              <label for="advancedLoginLockoutDurationMs">Durata lockout login (ms):</label>
+              <label for="advancedLoginLockoutDurationMs">Durata lockout login (ms)
+                <span class="help-icon" title="Durata del blocco temporaneo dopo troppi tentativi.">ⓘ</span>
+              </label>
               <input type="number" id="advancedLoginLockoutDurationMs" value="<%= settings.security.loginLockoutDurationMs %>" min="1000" max="3600000">
             </div>
             <div class="form-group">
-              <label for="advancedCorsOrigin">CORS Origin:</label>
+              <label for="advancedCorsOrigin">CORS Origin
+                <span class="help-icon" title="Origine consentita per chiamate API cross-origin.">ⓘ</span>
+              </label>
               <input type="text" id="advancedCorsOrigin" value="<%= settings.security.corsOrigin %>">
             </div>
           </div>
@@ -510,18 +601,22 @@
             <label>
               <input type="checkbox" id="advancedActivityStrictContinuity" <%= settings.activity.strictContinuity ? 'checked' : '' %>>
               Abilita continuità stretta
+              <span class="help-icon" title="Richiede continuità tra attività giornaliere.">ⓘ</span>
             </label>
           </div>
           <div class="form-grid">
             <div class="form-group">
-              <label for="advancedActivityRequiredMinutes">Minuti richiesti:</label>
+              <label for="advancedActivityRequiredMinutes">Minuti richiesti
+                <span class="help-icon" title="Minuti minimi richiesti per la giornata lavorativa.">ⓘ</span>
+              </label>
               <input type="number" id="advancedActivityRequiredMinutes" value="<%= settings.activity.requiredMinutes %>" min="1" max="1440">
             </div>
           </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Salva Impostazioni Avanzate</button>
-      </form>
+        </form>
+      </details>
     </div>
 
     <div class="settings-section">
@@ -876,18 +971,9 @@
           keyPath: document.getElementById('advancedHttpsKeyPath').value
         },
         logging: {
-          level: document.getElementById('advancedLogLevel').value
-        },
-        ldap: {
-          enabled: document.getElementById('advancedLdapEnabled').checked,
-          url: document.getElementById('advancedLdapUrl').value,
-          baseDN: document.getElementById('advancedLdapBaseDN').value,
-          bindDN: document.getElementById('advancedLdapBindDN').value,
-          bindPassword: document.getElementById('advancedLdapBindPassword').value,
-          userSearchFilter: document.getElementById('advancedLdapUserSearchFilter').value,
-          groupSearchBase: document.getElementById('advancedLdapGroupSearchBase').value,
-          requiredGroup: document.getElementById('advancedLdapRequiredGroup').value,
-          timeout: document.getElementById('advancedLdapTimeout').value
+          level: document.getElementById('advancedLogLevel').value,
+          toFile: document.getElementById('advancedLogToFile').checked,
+          filePath: document.getElementById('advancedLogFilePath').value
         },
         jwt: {
           secret: document.getElementById('advancedJwtSecret').value,
@@ -938,6 +1024,22 @@
         showAlert('Errore nel salvataggio delle impostazioni avanzate', 'danger');
       }
     });
+
+    function browseHttpsFile(targetId) {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.style.display = 'none';
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          const fileName = fileInput.files[0].name;
+          document.getElementById(targetId).value = fileName;
+          showAlert('File selezionato. Inserisci il percorso assoluto sul server Windows se diverso.', 'info');
+        }
+      });
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      document.body.removeChild(fileInput);
+    }
 
     async function runStorageTest() {
       try {

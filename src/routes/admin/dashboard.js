@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const monitoringService = require('../../services/admin/monitoringService');
 const exportService = require('../../services/admin/exportService');
@@ -302,13 +303,19 @@ router.get('/settings', async (req, res) => {
     const activityTypes = await activityTypesService.getActivityTypes();
     const users = await settingsService.listLocalUsers();
     const shiftTypes = await shiftTypesService.getShiftTypes();
+    const projectRoot = process.cwd();
+    const defaultHttpsCertPath = path.join(projectRoot, 'certs', 'cert.pem');
+    const defaultHttpsKeyPath = path.join(projectRoot, 'certs', 'key.pem');
 
     res.render('admin/settings', {
       title: 'Configurazione Server',
       settings,
       activityTypes,
       users,
-      shiftTypes
+      shiftTypes,
+      projectRoot,
+      defaultHttpsCertPath,
+      defaultHttpsKeyPath
     });
   } catch (error) {
     res.render('errors/error', {

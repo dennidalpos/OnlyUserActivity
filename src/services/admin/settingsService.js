@@ -77,7 +77,9 @@ class SettingsService {
         trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy)
       },
       logging: {
-        level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level)
+        level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
+        toFile: this.resolveEnvBoolean(envSettings, 'LOG_TO_FILE', config.logging.toFile),
+        filePath: this.resolveEnvValue(envSettings, 'LOG_FILE_PATH', config.logging.filePath)
       },
       jwt: {
         secret: this.resolveEnvValue(envSettings, 'JWT_SECRET', config.jwt.secret),
@@ -333,6 +335,12 @@ class SettingsService {
 
     if (logging.hasOwnProperty('level')) {
       updates.LOG_LEVEL = logging.level;
+    }
+    if (logging.hasOwnProperty('toFile')) {
+      updates.LOG_TO_FILE = logging.toFile ? 'true' : 'false';
+    }
+    if (logging.hasOwnProperty('filePath')) {
+      updates.LOG_FILE_PATH = logging.filePath;
     }
 
     if (ldap.hasOwnProperty('enabled')) {

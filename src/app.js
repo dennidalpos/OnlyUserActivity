@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const session = require('express-session');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -20,9 +21,19 @@ const userDashboardRoutes = require('./routes/user/dashboard');
 const fileStorage = require('./services/storage/fileStorage');
 const adminAuthService = require('./services/auth/adminAuthService');
 
+function createLogDestination() {
+  if (!config.logging.toFile) {
+    return undefined;
+  }
+  const logDir = path.dirname(config.logging.filePath);
+  fs.mkdirSync(logDir, { recursive: true });
+  return pino.destination({ dest: config.logging.filePath, sync: false });
+}
+
+const logDestination = createLogDestination();
 const logger = pino({
   level: config.logging.level,
-  transport: config.env === 'development' ? {
+  transport: !config.logging.toFile && config.env === 'development' ? {
     target: 'pino-pretty',
     options: {
       colorize: true,
@@ -30,7 +41,7 @@ const logger = pino({
       ignore: 'pid,hostname'
     }
   } : undefined
-});
+}, logDestination);
 
 const app = express();
 
