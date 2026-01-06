@@ -141,22 +141,22 @@ L'admin può modificare **tutti i parametri server** direttamente dall'interfacc
 
 #### Parametri disponibili nell'interfaccia avanzata
 
-**Server**
+**Server (Configurazione Server)**
 - `SERVER_HOST` (Host)
 - `SERVER_PORT` (Porta)
 - `TRUST_PROXY` (Proxy level)
 
-**HTTPS**
+**HTTPS (Configurazione HTTPS)**
 - `HTTPS_ENABLED`
 - `HTTPS_CERT_PATH`
 - `HTTPS_KEY_PATH`
 
-**Logging**
+**Logging (sezione dedicata)**
 - `LOG_LEVEL`
 - `LOG_TO_FILE`
 - `LOG_FILE_PATH`
 
-**LDAP / Active Directory**
+**LDAP / Active Directory (sezione dedicata)**
 - `LDAP_ENABLED`
 - `LDAP_URL`
 - `LDAP_BASE_DN`
@@ -194,11 +194,17 @@ L'admin può modificare **tutti i parametri server** direttamente dall'interfacc
 - `ACTIVITY_STRICT_CONTINUITY`
 - `ACTIVITY_REQUIRED_MINUTES`
 
+#### Percorsi certificati precompilati
+
+I campi **Percorso Certificato** e **Percorso Chiave Privata** vengono precompilati
+con il path derivato dalla root del progetto (es: `<root>/certs/cert.pem` e `<root>/certs/key.pem`).
+Su Windows Server 2022 usa percorsi assoluti quando i file si trovano fuori dal progetto.
+
 #### Test di troubleshooting prima del salvataggio
 
 La sezione **Test di Troubleshooting** consente di verificare parametri critici prima di applicare modifiche:
 - **Test permessi storage**: verifica che la directory dati sia scrivibile.
-- **Verifica file HTTPS**: controlla accessibilità certificato/chiave.
+- **Verifica file HTTPS**: controlla accessibilità certificato/chiave configurati in "Configurazione HTTPS".
 
 #### Test Bind LDAP
 
@@ -211,6 +217,7 @@ Prima di salvare impostazioni LDAP attive, esegui **Test Bind LDAP**:
 La UI avanzata consente di scrivere i log su file locale:
 - **LOG_TO_FILE** abilita la scrittura su file.
 - **LOG_FILE_PATH** definisce il percorso assoluto sul server Windows (es: `C:\\OnlyUserActivity\\logs\\activity-tracker.log`).
+Le icone di aiuto (ⓘ) nell'interfaccia mostrano una descrizione rapida di ogni parametro.
 
 ## 👥 Gestione Utenti
 
