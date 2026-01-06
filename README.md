@@ -153,6 +153,8 @@ L'admin può modificare **tutti i parametri server** direttamente dall'interfacc
 
 **Logging**
 - `LOG_LEVEL`
+- `LOG_TO_FILE`
+- `LOG_FILE_PATH`
 
 **LDAP / Active Directory**
 - `LDAP_ENABLED`
@@ -203,6 +205,12 @@ La sezione **Test di Troubleshooting** consente di verificare parametri critici 
 Prima di salvare impostazioni LDAP attive, esegui **Test Bind LDAP**:
 - Verifica connettività e credenziali Bind DN.
 - Riduce errori di configurazione prima del riavvio.
+
+#### Logging locale su Windows Server 2022
+
+La UI avanzata consente di scrivere i log su file locale:
+- **LOG_TO_FILE** abilita la scrittura su file.
+- **LOG_FILE_PATH** definisce il percorso assoluto sul server Windows (es: `C:\\OnlyUserActivity\\logs\\activity-tracker.log`).
 
 ## 👥 Gestione Utenti
 
