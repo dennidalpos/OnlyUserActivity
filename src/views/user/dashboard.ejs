@@ -80,7 +80,6 @@
             <div class="form-group">
               <label>Tipo Attività</label>
               <select id="activityType" required>
-                <!-- Popolato dinamicamente -->
               </select>
             </div>
           </div>
@@ -178,12 +177,10 @@
       const activities = data.activities || [];
       const summary = data.summary || {};
 
-      // Update summary
       document.getElementById('totalHours').textContent =
         `${Math.floor(summary.totalMinutes / 60)}h ${summary.totalMinutes % 60}m`;
 
-      // Calculate and display overtime
-      const requiredMinutes = 480; // 8 ore
+      const requiredMinutes = 480;
       const overtimeMinutes = summary.totalMinutes > requiredMinutes ? summary.totalMinutes - requiredMinutes : 0;
       const overtimeHours = Math.floor(overtimeMinutes / 60);
       const overtimeMins = overtimeMinutes % 60;
@@ -195,8 +192,7 @@
       document.getElementById('activityCount').textContent = activities.length;
       document.getElementById('dayStatus').textContent = summary.isComplete ? 'Completa' : 'Incompleta';
 
-      // Update progress bar
-      const requiredMinutesForBar = 480; // 8 ore
+      const requiredMinutesForBar = 480;
       const completionPercentage = Math.min(100, Math.round((summary.totalMinutes / requiredMinutesForBar) * 100));
       const progressBarFill = document.getElementById('progressBarFill');
       const progressText = document.getElementById('progressText');
@@ -204,7 +200,6 @@
       progressBarFill.style.width = completionPercentage + '%';
       progressText.textContent = completionPercentage + '%';
 
-      // Color coding: red < 50%, yellow 50-99%, green >= 100%
       if (completionPercentage < 50) {
         progressBarFill.style.backgroundColor = '#dc3545';
       } else if (completionPercentage < 100) {
@@ -213,7 +208,6 @@
         progressBarFill.style.backgroundColor = '#28a745';
       }
 
-      // Update activities list
       const list = document.getElementById('activitiesList');
 
       if (activities.length === 0) {
@@ -227,7 +221,6 @@
         const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
         const activityTypeFormatted = activity.activityType.charAt(0).toUpperCase() + activity.activityType.slice(1);
 
-        // Format date
         const dateObj = new Date(currentDate + 'T00:00:00');
         const dateFormatted = dateObj.toLocaleDateString('it-IT', {
           weekday: 'short',
@@ -289,7 +282,6 @@
         `;
       }).join('');
 
-      // Store activities for edit function
       window.currentActivities = activities;
     }
 
@@ -302,7 +294,6 @@
       document.getElementById('activityType').value = activityTypes[0] || 'lavoro';
       document.getElementById('notes').value = '';
 
-      // Update form title and button
       document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
       document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Salva';
 
@@ -321,7 +312,6 @@
         return;
       }
 
-      // Populate form with existing data
       editingActivityId = activityId;
       document.getElementById('addActivityForm').style.display = 'block';
       document.getElementById('startTime').value = activity.startTime;
@@ -329,7 +319,6 @@
       document.getElementById('activityType').value = activity.activityType;
       document.getElementById('notes').value = activity.notes || '';
 
-      // Update time pickers if they exist
       if (window.timePickersInitialized) {
         const startPickers = document.querySelectorAll('#startTime + .time-picker-container');
         const endPickers = document.querySelectorAll('#endTime + .time-picker-container');
@@ -347,11 +336,9 @@
         }
       }
 
-      // Update form title and button
       document.querySelector('#addActivityForm h4').textContent = 'Modifica Attività';
       document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Aggiorna';
 
-      // Scroll to form
       document.getElementById('addActivityForm').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -374,7 +361,6 @@
         notes: document.getElementById('notes').value
       };
 
-      // Add date only for create
       if (!editingActivityId) {
         data.date = currentDate;
       }
@@ -385,11 +371,9 @@
         let url, method;
 
         if (editingActivityId) {
-          // UPDATE existing activity
           url = `/api/activities/${editingActivityId}?date=${currentDate}`;
           method = 'PUT';
         } else {
-          // CREATE new activity
           url = '/api/activities';
           method = 'POST';
         }

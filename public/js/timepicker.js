@@ -1,4 +1,3 @@
-// Time Picker personalizzato con step di 15 minuti
 class TimePicker {
   constructor() {
     this.hours = [];

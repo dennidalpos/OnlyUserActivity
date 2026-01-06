@@ -87,16 +87,17 @@ function calculateDailySummary(activities) {
 }
 
 function validateActivityType(activityType, customType) {
-  const { ACTIVITY_TYPES } = require('../../middlewares/validation');
+  const { getActivityTypes } = require('../../middlewares/validation');
+  const activityTypes = getActivityTypes();
 
   if (!activityType) {
     return { valid: false, error: 'activityType è obbligatorio' };
   }
 
-  if (!ACTIVITY_TYPES.includes(activityType)) {
+  if (!activityTypes.includes(activityType)) {
     return {
       valid: false,
-      error: `activityType non valido. Valori ammessi: ${ACTIVITY_TYPES.join(', ')}`
+      error: `activityType non valido. Valori ammessi: ${activityTypes.join(', ')}`
     };
   }
 

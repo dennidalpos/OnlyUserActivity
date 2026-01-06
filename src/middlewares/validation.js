@@ -45,7 +45,7 @@ const loginSchema = Joi.object({
     })
 });
 
-const activitySchema = Joi.object({
+const buildActivitySchema = () => Joi.object({
   date: Joi.string()
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
     .required()
@@ -88,7 +88,7 @@ const activitySchema = Joi.object({
     })
 });
 
-const activityUpdateSchema = Joi.object({
+const buildActivityUpdateSchema = () => Joi.object({
   startTime: Joi.string()
     .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
     .messages({
@@ -112,8 +112,9 @@ const activityUpdateSchema = Joi.object({
     .allow('')
 }).min(1);
 
-function validate(schema) {
+function validate(schemaOrFactory) {
   return (req, res, next) => {
+    const schema = typeof schemaOrFactory === 'function' ? schemaOrFactory() : schemaOrFactory;
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
       stripUnknown: true
@@ -139,7 +140,7 @@ function validate(schema) {
   };
 }
 
-async function getActivityTypes() {
+function getActivityTypes() {
   return ACTIVITY_TYPES;
 }
 
@@ -148,12 +149,20 @@ async function reloadActivityTypes() {
   return ACTIVITY_TYPES;
 }
 
+function getActivitySchema() {
+  return buildActivitySchema();
+}
+
+function getActivityUpdateSchema() {
+  return buildActivityUpdateSchema();
+}
+
 module.exports = {
   ACTIVITY_TYPES,
   getActivityTypes,
   reloadActivityTypes,
+  getActivitySchema,
+  getActivityUpdateSchema,
   loginSchema,
-  activitySchema,
-  activityUpdateSchema,
   validate
 };

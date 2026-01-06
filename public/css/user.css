@@ -1,4 +1,3 @@
-/* Reset e Base */
 * {
   margin: 0;
   padding: 0;
@@ -12,7 +11,6 @@ body {
   line-height: 1.6;
 }
 
-/* Login Page */
 .login-page {
   display: flex;
   justify-content: center;
@@ -130,7 +128,6 @@ body {
   text-decoration: underline;
 }
 
-/* Navbar */
 .navbar {
   background: white;
   padding: 15px 30px;
@@ -160,14 +157,12 @@ body {
   font-size: 13px;
 }
 
-/* Container */
 .container {
   max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px;
 }
 
-/* Header */
 .header {
   display: flex;
   justify-content: space-between;
@@ -193,7 +188,6 @@ body {
   font-size: 14px;
 }
 
-/* Summary Cards */
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -223,7 +217,6 @@ body {
   font-weight: bold;
 }
 
-/* Progress Bar */
 .progress-bar-container {
   margin-top: 15px;
   display: flex;
@@ -255,7 +248,6 @@ body {
   font-size: 14px;
 }
 
-/* Activity Section */
 .activity-section {
   background: white;
   padding: 30px;
@@ -275,7 +267,6 @@ body {
   font-size: 20px;
 }
 
-/* Activity Form */
 .activity-form {
   background: #f9fafb;
   padding: 20px;
@@ -301,7 +292,6 @@ body {
   margin-top: 15px;
 }
 
-/* Activities List */
 .activities-list {
   display: flex;
   flex-direction: column;
@@ -435,7 +425,6 @@ body {
   background: #c82333;
 }
 
-/* States */
 .loading,
 .no-data {
   text-align: center;
@@ -443,7 +432,6 @@ body {
   color: #888;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .header {
     flex-direction: column;

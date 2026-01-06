@@ -14,7 +14,6 @@ class SettingsService {
     console.log('[SETTINGS] Lettura impostazioni correnti dal file .env...');
     console.log('[SETTINGS] Path file .env:', this.envPath);
 
-    // Read from .env file directly to show saved values even before server restart
     let envSettings = {};
     try {
       const envContent = await fs.readFile(this.envPath, 'utf-8');
@@ -299,7 +298,6 @@ class SettingsService {
       throw new Error('Utente non trovato');
     }
 
-    // Solo gli utenti locali possono modificare department ed email
     if (user.userType === 'ad' && (updates.department || updates.email)) {
       throw new Error('Non è possibile modificare reparto ed email per utenti AD');
     }
@@ -308,7 +306,6 @@ class SettingsService {
       shift: updates.shift
     };
 
-    // Aggiungi department ed email solo per utenti locali
     if (user.userType !== 'ad') {
       if (updates.hasOwnProperty('department')) {
         allowedUpdates.department = updates.department;
