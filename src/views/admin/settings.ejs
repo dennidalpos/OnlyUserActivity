@@ -131,6 +131,38 @@
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+    .settings-subsection {
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #fdfdfd;
+    }
+    .settings-subsection h4 {
+      margin: 0 0 12px;
+      color: #333;
+    }
+    .settings-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .settings-card {
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 16px;
+      background: #fff;
+    }
+    .settings-card p {
+      margin: 8px 0 16px;
+      color: #666;
+    }
+    .field-help {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -210,8 +242,21 @@
             <input type="text" id="ldapBaseDN" value="<%= settings.ldap.baseDN %>" placeholder="DC=company,DC=local">
           </div>
           <div class="form-group">
+            <label for="ldapBindDN">Bind DN:</label>
+            <input type="text" id="ldapBindDN" value="<%= settings.ldap.bindDN %>" placeholder="CN=ServiceAccount,CN=Users,DC=company,DC=local">
+          </div>
+          <div class="form-group">
+            <label for="ldapBindPassword">Bind Password:</label>
+            <input type="password" id="ldapBindPassword" value="<%= settings.ldap.bindPassword %>" placeholder="********">
+            <div class="field-help">Usato per il test bind e la ricerca utenti.</div>
+          </div>
+          <div class="form-group">
             <label for="ldapUserSearchFilter">User Search Filter:</label>
             <input type="text" id="ldapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>" placeholder="(sAMAccountName={{username}})">
+          </div>
+          <div class="form-group">
+            <label for="ldapGroupSearchBase">Group Search Base:</label>
+            <input type="text" id="ldapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>" placeholder="OU=Groups,DC=company,DC=local">
           </div>
           <div class="form-group">
             <label for="ldapRequiredGroup">Gruppo Richiesto:</label>
@@ -221,6 +266,10 @@
             <label for="ldapTimeout">Timeout (ms):</label>
             <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
           </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+          <button type="button" onclick="testLdapBind()" class="btn btn-success">Test Bind LDAP</button>
+          <span style="font-size: 13px; color: #666;">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
       </form>
@@ -249,6 +298,229 @@
           </div>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione HTTPS</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Test di Troubleshooting</h3>
+      <div class="alert alert-info">
+        Esegui i controlli per verificare connettività e permessi prima di applicare modifiche.
+      </div>
+      <div class="settings-card-grid">
+        <div class="settings-card">
+          <h4>Test permessi storage</h4>
+          <p>Verifica la possibilità di scrivere nella directory dati configurata.</p>
+          <button type="button" onclick="runStorageTest()" class="btn btn-primary">Esegui test</button>
+        </div>
+        <div class="settings-card">
+          <h4>Verifica file HTTPS</h4>
+          <p>Controlla che i file certificato/chiave siano accessibili dal server.</p>
+          <button type="button" onclick="runHttpsTest()" class="btn btn-primary">Esegui test</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Impostazioni Avanzate</h3>
+      <div class="alert alert-info">
+        Tutti i parametri server sono modificabili da qui. Salva e riavvia il server per applicare le modifiche.
+      </div>
+      <form id="advancedSettingsForm">
+        <div class="settings-subsection">
+          <h4>Server</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedServerHost">Host:</label>
+              <input type="text" id="advancedServerHost" value="<%= settings.server.host %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedServerPort">Porta:</label>
+              <input type="number" id="advancedServerPort" value="<%= settings.server.port %>" min="1" max="65535">
+            </div>
+            <div class="form-group">
+              <label for="advancedTrustProxy">Trust Proxy:</label>
+              <input type="number" id="advancedTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>HTTPS</h4>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="advancedHttpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
+              Abilita HTTPS diretto
+            </label>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedHttpsCertPath">Percorso Certificato:</label>
+              <input type="text" id="advancedHttpsCertPath" value="<%= settings.https.certPath || '' %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedHttpsKeyPath">Percorso Chiave Privata:</label>
+              <input type="text" id="advancedHttpsKeyPath" value="<%= settings.https.keyPath || '' %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Logging</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedLogLevel">Livello log:</label>
+              <input type="text" id="advancedLogLevel" value="<%= settings.logging.level %>" placeholder="info">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>LDAP / Active Directory</h4>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="advancedLdapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
+              Abilita LDAP/AD
+            </label>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedLdapUrl">URL LDAP:</label>
+              <input type="text" id="advancedLdapUrl" value="<%= settings.ldap.url %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapBaseDN">Base DN:</label>
+              <input type="text" id="advancedLdapBaseDN" value="<%= settings.ldap.baseDN %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapBindDN">Bind DN:</label>
+              <input type="text" id="advancedLdapBindDN" value="<%= settings.ldap.bindDN %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapBindPassword">Bind Password:</label>
+              <input type="password" id="advancedLdapBindPassword" value="<%= settings.ldap.bindPassword %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapUserSearchFilter">User Search Filter:</label>
+              <input type="text" id="advancedLdapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapGroupSearchBase">Group Search Base:</label>
+              <input type="text" id="advancedLdapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapRequiredGroup">Gruppo richiesto:</label>
+              <input type="text" id="advancedLdapRequiredGroup" value="<%= settings.ldap.requiredGroup %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedLdapTimeout">Timeout (ms):</label>
+              <input type="number" id="advancedLdapTimeout" value="<%= settings.ldap.timeout %>" min="1000" max="60000">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>JWT</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedJwtSecret">JWT Secret:</label>
+              <input type="password" id="advancedJwtSecret" value="<%= settings.jwt.secret %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedJwtExpiresIn">JWT Expires In:</label>
+              <input type="text" id="advancedJwtExpiresIn" value="<%= settings.jwt.expiresIn %>">
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="advancedJwtRefreshEnabled" <%= settings.jwt.refreshEnabled ? 'checked' : '' %>>
+                Abilita refresh token
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Storage</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedStorageRootPath">Percorso dati:</label>
+              <input type="text" id="advancedStorageRootPath" value="<%= settings.storage.rootPath %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAuditRetentionDays">Retention audit (giorni):</label>
+              <input type="number" id="advancedAuditRetentionDays" value="<%= settings.storage.auditRetentionDays %>" min="1" max="3650">
+            </div>
+            <div class="form-group">
+              <label for="advancedAuditPayloadMode">Modalità payload audit:</label>
+              <input type="text" id="advancedAuditPayloadMode" value="<%= settings.storage.auditPayloadMode %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Admin</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedAdminSessionSecret">Session Secret:</label>
+              <input type="password" id="advancedAdminSessionSecret" value="<%= settings.admin.sessionSecret %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminSessionMaxAge">Session Max Age (ms):</label>
+              <input type="number" id="advancedAdminSessionMaxAge" value="<%= settings.admin.sessionMaxAge %>" min="60000" max="86400000">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminDefaultUsername">Username default:</label>
+              <input type="text" id="advancedAdminDefaultUsername" value="<%= settings.admin.defaultUsername %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminDefaultPassword">Password default:</label>
+              <input type="password" id="advancedAdminDefaultPassword" value="<%= settings.admin.defaultPassword %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Sicurezza</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedRateLimitWindowMs">Rate limit window (ms):</label>
+              <input type="number" id="advancedRateLimitWindowMs" value="<%= settings.security.rateLimitWindowMs %>" min="1000" max="3600000">
+            </div>
+            <div class="form-group">
+              <label for="advancedRateLimitMaxRequests">Rate limit max richieste:</label>
+              <input type="number" id="advancedRateLimitMaxRequests" value="<%= settings.security.rateLimitMaxRequests %>" min="1" max="10000">
+            </div>
+            <div class="form-group">
+              <label for="advancedLoginRateLimitMax">Login max tentativi:</label>
+              <input type="number" id="advancedLoginRateLimitMax" value="<%= settings.security.loginRateLimitMax %>" min="1" max="50">
+            </div>
+            <div class="form-group">
+              <label for="advancedLoginLockoutDurationMs">Durata lockout login (ms):</label>
+              <input type="number" id="advancedLoginLockoutDurationMs" value="<%= settings.security.loginLockoutDurationMs %>" min="1000" max="3600000">
+            </div>
+            <div class="form-group">
+              <label for="advancedCorsOrigin">CORS Origin:</label>
+              <input type="text" id="advancedCorsOrigin" value="<%= settings.security.corsOrigin %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Attività</h4>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="advancedActivityStrictContinuity" <%= settings.activity.strictContinuity ? 'checked' : '' %>>
+              Abilita continuità stretta
+            </label>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedActivityRequiredMinutes">Minuti richiesti:</label>
+              <input type="number" id="advancedActivityRequiredMinutes" value="<%= settings.activity.requiredMinutes %>" min="1" max="1440">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salva Impostazioni Avanzate</button>
       </form>
     </div>
 
@@ -393,6 +665,8 @@
   </main>
 
   <script>
+    let ldapBindTestFingerprint = null;
+
     function showAlert(message, type = 'success') {
       const alertContainer = document.getElementById('alertContainer');
       const alert = document.createElement('div');
@@ -441,10 +715,26 @@
         enabled: document.getElementById('ldapEnabled').checked,
         url: document.getElementById('ldapUrl').value,
         baseDN: document.getElementById('ldapBaseDN').value,
+        bindDN: document.getElementById('ldapBindDN').value,
+        bindPassword: document.getElementById('ldapBindPassword').value,
         userSearchFilter: document.getElementById('ldapUserSearchFilter').value,
+        groupSearchBase: document.getElementById('ldapGroupSearchBase').value,
         requiredGroup: document.getElementById('ldapRequiredGroup').value,
         timeout: document.getElementById('ldapTimeout').value
       };
+
+      if (data.enabled && data.bindDN) {
+        const currentFingerprint = JSON.stringify({
+          url: data.url,
+          bindDN: data.bindDN,
+          bindPassword: data.bindPassword,
+          timeout: data.timeout
+        });
+        if (ldapBindTestFingerprint !== currentFingerprint) {
+          showAlert('Esegui il test bind LDAP con le credenziali correnti prima di salvare.', 'danger');
+          return;
+        }
+      }
 
       try {
         const response = await fetch('/admin/api/settings/ldap', {
@@ -466,6 +756,33 @@
         showAlert('Errore nel salvataggio della configurazione LDAP', 'danger');
       }
     });
+
+    async function testLdapBind() {
+      const payload = {
+        url: document.getElementById('ldapUrl').value,
+        bindDN: document.getElementById('ldapBindDN').value,
+        bindPassword: document.getElementById('ldapBindPassword').value,
+        timeout: document.getElementById('ldapTimeout').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/ldap/test-bind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          ldapBindTestFingerprint = JSON.stringify(payload);
+          showAlert(result.data.message || 'Test LDAP riuscito', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test bind LDAP', 'danger');
+      }
+    }
 
     document.getElementById('httpsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -541,6 +858,131 @@
         }
       } catch (error) {
         showAlert('Errore nella rimozione della categoria', 'danger');
+      }
+    }
+
+    document.getElementById('advancedSettingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        server: {
+          host: document.getElementById('advancedServerHost').value,
+          port: document.getElementById('advancedServerPort').value,
+          trustProxy: document.getElementById('advancedTrustProxy').value
+        },
+        https: {
+          enabled: document.getElementById('advancedHttpsEnabled').checked,
+          certPath: document.getElementById('advancedHttpsCertPath').value,
+          keyPath: document.getElementById('advancedHttpsKeyPath').value
+        },
+        logging: {
+          level: document.getElementById('advancedLogLevel').value
+        },
+        ldap: {
+          enabled: document.getElementById('advancedLdapEnabled').checked,
+          url: document.getElementById('advancedLdapUrl').value,
+          baseDN: document.getElementById('advancedLdapBaseDN').value,
+          bindDN: document.getElementById('advancedLdapBindDN').value,
+          bindPassword: document.getElementById('advancedLdapBindPassword').value,
+          userSearchFilter: document.getElementById('advancedLdapUserSearchFilter').value,
+          groupSearchBase: document.getElementById('advancedLdapGroupSearchBase').value,
+          requiredGroup: document.getElementById('advancedLdapRequiredGroup').value,
+          timeout: document.getElementById('advancedLdapTimeout').value
+        },
+        jwt: {
+          secret: document.getElementById('advancedJwtSecret').value,
+          expiresIn: document.getElementById('advancedJwtExpiresIn').value,
+          refreshEnabled: document.getElementById('advancedJwtRefreshEnabled').checked
+        },
+        storage: {
+          rootPath: document.getElementById('advancedStorageRootPath').value,
+          auditRetentionDays: document.getElementById('advancedAuditRetentionDays').value,
+          auditPayloadMode: document.getElementById('advancedAuditPayloadMode').value
+        },
+        admin: {
+          sessionSecret: document.getElementById('advancedAdminSessionSecret').value,
+          sessionMaxAge: document.getElementById('advancedAdminSessionMaxAge').value,
+          defaultUsername: document.getElementById('advancedAdminDefaultUsername').value,
+          defaultPassword: document.getElementById('advancedAdminDefaultPassword').value
+        },
+        security: {
+          rateLimitWindowMs: document.getElementById('advancedRateLimitWindowMs').value,
+          rateLimitMaxRequests: document.getElementById('advancedRateLimitMaxRequests').value,
+          loginRateLimitMax: document.getElementById('advancedLoginRateLimitMax').value,
+          loginLockoutDurationMs: document.getElementById('advancedLoginLockoutDurationMs').value,
+          corsOrigin: document.getElementById('advancedCorsOrigin').value
+        },
+        activity: {
+          strictContinuity: document.getElementById('advancedActivityStrictContinuity').checked,
+          requiredMinutes: document.getElementById('advancedActivityRequiredMinutes').value
+        }
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/advanced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni avanzate sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio delle impostazioni avanzate', 'danger');
+      }
+    });
+
+    async function runStorageTest() {
+      try {
+        const response = await fetch('/admin/api/settings/troubleshoot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'storage',
+            payload: {
+              rootPath: document.getElementById('advancedStorageRootPath')?.value
+            }
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test storage', 'danger');
+      }
+    }
+
+    async function runHttpsTest() {
+      try {
+        const response = await fetch('/admin/api/settings/troubleshoot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'https',
+            payload: {
+              certPath: document.getElementById('advancedHttpsCertPath')?.value,
+              keyPath: document.getElementById('advancedHttpsKeyPath')?.value
+            }
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test HTTPS', 'danger');
       }
     }
 

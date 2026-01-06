@@ -343,6 +343,21 @@ router.post('/api/settings/ldap', async (req, res) => {
   }
 });
 
+router.post('/api/settings/ldap/test-bind', async (req, res) => {
+  try {
+    const result = await settingsService.testLdapBind(req.body);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 router.post('/api/settings/https', async (req, res) => {
   try {
     const result = await settingsService.updateHttpsSettings(req.body);
@@ -380,6 +395,59 @@ router.post('/api/settings/server', async (req, res) => {
       req.ip,
       req.adminUser.username
     );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/advanced', async (req, res) => {
+  try {
+    const result = await settingsService.updateAdvancedSettings(req.body);
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'advanced', changes: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/troubleshoot', async (req, res) => {
+  try {
+    const { type, payload } = req.body || {};
+    let result;
+
+    if (type === 'storage') {
+      result = await settingsService.testStorageAccess(payload?.rootPath);
+    } else if (type === 'https') {
+      result = await settingsService.testHttpsFiles(payload?.certPath, payload?.keyPath);
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Tipo di test non valido'
+      });
+    }
 
     res.json({
       success: true,
