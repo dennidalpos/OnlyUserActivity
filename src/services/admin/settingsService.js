@@ -313,6 +313,9 @@ class SettingsService {
       if (updates.hasOwnProperty('email')) {
         allowedUpdates.email = updates.email;
       }
+      if (updates.hasOwnProperty('displayName')) {
+        allowedUpdates.displayName = updates.displayName;
+      }
     }
 
     const updatedUser = await userStorage.update(userKey, allowedUpdates);
@@ -328,6 +331,34 @@ class SettingsService {
         email: updatedUser.email
       },
       message: 'Informazioni utente aggiornate con successo'
+    };
+  }
+
+  async resetLocalUserPassword(userKey, newPassword) {
+    const user = await userStorage.findByUserKey(userKey);
+
+    if (!user) {
+      throw new Error('Utente non trovato');
+    }
+
+    if (user.userType === 'ad') {
+      throw new Error('Non è possibile reimpostare la password per utenti AD');
+    }
+
+    if (!newPassword) {
+      throw new Error('Nuova password obbligatoria');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    const updatedUser = await userStorage.update(userKey, { passwordHash });
+
+    return {
+      success: true,
+      user: {
+        userKey: updatedUser.userKey,
+        username: updatedUser.username
+      },
+      message: 'Password reimpostata con successo'
     };
   }
 

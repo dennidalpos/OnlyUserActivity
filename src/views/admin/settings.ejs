@@ -326,7 +326,16 @@
           <% users.forEach(user => { %>
           <tr data-user-key="<%= user.userKey %>">
             <td><%= user.username %></td>
-            <td><%= user.displayName %></td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.displayName %>
+              <% } else { %>
+                <input type="text"
+                  id="displayName-<%= user.userKey %>"
+                  value="<%= user.displayName %>"
+                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+              <% } %>
+            </td>
             <td>
               <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>">
                 <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
@@ -366,6 +375,7 @@
             <td>
               <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>')" class="btn btn-primary btn-sm" style="margin-right: 4px;">Imposta</button>
               <% if (user.userType !== 'ad') { %>
+              <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-warning btn-sm" style="margin-right: 4px;">Reset Password</button>
               <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-danger btn-sm">Elimina</button>
               <% } %>
             </td>
@@ -373,6 +383,12 @@
           <% }); %>
         </tbody>
       </table>
+    </div>
+
+    <div class="settings-section">
+      <h3>Reset Password Admin</h3>
+      <p>Imposta una nuova password per l'account admin attualmente autenticato.</p>
+      <button onclick="resetAdminPassword()" class="btn btn-warning">Reset Password Admin</button>
     </div>
   </main>
 
@@ -597,8 +613,10 @@
       };
 
       if (userType !== 'ad') {
+        const displayNameValue = document.getElementById(`displayName-${userKey}`).value;
         const deptValue = document.getElementById(`dept-${userKey}`).value;
         const emailValue = document.getElementById(`email-${userKey}`).value;
+        updates.displayName = displayNameValue || null;
         updates.department = deptValue || null;
         updates.email = emailValue || null;
       }
@@ -618,6 +636,54 @@
         }
       } catch (error) {
         showAlert('Errore nell\'aggiornamento delle informazioni utente', 'danger');
+      }
+    }
+
+    async function resetUserPassword(userKey, username) {
+      const newPassword = prompt(`Inserisci la nuova password per "${username}":`);
+      if (!newPassword) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Password reimpostata con successo', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel reset della password', 'danger');
+      }
+    }
+
+    async function resetAdminPassword() {
+      const newPassword = prompt('Inserisci la nuova password admin:');
+      if (!newPassword) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/api/admin/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Password admin aggiornata con successo', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel reset della password admin', 'danger');
       }
     }
 
