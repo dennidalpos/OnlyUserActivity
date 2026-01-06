@@ -1,4 +1,4 @@
-const ldap = require('ldapjs');
+const { Client } = require('ldapts');
 const config = require('../../config');
 
 class LDAPClient {
@@ -6,79 +6,47 @@ class LDAPClient {
     return this.createClientWithConfig(config.ldap);
   }
 
-  createClientWithConfig(ldapConfig) {
-    return new Promise((resolve, reject) => {
-      const client = ldap.createClient({
-        url: ldapConfig.url,
-        timeout: ldapConfig.timeout,
-        connectTimeout: ldapConfig.timeout
-      });
-
-      client.on('error', (err) => {
-        reject(new Error(`LDAP connection error: ${err.message}`));
-      });
-
-      const timeoutId = setTimeout(() => {
-        client.destroy();
-        reject(new Error('LDAP connection timeout'));
-      }, ldapConfig.timeout);
-
-      client.on('connect', () => {
-        clearTimeout(timeoutId);
-        resolve(client);
-      });
+  async createClientWithConfig(ldapConfig) {
+    const client = new Client({
+      url: ldapConfig.url,
+      timeout: ldapConfig.timeout,
+      connectTimeout: ldapConfig.timeout
     });
+
+    return client;
   }
 
-  bind(client, dn, password) {
-    return new Promise((resolve, reject) => {
-      client.bind(dn, password, (err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    });
+  async bind(client, dn, password) {
+    await client.bind(dn, password);
   }
 
-  searchUser(client, username) {
-    return new Promise((resolve, reject) => {
-      const filter = config.ldap.userSearchFilter.replace('{{username}}', username);
-      const opts = {
-        filter,
-        scope: 'sub',
-        attributes: ['dn', 'displayName', 'mail', 'department', 'memberOf', 'sAMAccountName']
-      };
+  async searchUser(client, username) {
+    const filter = config.ldap.userSearchFilter.replace('{{username}}', username);
+    const opts = {
+      filter,
+      scope: 'sub',
+      attributes: ['dn', 'displayName', 'mail', 'department', 'memberOf', 'sAMAccountName']
+    };
 
-      client.search(config.ldap.baseDN, opts, (err, res) => {
-        if (err) {
-          return reject(err);
-        }
+    const { searchEntries } = await client.search(config.ldap.baseDN, opts);
 
-        let user = null;
+    if (!searchEntries || searchEntries.length === 0) {
+      return null;
+    }
 
-        res.on('searchEntry', (entry) => {
-          user = {
-            dn: entry.objectName,
-            username: entry.object.sAMAccountName,
-            displayName: entry.object.displayName || username,
-            email: entry.object.mail || null,
-            department: entry.object.department || null,
-            memberOf: Array.isArray(entry.object.memberOf)
-              ? entry.object.memberOf
-              : (entry.object.memberOf ? [entry.object.memberOf] : [])
-          };
-        });
+    const entry = searchEntries[0];
+    const memberOf = Array.isArray(entry.memberOf)
+      ? entry.memberOf
+      : (entry.memberOf ? [entry.memberOf] : []);
 
-        res.on('error', (err) => {
-          reject(err);
-        });
-
-        res.on('end', () => {
-          resolve(user);
-        });
-      });
-    });
+    return {
+      dn: entry.dn,
+      username: entry.sAMAccountName || username,
+      displayName: entry.displayName || username,
+      email: entry.mail || null,
+      department: entry.department || null,
+      memberOf
+    };
   }
 
   isMemberOfGroup(memberOf, requiredGroup) {
@@ -96,9 +64,9 @@ class LDAPClient {
     });
   }
 
-  unbind(client) {
+  async unbind(client) {
     if (client) {
-      client.unbind();
+      await client.unbind();
     }
   }
 }

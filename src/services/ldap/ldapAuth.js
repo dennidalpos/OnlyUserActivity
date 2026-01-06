@@ -4,16 +4,24 @@ const userStorage = require('../storage/userStorage');
 
 class LDAPAuth {
   async authenticate(username, password) {
-    let client;
+    let serviceClient;
+    let authClient;
 
     try {
-      client = await ldapClient.createClient();
+      serviceClient = await ldapClient.createClient();
 
       if (config.ldap.bindDN) {
-        await ldapClient.bind(client, config.ldap.bindDN, config.ldap.bindPassword);
+        try {
+          await ldapClient.bind(serviceClient, config.ldap.bindDN, config.ldap.bindPassword);
+        } catch (error) {
+          if (this.isInvalidCredentialsError(error)) {
+            throw new Error('Credenziali account di servizio LDAP non valide');
+          }
+          throw error;
+        }
       }
 
-      const ldapUser = await ldapClient.searchUser(client, username);
+      const ldapUser = await ldapClient.searchUser(serviceClient, username);
 
       if (!ldapUser) {
         throw new Error('Utente non trovato in LDAP');
@@ -30,9 +38,15 @@ class LDAPAuth {
         }
       }
 
-      ldapClient.unbind(client);
-      client = await ldapClient.createClient();
-      await ldapClient.bind(client, ldapUser.dn, password);
+      authClient = await ldapClient.createClient();
+      try {
+        await ldapClient.bind(authClient, ldapUser.dn, password);
+      } catch (error) {
+        if (this.isInvalidCredentialsError(error)) {
+          throw new Error('Username o password non validi');
+        }
+        throw error;
+      }
 
       let user = await userStorage.findByUsername(username);
 
@@ -54,15 +68,26 @@ class LDAPAuth {
       return user;
 
     } catch (error) {
-      if (error.message.includes('Invalid Credentials')) {
+      if (this.isInvalidCredentialsError(error)) {
         throw new Error('Username o password non validi');
       }
       throw error;
     } finally {
-      if (client) {
-        ldapClient.unbind(client);
+      if (serviceClient) {
+        await ldapClient.unbind(serviceClient);
+      }
+      if (authClient) {
+        await ldapClient.unbind(authClient);
       }
     }
+  }
+
+  isInvalidCredentialsError(error) {
+    const message = error?.message || '';
+    const lowered = message.toLowerCase();
+    return lowered.includes('invalid credentials')
+      || message.includes('InvalidCredentialsError')
+      || message.includes('Invalid Credentials');
   }
 }
 
