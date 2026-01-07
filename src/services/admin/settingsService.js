@@ -469,7 +469,8 @@ class SettingsService {
   }
 
   async testStorageAccess(rootPath) {
-    const targetPath = rootPath || config.storage.rootPath;
+    const trimmedPath = typeof rootPath === 'string' ? rootPath.trim() : '';
+    const targetPath = trimmedPath || config.storage.rootPath;
     await fs.mkdir(targetPath, { recursive: true });
     const testFile = path.join(targetPath, `.write-test-${Date.now()}.tmp`);
     await fs.writeFile(testFile, 'ok', 'utf-8');
@@ -478,11 +479,24 @@ class SettingsService {
   }
 
   async testHttpsFiles(certPath, keyPath) {
-    if (!certPath || !keyPath) {
-      throw new Error('Percorsi certificato e chiave sono obbligatori');
+    const trimmedCertPath = typeof certPath === 'string' ? certPath.trim() : '';
+    const trimmedKeyPath = typeof keyPath === 'string' ? keyPath.trim() : '';
+    if (!trimmedCertPath || !trimmedKeyPath) {
+      const error = new Error('Percorsi certificato e chiave sono obbligatori');
+      error.statusCode = 400;
+      throw error;
     }
-    await fs.access(certPath);
-    await fs.access(keyPath);
+    try {
+      await fs.access(trimmedCertPath);
+      await fs.access(trimmedKeyPath);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        const notFoundError = new Error('File HTTPS non trovato. Verifica i percorsi configurati.');
+        notFoundError.statusCode = 400;
+        throw notFoundError;
+      }
+      throw error;
+    }
     return { success: true, message: 'File HTTPS trovati e accessibili' };
   }
 
