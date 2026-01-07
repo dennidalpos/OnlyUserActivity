@@ -78,10 +78,12 @@ app.use('/admin', session({
   secret: config.admin.sessionSecret,
   resave: false,
   saveUninitialized: false,
+  proxy: config.server.trustProxy > 0,
   cookie: {
     maxAge: config.admin.sessionMaxAge,
     httpOnly: true,
-    secure: config.env === 'production' && config.https.enabled
+    secure: config.env === 'production' && config.https.enabled,
+    sameSite: 'lax'
   }
 }));
 
@@ -89,10 +91,12 @@ app.use('/user', session({
   secret: config.jwt.secret,
   resave: false,
   saveUninitialized: false,
+  proxy: config.server.trustProxy > 0,
   cookie: {
     maxAge: 8 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: config.env === 'production' && config.https.enabled
+    secure: config.env === 'production' && config.https.enabled,
+    sameSite: 'lax'
   }
 }));
 
