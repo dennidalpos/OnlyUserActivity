@@ -102,6 +102,10 @@ app.use('/user', session({
 
 app.use(requestLogger(logger));
 
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',

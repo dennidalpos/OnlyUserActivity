@@ -19,7 +19,7 @@ const apiLimiter = rateLimit({
 });
 
 const loginLimiter = rateLimit({
-  windowMs: config.security.rateLimitWindowMs,
+  windowMs: config.security.loginLockoutDurationMs,
   max: config.security.loginRateLimitMax,
   message: {
     success: false,

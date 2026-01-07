@@ -461,7 +461,8 @@ router.post('/api/settings/troubleshoot', async (req, res) => {
       data: result
     });
   } catch (error) {
-    res.status(500).json({
+    const status = error.statusCode || 500;
+    res.status(status).json({
       success: false,
       error: error.message
     });
