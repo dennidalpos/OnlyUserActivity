@@ -28,13 +28,13 @@ npm start
 
 ## 🧪 Dati di Test (Seed)
 
-Per generare 10 utenti locali di test (5 per turno) e attività storiche con irregolarità:
+Per generare 10 utenti locali di test (5 per turno) e attività storiche per gli ultimi 3 mesi:
 
 ```bash
 node scripts/seed-test-users.js
 ```
 
-Lo script crea utenti `testuser01` → `testuser10` con password `Password123!`, assegna i turni **Feriali** e **24/7** e inserisce attività per un mese di circa 3 mesi fa.
+Lo script crea utenti `testuser01` → `testuser10` con password `Password123!`, assegna i turni **Feriali** e **24/7** e inserisce attività dal periodo di 3 mesi fa fino a oggi. Per ogni turno crea 3 utenti completamente **OK** e 2 con irregolarità casuali.
 
 ## ✨ Caratteristiche Principali
 
