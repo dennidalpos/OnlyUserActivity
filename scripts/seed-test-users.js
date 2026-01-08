@@ -58,7 +58,7 @@ async function ensureUser(username, displayName) {
   return await userStorage.findByUserKey(user.userKey);
 }
 
-async function seedUserActivities(user, shiftType, activityTypes, monthStart, monthEnd) {
+async function seedUserActivities(user, shiftType, activityTypes, monthStart, monthEnd, includeIrregularities) {
   const allDates = [];
   let cursor = formatDate(monthStart);
   const end = formatDate(monthEnd);
@@ -72,8 +72,8 @@ async function seedUserActivities(user, shiftType, activityTypes, monthStart, mo
 
   const shuffled = allDates.sort(() => 0.5 - Math.random());
   const targetDays = shuffled.slice(0, Math.min(18, shuffled.length));
-  const missingDays = new Set(targetDays.slice(0, 3));
-  const incompleteDays = new Set(targetDays.slice(3, 6));
+  const missingDays = includeIrregularities ? new Set(targetDays.slice(0, 3)) : new Set();
+  const incompleteDays = includeIrregularities ? new Set(targetDays.slice(3, 6)) : new Set();
 
   for (const date of targetDays) {
     if (missingDays.has(date)) {
@@ -129,7 +129,8 @@ async function main() {
     await settingsService.updateUserShift(user.userKey, shift);
 
     const shiftType = i < USERS_PER_SHIFT ? shiftFeriali : shift247;
-    await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay);
+    const includeIrregularities = i < 4;
+    await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay, includeIrregularities);
   }
 
   console.log('Seed dati completato.');
