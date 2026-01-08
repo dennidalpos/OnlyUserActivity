@@ -53,19 +53,34 @@ const buildActivitySchema = () => Joi.object({
       'string.pattern.base': 'Formato data non valido. Usare YYYY-MM-DD',
       'any.required': 'Data è obbligatoria'
     }),
-  startTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
+  durationHours: Joi.number()
+    .integer()
+    .min(0)
+    .max(24)
     .required()
     .messages({
-      'string.pattern.base': 'Orario di inizio non valido. Usare HH:MM con step di 15 minuti',
-      'any.required': 'Orario di inizio è obbligatorio'
+      'number.base': 'Le ore devono essere un numero',
+      'number.min': 'Le ore non possono essere negative',
+      'number.max': 'Le ore non possono superare 24',
+      'any.required': 'Le ore sono obbligatorie'
     }),
-  endTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
+  durationMinutes: Joi.number()
+    .integer()
+    .valid(0, 15, 30, 45)
     .required()
     .messages({
-      'string.pattern.base': 'Orario di fine non valido. Usare HH:MM con step di 15 minuti',
-      'any.required': 'Orario di fine è obbligatorio'
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45',
+      'any.required': 'I minuti sono obbligatori'
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
   activityType: Joi.string()
     .valid(...ACTIVITY_TYPES)
@@ -89,15 +104,30 @@ const buildActivitySchema = () => Joi.object({
 });
 
 const buildActivityUpdateSchema = () => Joi.object({
-  startTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
+  durationHours: Joi.number()
+    .integer()
+    .min(0)
+    .max(24)
     .messages({
-      'string.pattern.base': 'Orario di inizio non valido'
+      'number.base': 'Le ore devono essere un numero',
+      'number.min': 'Le ore non possono essere negative',
+      'number.max': 'Le ore non possono superare 24'
     }),
-  endTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):(00|15|30|45)$/)
+  durationMinutes: Joi.number()
+    .integer()
+    .valid(0, 15, 30, 45)
     .messages({
-      'string.pattern.base': 'Orario di fine non valido'
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45'
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
   activityType: Joi.string()
     .valid(...ACTIVITY_TYPES)
@@ -110,7 +140,7 @@ const buildActivityUpdateSchema = () => Joi.object({
   notes: Joi.string()
     .max(500)
     .allow('')
-}).min(1);
+}).and('durationHours', 'durationMinutes').min(1);
 
 function validate(schemaOrFactory) {
   return (req, res, next) => {

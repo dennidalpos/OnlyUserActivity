@@ -12,6 +12,7 @@ const userStorage = require('../../services/storage/userStorage');
 const activityStorage = require('../../services/storage/activityStorage');
 const { requireAdminAuth } = require('../../middlewares/adminAuth');
 const { getCurrentDate } = require('../../services/utils/dateUtils');
+const { findShiftType } = require('../../services/utils/shiftUtils');
 const { reloadActivityTypes } = require('../../middlewares/validation');
 const adminAuthService = require('../../services/auth/adminAuthService');
 
@@ -47,6 +48,48 @@ router.get('/dashboard', async (req, res) => {
       ...viewData
     });
 
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.get('/dashboard/users/:userKey/irregularities', async (req, res) => {
+  try {
+    const { userKey } = req.params;
+    const user = await userStorage.findByUserKey(userKey);
+
+    if (!user) {
+      return res.render('errors/error', {
+        title: 'Errore',
+        error: 'Utente non trovato'
+      });
+    }
+
+    const today = getCurrentDate();
+    const currentYear = today.split('-')[0];
+    const fromDate = req.query.from || `${currentYear}-01-01`;
+    const toDate = req.query.to || today;
+
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const shiftType = findShiftType(shiftTypes, user.shift);
+    const irregularities = await monitoringService.getUserIrregularities(
+      userKey,
+      fromDate,
+      toDate,
+      shiftType
+    );
+
+    res.render('admin/irregularities', {
+      title: 'Irregolarità Utente',
+      user,
+      irregularities,
+      fromDate,
+      toDate,
+      shiftType
+    });
   } catch (error) {
     res.render('errors/error', {
       title: 'Errore',
@@ -407,6 +450,34 @@ router.post('/api/settings/server', async (req, res) => {
       success: true,
       data: result
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/settings/configuration/export', async (req, res) => {
+  try {
+    const payload = await settingsService.exportFullConfiguration();
+    const filename = `config_export_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(payload, null, 2));
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/configuration/import', async (req, res) => {
+  try {
+    const result = await settingsService.importFullConfiguration(req.body);
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({
       success: false,

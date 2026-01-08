@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/css/user.css">
   <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
-  <script src="/js/timepicker.js"></script>
 </head>
 <body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
@@ -60,6 +59,19 @@
       </div>
     </div>
 
+    <div class="shift-info-card">
+      <div>
+        <h3>Tipo di Turno Associato</h3>
+        <p class="shift-name"><%= userShift ? userShift.name : 'Nessun turno assegnato' %></p>
+      </div>
+      <% if (userShift) { %>
+      <div class="shift-meta">
+        <span class="shift-badge"><%= userShift.includeWeekends ? 'Include weekend' : 'Esclude weekend' %></span>
+        <span class="shift-badge"><%= userShift.includeHolidays ? 'Include festività' : 'Esclude festività' %></span>
+      </div>
+      <% } %>
+    </div>
+
     <div class="activity-section">
       <div class="section-header">
         <h3>Gestione Attività</h3>
@@ -71,12 +83,12 @@
         <form onsubmit="addActivity(event)">
           <div class="form-row">
             <div class="form-group">
-              <label>Ora Inizio</label>
-              <input type="time" id="startTime" required step="900" data-ui-help="Seleziona l'orario di inizio (step 15 minuti)." data-ui-severity="info">
+              <label>Ore</label>
+              <select id="durationHours" required data-ui-help="Seleziona le ore di durata." data-ui-severity="info"></select>
             </div>
             <div class="form-group">
-              <label>Ora Fine</label>
-              <input type="time" id="endTime" required step="900" data-ui-help="Seleziona l'orario di fine (step 15 minuti)." data-ui-severity="info">
+              <label>Minuti</label>
+              <select id="durationMinutes" required data-ui-help="Seleziona i minuti di durata (15/30/45)." data-ui-severity="info"></select>
             </div>
             <div class="form-group">
               <label>Tipo Attività</label>
@@ -99,6 +111,44 @@
         <p class="loading">Caricamento...</p>
       </div>
     </div>
+
+    <div class="calendar-section">
+      <div class="section-header">
+        <h3>Calendario Mensile</h3>
+        <div class="calendar-nav">
+          <button type="button" class="btn btn-sm" onclick="navigateMonth(-1, this)" data-ui-help="Vai al mese precedente." data-ui-severity="info">&larr;</button>
+          <span id="calendarMonthLabel"></span>
+          <button type="button" class="btn btn-sm" onclick="navigateMonth(1, this)" data-ui-help="Vai al mese successivo." data-ui-severity="info">&rarr;</button>
+        </div>
+      </div>
+
+      <div class="calendar-legend">
+        <span class="legend-item legend-ok">OK</span>
+        <span class="legend-item legend-incomplete">Incompleto</span>
+        <span class="legend-item legend-missing">Non inserito</span>
+        <span class="legend-item legend-off">Non richiesto</span>
+      </div>
+
+      <div class="calendar-grid" id="calendarGrid"></div>
+
+      <div class="calendar-actions">
+        <h4>Imposta giornata intera</h4>
+        <div class="quick-actions">
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('malattia', this)">Malattia</button>
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('ferie', this)">Ferie</button>
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('permesso', this, { label: 'Congedo' })">Congedo</button>
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('lavoro', this, { label: 'Smart working', notes: 'Smart working' })">Smart working</button>
+        </div>
+        <p class="calendar-hint">Seleziona un giorno dal calendario per applicare la giornata intera.</p>
+      </div>
+
+      <div class="calendar-irregularities">
+        <h4>Irregolarità fuori mese corrente</h4>
+        <div id="irregularityShortcuts" class="irregularity-shortcuts">
+          <p class="no-data">Nessuna irregolarità trovata.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -106,6 +156,9 @@
     let currentDate = '<%= currentDate %>';
     let editingActivityId = null;
     let activityTypes = [];
+    let requiredMinutes = 480;
+    let calendarDate = '<%= currentDate %>';
+    let selectedCalendarDate = '<%= currentDate %>';
 
     console.log('Dashboard script loaded. Token:', token ? 'present' : 'missing');
 
@@ -139,6 +192,37 @@
       });
     }
 
+    function populateDurationSelects() {
+      const hoursSelect = document.getElementById('durationHours');
+      const minutesSelect = document.getElementById('durationMinutes');
+      hoursSelect.innerHTML = '';
+      minutesSelect.innerHTML = '';
+
+      for (let i = 0; i <= 24; i += 1) {
+        const option = document.createElement('option');
+        option.value = String(i);
+        option.textContent = `${i}h`;
+        hoursSelect.appendChild(option);
+      }
+
+      [0, 15, 30, 45].forEach(min => {
+        const option = document.createElement('option');
+        option.value = String(min);
+        option.textContent = `${min}m`;
+        minutesSelect.appendChild(option);
+      });
+    }
+
+    function setDurationSelectValues(durationMinutesValue) {
+      const hoursSelect = document.getElementById('durationHours');
+      const minutesSelect = document.getElementById('durationMinutes');
+      const hours = Math.max(0, Math.floor(durationMinutesValue / 60));
+      const minutes = durationMinutesValue % 60;
+
+      hoursSelect.value = String(Math.min(hours, 24));
+      minutesSelect.value = String([0, 15, 30, 45].includes(minutes) ? minutes : 0);
+    }
+
     function setToday(anchor) {
       console.log('setToday called');
       lastActionAnchor = anchor || document.getElementById('activityDate');
@@ -154,6 +238,15 @@
       console.log('loadActivities called for date:', document.getElementById('activityDate')?.value);
       const date = document.getElementById('activityDate').value;
       currentDate = date;
+      selectedCalendarDate = date;
+      const [year, month] = date.split('-');
+      const monthPrefix = `${year}-${month}`;
+      if (!calendarDate.startsWith(monthPrefix)) {
+        calendarDate = `${year}-${month}-01`;
+        loadMonthCalendar();
+      } else {
+        highlightSelectedCalendarDay();
+      }
 
       try {
         console.log('Fetching activities from API...');
@@ -183,7 +276,7 @@
       const summary = data.summary || {};
 
       const totalMinutes = Number.isFinite(summary.totalMinutes) ? summary.totalMinutes : 0;
-      const requiredMinutes = Number.isFinite(summary.requiredMinutes) ? summary.requiredMinutes : 480;
+      requiredMinutes = Number.isFinite(summary.requiredMinutes) ? summary.requiredMinutes : 480;
 
       document.getElementById('totalHours').textContent =
         `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
@@ -241,20 +334,13 @@
           <div class="activity-item" data-activity-id="${activity.id}">
             <div class="activity-header">
               <div class="activity-info">
-                <span class="activity-time">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 4px;">
-                    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                  </svg>
-                  ${activity.startTime} - ${activity.endTime}
-                </span>
                 <span class="activity-type badge badge-${activity.activityType}">${activityTypeFormatted}</span>
                 <span class="activity-duration">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
                     <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0z"/>
                     <path d="M8 4.5a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3.5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/>
                   </svg>
-                  ${durationText}
+                  Durata: ${durationText}
                 </span>
                 <span class="activity-date">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
@@ -301,18 +387,12 @@
       lastActionAnchor = anchor || document.getElementById('addActivityForm');
       editingActivityId = null;
       document.getElementById('addActivityForm').style.display = 'block';
-      document.getElementById('startTime').value = '';
-      document.getElementById('endTime').value = '';
+      setDurationSelectValues(requiredMinutes);
       document.getElementById('activityType').value = activityTypes[0] || 'lavoro';
       document.getElementById('notes').value = '';
 
       document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
       document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Salva';
-
-      if (!window.timePickersInitialized) {
-        timePicker.createAllTimePickers();
-        window.timePickersInitialized = true;
-      }
     }
 
     function editActivity(activityId, anchor) {
@@ -327,27 +407,9 @@
 
       editingActivityId = activityId;
       document.getElementById('addActivityForm').style.display = 'block';
-      document.getElementById('startTime').value = activity.startTime;
-      document.getElementById('endTime').value = activity.endTime;
+      setDurationSelectValues(activity.durationMinutes);
       document.getElementById('activityType').value = activity.activityType;
       document.getElementById('notes').value = activity.notes || '';
-
-      if (window.timePickersInitialized) {
-        const startPickers = document.querySelectorAll('#startTime + .time-picker-container');
-        const endPickers = document.querySelectorAll('#endTime + .time-picker-container');
-
-        if (startPickers.length > 0) {
-          const [startH, startM] = activity.startTime.split(':');
-          startPickers[0].querySelector('.time-picker-hour').value = startH;
-          startPickers[0].querySelector('.time-picker-minute').value = startM;
-        }
-
-        if (endPickers.length > 0) {
-          const [endH, endM] = activity.endTime.split(':');
-          endPickers[0].querySelector('.time-picker-hour').value = endH;
-          endPickers[0].querySelector('.time-picker-minute').value = endM;
-        }
-      }
 
       document.querySelector('#addActivityForm h4').textContent = 'Modifica Attività';
       document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Aggiorna';
@@ -370,8 +432,8 @@
       lastActionAnchor = event.submitter || document.querySelector('#addActivityForm button[type="submit"]');
 
       const data = {
-        startTime: document.getElementById('startTime').value,
-        endTime: document.getElementById('endTime').value,
+        durationHours: Number(document.getElementById('durationHours').value),
+        durationMinutes: Number(document.getElementById('durationMinutes').value),
         activityType: document.getElementById('activityType').value,
         notes: document.getElementById('notes').value
       };
@@ -472,9 +534,197 @@
       alert(message);
     }
 
+    function formatMonthLabel(dateString) {
+      const date = new Date(`${dateString}T00:00:00`);
+      return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+    }
+
+    function selectCalendarDate(dateString) {
+      selectedCalendarDate = dateString;
+      document.getElementById('activityDate').value = dateString;
+      currentDate = dateString;
+      loadActivities();
+
+      const [year, month] = dateString.split('-');
+      const currentMonthPrefix = `${year}-${month}`;
+      if (!calendarDate.startsWith(currentMonthPrefix)) {
+        calendarDate = `${year}-${month}-01`;
+        loadMonthCalendar();
+      } else {
+        highlightSelectedCalendarDay();
+      }
+    }
+
+    function highlightSelectedCalendarDay() {
+      document.querySelectorAll('.calendar-day').forEach(cell => {
+        const dateValue = cell.getAttribute('data-date');
+        if (dateValue === selectedCalendarDate) {
+          cell.classList.add('selected');
+        } else {
+          cell.classList.remove('selected');
+        }
+      });
+    }
+
+    function renderCalendar(days, year, month) {
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+      const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+      dayNames.forEach(name => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day calendar-day-header';
+        header.textContent = name;
+        grid.appendChild(header);
+      });
+
+      const firstDay = new Date(year, month - 1, 1);
+      const startOffset = (firstDay.getDay() + 6) % 7;
+
+      for (let i = 0; i < startOffset; i += 1) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day calendar-day-empty';
+        grid.appendChild(empty);
+      }
+
+      days.forEach(day => {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'calendar-day';
+        const dateObj = new Date(`${day.date}T00:00:00`);
+        cell.innerHTML = `<span>${dateObj.getDate()}</span>`;
+        cell.setAttribute('data-date', day.date);
+
+        if (!day.isRequired) {
+          cell.classList.add('day-off');
+        } else if (day.status === 'OK') {
+          cell.classList.add('day-ok');
+        } else if (day.status === 'Incompleto') {
+          cell.classList.add('day-incomplete');
+        } else {
+          cell.classList.add('day-missing');
+        }
+
+        if (day.isFuture) {
+          cell.classList.add('day-future');
+        }
+
+        if (day.date === selectedCalendarDate) {
+          cell.classList.add('selected');
+        }
+
+        cell.addEventListener('click', () => selectCalendarDate(day.date));
+        grid.appendChild(cell);
+      });
+    }
+
+    function renderIrregularities(irregularities) {
+      const container = document.getElementById('irregularityShortcuts');
+      if (!irregularities || irregularities.length === 0) {
+        container.innerHTML = '<p class="no-data">Nessuna irregolarità trovata.</p>';
+        return;
+      }
+
+      container.innerHTML = irregularities.map(item => `
+        <button type="button" class="btn btn-sm" onclick="selectCalendarDate('${item.date}')">
+          ${item.date} · ${item.status}
+        </button>
+      `).join('');
+    }
+
+    async function loadMonthCalendar(anchor) {
+      lastActionAnchor = anchor || document.getElementById('calendarGrid');
+      try {
+        const response = await fetch(`/api/activities/month?date=${calendarDate}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          showError(result.error?.message || 'Errore nel caricamento del calendario');
+          return;
+        }
+
+        const { month, days, irregularities } = result.data;
+        const monthLabel = formatMonthLabel(`${month.year}-${String(month.month).padStart(2, '0')}-01`);
+        document.getElementById('calendarMonthLabel').textContent = monthLabel;
+        renderCalendar(days, month.year, month.month);
+        renderIrregularities(irregularities);
+      } catch (error) {
+        console.error('Error loading month calendar:', error);
+        showError('Errore nel caricamento del calendario');
+      }
+    }
+
+    function navigateMonth(direction, anchor) {
+      lastActionAnchor = anchor || document.getElementById('calendarGrid');
+      const baseDate = new Date(`${calendarDate}T00:00:00`);
+      baseDate.setMonth(baseDate.getMonth() + direction);
+      calendarDate = baseDate.toISOString().split('T')[0];
+      loadMonthCalendar();
+    }
+
+    function getQuickDayDurationParts() {
+      const minutes = Number.isFinite(requiredMinutes) ? requiredMinutes : 480;
+      const hours = Math.min(24, Math.ceil(minutes / 60));
+      let remainder = minutes % 60;
+      if (![15, 30, 45].includes(remainder)) {
+        remainder = 15;
+      }
+      return { hours, minutes: remainder };
+    }
+
+    async function applyQuickDay(activityType, anchor, options = {}) {
+      lastActionAnchor = anchor || document.querySelector('.quick-actions');
+      if (!selectedCalendarDate) {
+        showError('Seleziona prima un giorno dal calendario');
+        return;
+      }
+
+      const duration = getQuickDayDurationParts();
+      const payload = {
+        date: selectedCalendarDate,
+        activityType,
+        durationHours: duration.hours,
+        durationMinutes: duration.minutes,
+        notes: options.notes || ''
+      };
+
+      if (options.label && activityType === 'permesso') {
+        payload.notes = payload.notes ? `${payload.notes} (${options.label})` : options.label;
+      }
+
+      try {
+        const response = await fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          loadActivities();
+          loadMonthCalendar();
+          showSuccess(`Giornata impostata: ${options.label || activityType}`);
+        } else {
+          showError(result.error?.message || 'Errore nel salvataggio');
+        }
+      } catch (error) {
+        console.error('Quick day error:', error);
+        showError('Errore nel salvataggio della giornata');
+      }
+    }
+
     console.log('Calling loadActivityTypes and loadActivities on page load...');
+    populateDurationSelects();
     loadActivityTypes();
     loadActivities();
+    loadMonthCalendar();
 
     helpSystem.init(userDashboardHelp);
   </script>

@@ -258,6 +258,24 @@
         </div>
         <button type="submit" class="btn btn-primary" data-ui-help="Salva le impostazioni di rete del server." data-ui-severity="info">Salva Configurazione Server</button>
       </form>
+      <div class="settings-subsection" style="margin-top: 20px;">
+        <h4>Import / Export Configurazione Completa</h4>
+        <p style="color: #666; margin-bottom: 12px;">
+          Esporta o reimporta utenti, attività e impostazioni server in un unico file JSON.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)" data-ui-help="Scarica un file JSON con tutta la configurazione del server." data-ui-severity="info">
+            ⬇️ Esporta configurazione
+          </button>
+          <input type="file" id="configImportFile" accept=".json" style="flex: 1; min-width: 240px;">
+          <button type="button" class="btn btn-primary" onclick="importConfiguration(this)" data-ui-help="Carica un file JSON per importare utenti, attività e impostazioni." data-ui-severity="warn">
+            ⬆️ Importa configurazione
+          </button>
+        </div>
+        <p style="color: #999; font-size: 13px; margin-top: 10px;">
+          L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
+        </p>
+      </div>
     </div>
 
     <div class="settings-section">
@@ -754,6 +772,63 @@
       setTimeout(() => {
         alert.remove();
       }, 5000);
+    }
+
+    async function exportConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const response = await fetch('/admin/api/settings/configuration/export');
+        if (!response.ok) {
+          throw new Error('Errore durante l\'export');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'configurazione-completa.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        showAlert('Export completato', 'success');
+      } catch (error) {
+        showAlert('Errore durante l\'export della configurazione', 'danger');
+      }
+    }
+
+    async function importConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      const fileInput = document.getElementById('configImportFile');
+      if (!fileInput?.files?.length) {
+        showAlert('Seleziona un file JSON da importare', 'danger');
+        return;
+      }
+
+      if (!confirm('L\'importazione sovrascriverà utenti, attività e impostazioni. Continuare?')) {
+        return;
+      }
+
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        const response = await fetch('/admin/api/settings/configuration/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message || 'Import completato', 'success');
+          if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error || 'Errore durante l\'import', 'danger');
+        }
+      } catch (error) {
+        showAlert('File JSON non valido o errore durante l\'import', 'danger');
+      }
     }
 
     document.getElementById('serverForm').addEventListener('submit', async (e) => {

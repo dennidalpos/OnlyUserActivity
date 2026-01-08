@@ -26,6 +26,16 @@ npm start
 # Admin:  http://localhost:3001/admin/auth/login (admin/admin)
 ```
 
+## 🧪 Dati di Test (Seed)
+
+Per generare 10 utenti locali di test (5 per turno) e attività storiche con irregolarità:
+
+```bash
+node scripts/seed-test-users.js
+```
+
+Lo script crea utenti `testuser01` → `testuser10` con password `Password123!`, assegna i turni **Feriali** e **24/7** e inserisce attività per un mese di circa 3 mesi fa.
+
 ## ✨ Caratteristiche Principali
 
 ### 🔄 Gestione Turni Configurabile (NUOVO v2.0)
@@ -193,6 +203,13 @@ L'admin può modificare **tutti i parametri server** direttamente dall'interfacc
 **Attività**
 - `ACTIVITY_STRICT_CONTINUITY`
 - `ACTIVITY_REQUIRED_MINUTES`
+
+### Import/Export Configurazione Completa
+
+Nella sezione **Configurazione → Configurazione Server** trovi i pulsanti per esportare o importare l'intera configurazione:
+
+- **Export:** scarica un JSON con utenti, attività e impostazioni.
+- **Import:** carica un JSON per ripristinare tutti i dati (sovrascrive quelli esistenti).
 
 #### Percorsi certificati precompilati
 

@@ -1,19 +1,24 @@
 const userStorage = require('../storage/userStorage');
 const activityService = require('../activity/activityService');
-const { addDays, getCurrentDate, formatDate } = require('../utils/dateUtils');
+const shiftTypesService = require('./shiftTypesService');
+const config = require('../../config');
+const { addDays, getCurrentDate, formatDate, isFutureDate } = require('../utils/dateUtils');
+const { findShiftType, isWorkingDay } = require('../utils/shiftUtils');
 
 class MonitoringService {
   async getDailyStatus(date, filters = {}) {
     const allUsers = await userStorage.listAll();
     const userStatuses = [];
+    const shiftTypes = await shiftTypesService.getShiftTypes();
 
     for (const user of allUsers) {
       if (filters.username && !user.username.toLowerCase().includes(filters.username.toLowerCase())) {
         continue;
       }
 
+      const shiftType = findShiftType(shiftTypes, user.shift);
       const dayData = await activityService.getDayActivities(user.userKey, date);
-      const status = this.determineStatus(dayData.summary);
+      const status = this.determineStatus(dayData.summary, isWorkingDay(date, shiftType), isFutureDate(date));
 
       if (filters.status && status !== filters.status) {
         continue;
@@ -55,13 +60,15 @@ class MonitoringService {
   async getRangeStatus(fromDate, toDate, filters = {}) {
     const allUsers = await userStorage.listAll();
     const userStatuses = [];
+    const shiftTypes = await shiftTypesService.getShiftTypes();
 
     for (const user of allUsers) {
       if (filters.username && !user.username.toLowerCase().includes(filters.username.toLowerCase())) {
         continue;
       }
 
-      const stats = await this.calculateUserRangeStats(user.userKey, fromDate, toDate);
+      const shiftType = findShiftType(shiftTypes, user.shift);
+      const stats = await this.calculateUserRangeStats(user.userKey, fromDate, toDate, shiftType);
 
       if (filters.status && stats.overallStatus !== filters.status) {
         continue;
@@ -100,7 +107,7 @@ class MonitoringService {
     };
   }
 
-  async calculateUserRangeStats(userKey, fromDate, toDate) {
+  async calculateUserRangeStats(userKey, fromDate, toDate, shiftType) {
     let current = fromDate;
     const end = toDate;
 
@@ -111,11 +118,18 @@ class MonitoringService {
     let absentDays = 0;
 
     while (current <= end) {
+      const isRequired = isWorkingDay(current, shiftType);
+
+      if (!isRequired || isFutureDate(current)) {
+        current = addDays(current, 1);
+        continue;
+      }
+
       const dayData = await activityService.getDayActivities(userKey, current);
       totalMinutes += dayData.summary.totalMinutes;
       totalDays++;
 
-      const status = this.determineStatus(dayData.summary);
+      const status = this.determineStatus(dayData.summary, true);
       if (status === 'OK') completeDays++;
       else if (status === 'INCOMPLETO') incompleteDays++;
       else absentDays++;
@@ -128,7 +142,9 @@ class MonitoringService {
     const completionRate = totalDays > 0 ? (completeDays / totalDays) * 100 : 0;
 
     let overallStatus = 'ASSENTE';
-    if (completeDays > 0) {
+    if (totalDays === 0) {
+      overallStatus = 'OK';
+    } else if (completeDays > 0) {
       overallStatus = completionRate >= 80 ? 'OK' : 'INCOMPLETO';
     }
 
@@ -145,7 +161,10 @@ class MonitoringService {
     };
   }
 
-  determineStatus(summary) {
+  determineStatus(summary, isRequired = true, isFuture = false) {
+    if (!isRequired || isFuture) {
+      return 'OK';
+    }
     if (summary.totalMinutes === 0) {
       return 'ASSENTE';
     }
@@ -160,7 +179,43 @@ class MonitoringService {
     const lastDay = new Date(year, month, 0).getDate();
     const toDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-    return await this.calculateUserRangeStats(userKey, fromDate, toDate);
+    const user = await userStorage.findByUserKey(userKey);
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const shiftType = findShiftType(shiftTypes, user?.shift);
+
+    return await this.calculateUserRangeStats(userKey, fromDate, toDate, shiftType);
+  }
+
+  async getUserIrregularities(userKey, fromDate, toDate, shiftType) {
+    const rangeData = await activityService.getActivitiesRange(userKey, fromDate, toDate);
+    const summaries = rangeData.dailySummaries || {};
+    const irregularities = [];
+    let cursor = fromDate;
+
+    while (cursor <= toDate) {
+      const isRequired = isWorkingDay(cursor, shiftType);
+      if (isRequired && !isFutureDate(cursor)) {
+        const summary = summaries[cursor] || {
+          totalMinutes: 0,
+          requiredMinutes: config.activity.requiredMinutes,
+          isComplete: false
+        };
+
+        const status = this.determineStatus(summary, true, false);
+        if (status !== 'OK') {
+          irregularities.push({
+            date: cursor,
+            status,
+            totalMinutes: summary.totalMinutes,
+            requiredMinutes: summary.requiredMinutes
+          });
+        }
+      }
+
+      cursor = addDays(cursor, 1);
+    }
+
+    return irregularities;
   }
 }
 
