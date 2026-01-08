@@ -477,6 +477,7 @@
         if (result.success) {
           cancelAdd();
           loadActivities();
+          loadMonthCalendar();
           showSuccess(editingActivityId ? 'Attività aggiornata con successo' : 'Attività aggiunta con successo');
         } else {
           showError(result.error?.message || result.error || 'Errore sconosciuto');
@@ -505,6 +506,7 @@
 
         if (result.success) {
           loadActivities();
+          loadMonthCalendar();
           showSuccess('Attività eliminata');
         } else {
           showError(result.error.message);
