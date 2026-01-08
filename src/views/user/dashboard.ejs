@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Activity Tracker</title>
   <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
   <script src="/js/timepicker.js"></script>
 </head>
-<body>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
     <div class="navbar-brand">
       <h1>Activity Tracker</h1>
@@ -28,9 +29,9 @@
     <div class="header">
       <h2>Le Tue Attività</h2>
       <div class="date-selector">
-        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control">
-        <button onclick="loadActivities()" class="btn btn-primary">Carica</button>
-        <button onclick="setToday()" class="btn">Oggi</button>
+        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control" data-ui-help="Scegli la data di lavoro da visualizzare." data-ui-severity="info">
+        <button onclick="loadActivities(this)" class="btn btn-primary" data-ui-help="Carica le attività e aggiorna le statistiche della giornata." data-ui-severity="info">Carica</button>
+        <button onclick="setToday(this)" class="btn" data-ui-help="Imposta rapidamente la data odierna." data-ui-severity="info">Oggi</button>
       </div>
     </div>
 
@@ -62,7 +63,7 @@
     <div class="activity-section">
       <div class="section-header">
         <h3>Gestione Attività</h3>
-        <button onclick="showAddActivity()" class="btn btn-primary">+ Nuova Attività</button>
+        <button onclick="showAddActivity(this)" class="btn btn-primary" data-ui-help="Apri il form per registrare una nuova attività." data-ui-severity="info">+ Nuova Attività</button>
       </div>
 
       <div id="addActivityForm" class="activity-form" style="display: none;">
@@ -71,25 +72,25 @@
           <div class="form-row">
             <div class="form-group">
               <label>Ora Inizio</label>
-              <input type="time" id="startTime" required step="900">
+              <input type="time" id="startTime" required step="900" data-ui-help="Seleziona l'orario di inizio (step 15 minuti)." data-ui-severity="info">
             </div>
             <div class="form-group">
               <label>Ora Fine</label>
-              <input type="time" id="endTime" required step="900">
+              <input type="time" id="endTime" required step="900" data-ui-help="Seleziona l'orario di fine (step 15 minuti)." data-ui-severity="info">
             </div>
             <div class="form-group">
               <label>Tipo Attività</label>
-              <select id="activityType" required>
+              <select id="activityType" required data-ui-help="Scegli la categoria che descrive l'attività svolta." data-ui-severity="info">
               </select>
             </div>
           </div>
           <div class="form-group">
             <label>Note</label>
-            <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
+            <textarea id="notes" rows="2" placeholder="Descrizione attività..." data-ui-help="Inserisci dettagli utili o contesto per l'attività." data-ui-severity="info"></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Salva</button>
-            <button type="button" onclick="cancelAdd()" class="btn">Annulla</button>
+            <button type="submit" class="btn btn-primary" data-ui-help="Salva l'attività o aggiorna quella selezionata." data-ui-severity="info">Salva</button>
+            <button type="button" onclick="cancelAdd(this)" class="btn" data-ui-help="Chiudi il form senza salvare." data-ui-severity="warn">Annulla</button>
           </div>
         </form>
       </div>
@@ -138,14 +139,18 @@
       });
     }
 
-    function setToday() {
+    function setToday(anchor) {
       console.log('setToday called');
+      lastActionAnchor = anchor || document.getElementById('activityDate');
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('activityDate').value = today;
       loadActivities();
     }
 
-    async function loadActivities() {
+    let lastActionAnchor = null;
+
+    async function loadActivities(anchor) {
+      lastActionAnchor = anchor || document.getElementById('activityDate');
       console.log('loadActivities called for date:', document.getElementById('activityDate')?.value);
       const date = document.getElementById('activityDate').value;
       currentDate = date;
@@ -259,13 +264,13 @@
                 </span>
               </div>
               <div class="activity-actions">
-                <button onclick="editActivity('${activity.id}')" class="btn btn-sm btn-primary">
+                <button onclick="editActivity('${activity.id}', this)" class="btn btn-sm btn-primary" data-ui-help="Modifica orari, categoria o note dell'attività selezionata." data-ui-severity="info">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
                     <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                   </svg>
                   Modifica
                 </button>
-                <button onclick="deleteActivity('${activity.id}')" class="btn btn-sm btn-danger">
+                <button onclick="deleteActivity('${activity.id}', this)" class="btn btn-sm btn-danger" data-ui-help="Elimina definitivamente l'attività selezionata." data-ui-severity="warn">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                     <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -286,10 +291,14 @@
       }).join('');
 
       window.currentActivities = activities;
+      if (window.uiHelper) {
+        window.uiHelper.bindHelpTargets(list);
+      }
     }
 
-    function showAddActivity() {
+    function showAddActivity(anchor) {
       console.log('showAddActivity called');
+      lastActionAnchor = anchor || document.getElementById('addActivityForm');
       editingActivityId = null;
       document.getElementById('addActivityForm').style.display = 'block';
       document.getElementById('startTime').value = '';
@@ -306,8 +315,9 @@
       }
     }
 
-    function editActivity(activityId) {
+    function editActivity(activityId, anchor) {
       console.log('editActivity called for:', activityId);
+      lastActionAnchor = anchor || document.getElementById('addActivityForm');
 
       const activity = window.currentActivities?.find(a => a.id === activityId);
       if (!activity) {
@@ -345,8 +355,9 @@
       document.getElementById('addActivityForm').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function cancelAdd() {
+    function cancelAdd(anchor) {
       console.log('cancelAdd called');
+      lastActionAnchor = anchor || document.getElementById('addActivityForm');
       document.getElementById('addActivityForm').style.display = 'none';
       editingActivityId = null;
       document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
@@ -356,6 +367,7 @@
     async function addActivity(event) {
       console.log('addActivity called', editingActivityId ? '(UPDATE mode)' : '(CREATE mode)');
       event.preventDefault();
+      lastActionAnchor = event.submitter || document.querySelector('#addActivityForm button[type="submit"]');
 
       const data = {
         startTime: document.getElementById('startTime').value,
@@ -407,7 +419,8 @@
       }
     }
 
-    async function deleteActivity(activityId) {
+    async function deleteActivity(activityId, anchor) {
+      lastActionAnchor = anchor || document.querySelector(`[data-activity-id="${activityId}"]`);
       if (!confirm('Sei sicuro di voler eliminare questa attività?')) {
         return;
       }
@@ -435,11 +448,27 @@
 
     function showError(message) {
       console.error('showError:', message);
+      if (window.uiHelper && window.uiHelper.enabled) {
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('activitiesList'),
+          message: message,
+          severity: 'error'
+        });
+        return;
+      }
       alert('Errore: ' + message);
     }
 
     function showSuccess(message) {
       console.log('showSuccess:', message);
+      if (window.uiHelper && window.uiHelper.enabled) {
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('activitiesList'),
+          message: message,
+          severity: 'info'
+        });
+        return;
+      }
       alert(message);
     }
 

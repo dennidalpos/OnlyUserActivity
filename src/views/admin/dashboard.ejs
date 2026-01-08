@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
   <style>
     * {
@@ -134,7 +135,7 @@
     }
   </style>
 </head>
-<body>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
     <div class="container">
       <h1>Activity Tracker</h1>
@@ -176,18 +177,18 @@
         }
         %>
 
-        <a href="<%= getNavUrl('prev') %>" class="nav-btn">&larr; Precedente</a>
-        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn">Oggi</a>
-        <a href="<%= getNavUrl('next') %>" class="nav-btn">Successivo &rarr;</a>
+        <a href="<%= getNavUrl('prev') %>" class="nav-btn" data-ui-help="Vai al periodo precedente nel monitoraggio." data-ui-severity="info">&larr; Precedente</a>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn" data-ui-help="Torna rapidamente alla data odierna." data-ui-severity="info">Oggi</a>
+        <a href="<%= getNavUrl('next') %>" class="nav-btn" data-ui-help="Vai al periodo successivo nel monitoraggio." data-ui-severity="info">Successivo &rarr;</a>
       </div>
 
       <div class="view-mode-selector">
         <a href="/admin/dashboard?viewMode=day&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>">Giorno</a>
+           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>" data-ui-help="Visualizza lo stato per una singola giornata." data-ui-severity="info">Giorno</a>
         <a href="/admin/dashboard?viewMode=week&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>">Settimana</a>
+           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>" data-ui-help="Visualizza il riepilogo settimanale." data-ui-severity="info">Settimana</a>
         <a href="/admin/dashboard?viewMode=month&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>">Mese</a>
+           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>" data-ui-help="Visualizza il riepilogo mensile." data-ui-severity="info">Mese</a>
       </div>
     </div>
 
@@ -236,20 +237,20 @@
       <div class="form-row">
         <div class="form-group">
           <label for="username">Cerca Utente:</label>
-          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username">
+          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username" data-ui-help="Filtra per username o parte di esso." data-ui-severity="info">
         </div>
         <div class="form-group">
           <label for="status">Stato:</label>
-          <select id="status" name="status">
+          <select id="status" name="status" data-ui-help="Seleziona lo stato di completamento da visualizzare." data-ui-severity="info">
             <option value="">Tutti</option>
             <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK</option>
             <option value="INCOMPLETO" <%= filters.status === 'INCOMPLETO' ? 'selected' : '' %>>Incompleto</option>
             <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Filtra</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Applica i filtri selezionati alla tabella." data-ui-severity="info">Filtra</button>
         <% if (filters.username || filters.status) { %>
-        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn">Reset</a>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn" data-ui-help="Rimuove tutti i filtri applicati." data-ui-severity="warn">Reset</a>
         <% } %>
       </div>
     </form>

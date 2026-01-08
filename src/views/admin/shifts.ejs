@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/ui-helper.js"></script>
   <style>
     .shifts-container {
       max-width: 1200px;
@@ -208,7 +209,7 @@
     }
   </style>
 </head>
-<body>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
     <div class="container">
       <h1>Activity Tracker</h1>
@@ -234,7 +235,7 @@
       </div>
 
       <div style="margin-bottom: 20px;">
-        <button type="button" onclick="showAddShiftModal()" class="btn btn-success">
+        <button type="button" onclick="showAddShiftModal(this)" class="btn btn-success" data-ui-help="Apre il modulo per creare un nuovo tipo di turno." data-ui-severity="info">
           ➕ Aggiungi Nuovo Turno
         </button>
       </div>
@@ -260,8 +261,8 @@
             </div>
           </div>
           <div class="shift-type-actions">
-            <button onclick="editShiftType('<%= shiftType.id %>')" class="btn btn-primary btn-sm">Modifica</button>
-            <button onclick="deleteShiftType('<%= shiftType.id %>')" class="btn btn-danger btn-sm">Elimina</button>
+            <button onclick="editShiftType('<%= shiftType.id %>', this)" class="btn btn-primary btn-sm" data-ui-help="Modifica i dettagli del turno selezionato." data-ui-severity="info">Modifica</button>
+            <button onclick="deleteShiftType('<%= shiftType.id %>', this)" class="btn btn-danger btn-sm" data-ui-help="Elimina il turno in modo permanente." data-ui-severity="warn">Elimina</button>
           </div>
         </div>
         <% }); %>
@@ -280,33 +281,33 @@
         <div class="form-group">
           <label for="shiftId">ID Turno (univoco, no spazi):</label>
           <input type="text" id="shiftId" required pattern="[a-z0-9-_]+"
-                 placeholder="es: turno-mattina">
+                 placeholder="es: turno-mattina" data-ui-help="Inserisci un ID univoco per identificare il turno." data-ui-severity="info">
           <small style="color: #666; font-size: 12px;">Solo lettere minuscole, numeri, trattini e underscore</small>
         </div>
 
         <div class="form-group">
           <label for="shiftName">Nome Turno:</label>
-          <input type="text" id="shiftName" required placeholder="es: Turno Mattina">
+          <input type="text" id="shiftName" required placeholder="es: Turno Mattina" data-ui-help="Nome leggibile del turno per gli utenti." data-ui-severity="info">
         </div>
 
         <div class="form-group">
           <label for="shiftDescription">Descrizione (opzionale):</label>
-          <textarea id="shiftDescription" placeholder="Descrizione del turno..."></textarea>
+          <textarea id="shiftDescription" placeholder="Descrizione del turno..." data-ui-help="Descrizione facoltativa del turno." data-ui-severity="info"></textarea>
         </div>
 
         <div class="checkbox-group">
-          <input type="checkbox" id="includeWeekends">
+          <input type="checkbox" id="includeWeekends" data-ui-help="Includi sabato e domenica nelle giornate del turno." data-ui-severity="info">
           <label for="includeWeekends">Includi Weekend (Sabato e Domenica)</label>
         </div>
 
         <div class="checkbox-group">
-          <input type="checkbox" id="includeHolidays">
+          <input type="checkbox" id="includeHolidays" data-ui-help="Includi le festività nazionali nel turno." data-ui-severity="info">
           <label for="includeHolidays">Includi Festività</label>
         </div>
 
         <div class="modal-footer">
-          <button type="button" onclick="closeShiftModal()" class="btn">Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" onclick="closeShiftModal(this)" class="btn" data-ui-help="Chiude il modulo senza salvare." data-ui-severity="warn">Annulla</button>
+          <button type="submit" class="btn btn-primary" data-ui-help="Salva il turno e aggiorna la lista." data-ui-severity="info">Salva</button>
         </div>
       </form>
     </div>
@@ -314,8 +315,22 @@
 
   <script>
     let shiftTypesData = <%- JSON.stringify(shiftTypes) %>;
+    let lastActionAnchor = null;
 
     function showAlert(message, type = 'success') {
+      if (window.uiHelper && window.uiHelper.enabled) {
+        const severityMap = {
+          success: 'info',
+          info: 'info',
+          danger: 'error'
+        };
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('alertContainer'),
+          message,
+          severity: severityMap[type] || 'info'
+        });
+        return;
+      }
       const alertContainer = document.getElementById('alertContainer');
       const alert = document.createElement('div');
       alert.className = `alert alert-${type}`;
@@ -327,7 +342,8 @@
       }, 5000);
     }
 
-    function showAddShiftModal() {
+    function showAddShiftModal(anchor) {
+      lastActionAnchor = anchor || document.getElementById('shiftModal');
       document.getElementById('modalTitle').textContent = 'Aggiungi Turno';
       document.getElementById('editingShiftId').value = '';
       document.getElementById('shiftForm').reset();
@@ -335,7 +351,8 @@
       document.getElementById('shiftModal').style.display = 'flex';
     }
 
-    function editShiftType(id) {
+    function editShiftType(id, anchor) {
+      lastActionAnchor = anchor || document.getElementById('shiftModal');
       const shiftType = shiftTypesData.find(st => st.id === id);
       if (!shiftType) return;
 
@@ -350,13 +367,15 @@
       document.getElementById('shiftModal').style.display = 'flex';
     }
 
-    function closeShiftModal() {
+    function closeShiftModal(anchor) {
+      lastActionAnchor = anchor || document.getElementById('shiftModal');
       document.getElementById('shiftModal').style.display = 'none';
       document.getElementById('shiftForm').reset();
     }
 
     document.getElementById('shiftForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      lastActionAnchor = e.submitter || document.querySelector('#shiftForm button[type="submit"]');
 
       const editingId = document.getElementById('editingShiftId').value;
       const shiftData = {
@@ -396,7 +415,8 @@
       }
     });
 
-    async function deleteShiftType(id) {
+    async function deleteShiftType(id, anchor) {
+      lastActionAnchor = anchor || document.querySelector(`[data-shift-id="${id}"]`);
       const shiftType = shiftTypesData.find(st => st.id === id);
       if (!confirm(`Sei sicuro di voler eliminare il turno "${shiftType.name}"?`)) {
         return;
