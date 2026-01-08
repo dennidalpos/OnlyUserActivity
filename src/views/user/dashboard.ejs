@@ -676,11 +676,9 @@
 
     function getQuickDayDurationParts() {
       const minutes = Number.isFinite(requiredMinutes) ? requiredMinutes : 480;
-      const hours = Math.min(24, Math.ceil(minutes / 60));
-      let remainder = minutes % 60;
-      if (![15, 30, 45].includes(remainder)) {
-        remainder = 15;
-      }
+      const roundedMinutes = Math.min(24 * 60, Math.ceil(minutes / 15) * 15);
+      const hours = Math.floor(roundedMinutes / 60);
+      const remainder = roundedMinutes % 60;
       return { hours, minutes: remainder };
     }
 
