@@ -2,14 +2,14 @@ param(
   [string]$ServiceName = "OnlyUserActivity",
   [string]$ProjectRoot = (Resolve-Path ".").Path,
   [string]$NodePath = (Get-Command node -ErrorAction Stop).Source,
-  [string]$NssmPath = (Join-Path (Resolve-Path ".").Path "tools\nssm.exe"),
+  [string]$NssmPath = (Join-Path (Resolve-Path ".").Path "nssm.exe"),
   [string]$LogDir = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $NssmPath)) {
-  throw "nssm.exe non trovato in '$NssmPath'. Scaricalo da https://nssm.cc/ e posizionalo in tools\nssm.exe."
+  throw "nssm.exe non trovato in '$NssmPath'. Scaricalo da https://nssm.cc/ e posizionalo nella root del progetto (nssm.exe)."
 }
 
 $serverPath = Join-Path $ProjectRoot "src\server.js"

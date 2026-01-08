@@ -297,7 +297,7 @@ pm2 startup  # Auto-start al boot
 
 Per Windows Server puoi installare il webserver come servizio usando **NSSM**.
 
-1. Scarica `nssm.exe` da https://nssm.cc/ e salvalo in `tools\\nssm.exe`
+1. Scarica `nssm.exe` da https://nssm.cc/ e salvalo nella root del progetto (`nssm.exe`)
 2. Apri PowerShell **come amministratore**
 3. Esegui:
 
