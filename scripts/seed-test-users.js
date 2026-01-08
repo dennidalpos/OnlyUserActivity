@@ -9,15 +9,8 @@ const { findShiftType, isWorkingDay } = require('../src/services/utils/shiftUtil
 
 const TOTAL_USERS = 10;
 const USERS_PER_SHIFT = 5;
+const OK_USERS_PER_SHIFT = 3;
 const REQUIRED_MINUTES = config.activity.requiredMinutes;
-
-function getMonthRange(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  return { firstDay, lastDay };
-}
 
 function getRandomItem(items) {
   return items[Math.floor(Math.random() * items.length)];
@@ -58,31 +51,41 @@ async function ensureUser(username, displayName) {
   return await userStorage.findByUserKey(user.userKey);
 }
 
-async function seedUserActivities(user, shiftType, activityTypes, monthStart, monthEnd, includeIrregularities) {
-  const allDates = [];
-  let cursor = formatDate(monthStart);
-  const end = formatDate(monthEnd);
+async function seedUserActivities(user, shiftType, activityTypes, fromDate, toDate, statusMode) {
+  const workingDates = [];
+  let cursor = fromDate;
 
-  while (cursor <= end) {
+  while (cursor <= toDate) {
     if (isWorkingDay(cursor, shiftType)) {
-      allDates.push(cursor);
+      workingDates.push(cursor);
     }
     cursor = addDays(cursor, 1);
   }
 
-  const shuffled = allDates.sort(() => 0.5 - Math.random());
-  const targetDays = shuffled.slice(0, Math.min(18, shuffled.length));
-  const missingDays = includeIrregularities ? new Set(targetDays.slice(0, 3)) : new Set();
-  const incompleteDays = includeIrregularities ? new Set(targetDays.slice(3, 6)) : new Set();
+  let missingDays = new Set();
+  let incompleteDays = new Set();
 
-  for (const date of targetDays) {
+  if (statusMode === 'irregular' && workingDates.length > 0) {
+    const shuffled = workingDates.slice().sort(() => 0.5 - Math.random());
+    const missingCount = Math.max(1, Math.floor(workingDates.length * 0.05));
+    const incompleteCount = Math.max(1, Math.floor(workingDates.length * 0.1));
+    missingDays = new Set(shuffled.slice(0, Math.min(missingCount, shuffled.length)));
+    incompleteDays = new Set(
+      shuffled.slice(
+        Math.min(missingCount, shuffled.length),
+        Math.min(missingCount + incompleteCount, shuffled.length)
+      )
+    );
+  }
+
+  for (const date of workingDates) {
     if (missingDays.has(date)) {
       continue;
     }
 
     const isIncomplete = incompleteDays.has(date);
     const targetMinutes = isIncomplete
-      ? Math.max(120, REQUIRED_MINUTES - 120)
+      ? Math.max(120, Math.floor(REQUIRED_MINUTES * getRandomItem([0.5, 0.65, 0.8])))
       : REQUIRED_MINUTES + getRandomItem([0, 30, 60]);
 
     const activityCount = getRandomItem([1, 2, 3]);
@@ -116,8 +119,10 @@ async function main() {
     .filter(type => type !== 'altro');
 
   const today = new Date();
-  today.setMonth(today.getMonth() - 3);
-  const { firstDay, lastDay } = getMonthRange(today);
+  const startDate = new Date(today);
+  startDate.setMonth(startDate.getMonth() - 3);
+  const fromDate = formatDate(startDate);
+  const toDate = formatDate(today);
 
   for (let i = 0; i < TOTAL_USERS; i += 1) {
     const index = String(i + 1).padStart(2, '0');
@@ -129,9 +134,9 @@ async function main() {
     await settingsService.updateUserShift(user.userKey, shift);
 
     const shiftType = i < USERS_PER_SHIFT ? shiftFeriali : shift247;
-    const includeIrregularities = i < 4;
-    await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay, includeIrregularities);
-    await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay, includeIrregularities);
+    const indexInShift = i % USERS_PER_SHIFT;
+    const statusMode = indexInShift < OK_USERS_PER_SHIFT ? 'ok' : 'irregular';
+    await seedUserActivities(user, shiftType, activityTypes, fromDate, toDate, statusMode);
   }
 
   console.log('Seed dati completato.');
