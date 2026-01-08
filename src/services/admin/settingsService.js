@@ -5,6 +5,8 @@ const fileStorage = require('../storage/fileStorage');
 const userStorage = require('../storage/userStorage');
 const { hashPassword } = require('../utils/hashUtils');
 const ldapClient = require('../ldap/ldapClient');
+const activityTypesService = require('./activityTypesService');
+const shiftTypesService = require('./shiftTypesService');
 
 class SettingsService {
   constructor() {
@@ -662,6 +664,200 @@ class SettingsService {
       success: true,
       message: 'Utente eliminato con successo'
     };
+  }
+
+  async exportFullConfiguration() {
+    const settings = await this.getCurrentSettings();
+    const activityTypes = await activityTypesService.getActivityTypes();
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const users = await userStorage.listAll();
+    const activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      settings,
+      activityTypes,
+      shiftTypes,
+      users,
+      activities
+    };
+  }
+
+  async exportActivitiesSnapshot(rootPath) {
+    const activitiesPath = path.join(rootPath, 'activities');
+    const snapshot = [];
+
+    let userDirs = [];
+    try {
+      userDirs = await fs.readdir(activitiesPath, { withFileTypes: true });
+    } catch (error) {
+      return snapshot;
+    }
+
+    for (const userDir of userDirs) {
+      if (!userDir.isDirectory()) {
+        continue;
+      }
+
+      const userKey = userDir.name;
+      const userPath = path.join(activitiesPath, userKey);
+      let yearDirs = [];
+
+      try {
+        yearDirs = await fs.readdir(userPath, { withFileTypes: true });
+      } catch (error) {
+        continue;
+      }
+
+      for (const yearDir of yearDirs) {
+        if (!yearDir.isDirectory()) {
+          continue;
+        }
+
+        const year = yearDir.name;
+        const yearPath = path.join(userPath, year);
+        let monthFiles = [];
+
+        try {
+          monthFiles = await fs.readdir(yearPath, { withFileTypes: true });
+        } catch (error) {
+          continue;
+        }
+
+        for (const monthFile of monthFiles) {
+          if (!monthFile.isFile() || !monthFile.name.endsWith('.json')) {
+            continue;
+          }
+
+          const filePath = path.join(yearPath, monthFile.name);
+          const monthData = await fileStorage.readJSON(filePath);
+
+          if (!monthData) {
+            continue;
+          }
+
+          snapshot.push({
+            userKey,
+            year,
+            month: monthFile.name.replace('.json', ''),
+            data: monthData
+          });
+        }
+      }
+    }
+
+    return snapshot;
+  }
+
+  async importFullConfiguration(payload) {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Payload configurazione non valido');
+    }
+
+    if (payload.settings) {
+      await this.applySettingsSnapshot(payload.settings);
+    }
+
+    if (Array.isArray(payload.activityTypes)) {
+      await activityTypesService.setActivityTypes(payload.activityTypes);
+    }
+
+    if (Array.isArray(payload.shiftTypes)) {
+      await shiftTypesService.setShiftTypes(payload.shiftTypes);
+    }
+
+    if (Array.isArray(payload.users)) {
+      await this.importUsersSnapshot(payload.users);
+    }
+
+    if (Array.isArray(payload.activities)) {
+      await this.importActivitiesSnapshot(payload.activities, payload.settings?.storage?.rootPath || config.storage.rootPath);
+    }
+
+    return { success: true, message: 'Configurazione importata con successo' };
+  }
+
+  async applySettingsSnapshot(settings) {
+    const updates = {
+      SERVER_HOST: settings.server?.host,
+      SERVER_PORT: settings.server?.port,
+      TRUST_PROXY: settings.server?.trustProxy,
+      LDAP_ENABLED: settings.ldap?.enabled ? 'true' : 'false',
+      LDAP_URL: settings.ldap?.url,
+      LDAP_BASE_DN: settings.ldap?.baseDN,
+      LDAP_BIND_DN: settings.ldap?.bindDN,
+      LDAP_BIND_PASSWORD: settings.ldap?.bindPassword,
+      LDAP_USER_SEARCH_FILTER: settings.ldap?.userSearchFilter,
+      LDAP_GROUP_SEARCH_BASE: settings.ldap?.groupSearchBase,
+      LDAP_REQUIRED_GROUP: settings.ldap?.requiredGroup,
+      LDAP_TIMEOUT: settings.ldap?.timeout,
+      HTTPS_ENABLED: settings.https?.enabled ? 'true' : 'false',
+      HTTPS_CERT_PATH: settings.https?.certPath,
+      HTTPS_KEY_PATH: settings.https?.keyPath,
+      LOG_LEVEL: settings.logging?.level,
+      LOG_TO_FILE: settings.logging?.toFile ? 'true' : 'false',
+      LOG_FILE_PATH: settings.logging?.filePath,
+      JWT_SECRET: settings.jwt?.secret,
+      JWT_EXPIRES_IN: settings.jwt?.expiresIn,
+      JWT_REFRESH_ENABLED: settings.jwt?.refreshEnabled ? 'true' : 'false',
+      DATA_ROOT_PATH: settings.storage?.rootPath,
+      AUDIT_LOG_RETENTION_DAYS: settings.storage?.auditRetentionDays,
+      AUDIT_PAYLOAD_MODE: settings.storage?.auditPayloadMode,
+      ADMIN_SESSION_SECRET: settings.admin?.sessionSecret,
+      ADMIN_SESSION_MAX_AGE: settings.admin?.sessionMaxAge,
+      ADMIN_DEFAULT_USERNAME: settings.admin?.defaultUsername,
+      ADMIN_DEFAULT_PASSWORD: settings.admin?.defaultPassword,
+      RATE_LIMIT_WINDOW_MS: settings.security?.rateLimitWindowMs,
+      RATE_LIMIT_MAX_REQUESTS: settings.security?.rateLimitMaxRequests,
+      LOGIN_RATE_LIMIT_MAX: settings.security?.loginRateLimitMax,
+      LOGIN_LOCKOUT_DURATION_MS: settings.security?.loginLockoutDurationMs,
+      CORS_ORIGIN: settings.security?.corsOrigin,
+      ACTIVITY_STRICT_CONTINUITY: settings.activity?.strictContinuity ? 'true' : 'false',
+      ACTIVITY_REQUIRED_MINUTES: settings.activity?.requiredMinutes
+    };
+
+    Object.keys(updates).forEach(key => {
+      if (updates[key] === undefined || updates[key] === null) {
+        delete updates[key];
+      }
+    });
+
+    await this.updateEnvFile(updates);
+  }
+
+  async importUsersSnapshot(users) {
+    const usersPath = path.join(config.storage.rootPath, 'users');
+    const index = {};
+
+    await fs.mkdir(usersPath, { recursive: true });
+
+    for (const user of users) {
+      if (!user?.userKey || !user?.username) {
+        continue;
+      }
+
+      const userPath = path.join(usersPath, `${user.userKey}.json`);
+      await fileStorage.writeJSON(userPath, user);
+      index[user.username.toLowerCase()] = user.userKey;
+    }
+
+    await userStorage.saveIndex(index);
+    userStorage.invalidateAllCache();
+  }
+
+  async importActivitiesSnapshot(entries, rootPath) {
+    const activitiesPath = path.join(rootPath, 'activities');
+
+    for (const entry of entries) {
+      if (!entry?.userKey || !entry?.year || !entry?.month || !entry?.data) {
+        continue;
+      }
+
+      const monthDir = path.join(activitiesPath, entry.userKey, String(entry.year));
+      await fs.mkdir(monthDir, { recursive: true });
+      const filePath = path.join(monthDir, `${entry.month}.json`);
+      await fileStorage.writeJSON(filePath, entry.data);
+    }
   }
 }
 
