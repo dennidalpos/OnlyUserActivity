@@ -144,8 +144,12 @@ class MonitoringService {
     let overallStatus = 'ASSENTE';
     if (totalDays === 0) {
       overallStatus = 'OK';
-    } else if (completeDays > 0) {
-      overallStatus = completionRate >= 80 ? 'OK' : 'INCOMPLETO';
+    } else if (absentDays === totalDays) {
+      overallStatus = 'ASSENTE';
+    } else if (incompleteDays > 0 || absentDays > 0) {
+      overallStatus = 'INCOMPLETO';
+    } else {
+      overallStatus = 'OK';
     }
 
     return {

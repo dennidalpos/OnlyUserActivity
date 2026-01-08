@@ -201,8 +201,17 @@ class ActivityService {
 
       let status = 'Non inserito';
       if (isRequired && !isFuture) {
-        if (summary.totalMinutes > 0) {
-          status = summary.isComplete ? 'OK' : 'Incompleto';
+        const requiredMinutes = summary.requiredMinutes || config.activity.requiredMinutes;
+        const completionPercentage = requiredMinutes > 0
+          ? Math.min(100, Math.round((summary.totalMinutes / requiredMinutes) * 100))
+          : 0;
+
+        if (completionPercentage === 0) {
+          status = 'Non inserito';
+        } else if (completionPercentage === 100) {
+          status = 'OK';
+        } else {
+          status = 'Incompleto';
         }
       }
 
@@ -244,9 +253,18 @@ class ActivityService {
           isComplete: false
         };
 
+        const requiredMinutes = summary.requiredMinutes || config.activity.requiredMinutes;
+        const completionPercentage = requiredMinutes > 0
+          ? Math.min(100, Math.round((summary.totalMinutes / requiredMinutes) * 100))
+          : 0;
+
         let status = 'Non inserito';
-        if (summary.totalMinutes > 0) {
-          status = summary.isComplete ? 'OK' : 'Incompleto';
+        if (completionPercentage === 0) {
+          status = 'Non inserito';
+        } else if (completionPercentage === 100) {
+          status = 'OK';
+        } else {
+          status = 'Incompleto';
         }
 
         if (status !== 'OK') {
