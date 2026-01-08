@@ -303,6 +303,8 @@ Per Windows Server puoi installare il webserver come servizio usando **NSSM**.
 
 ```powershell
 .\scripts\install-windows-service.ps1 -ServiceName "OnlyUserActivity"
+# oppure, da dentro la cartella scripts
+# .\install-windows-service.ps1 -ServiceName "OnlyUserActivity"
 ```
 
 Il servizio avvierà automaticamente il server con `src\\server.js` e scriverà i log in `logs\\service-stdout.log` e `logs\\service-stderr.log`.

@@ -1,8 +1,8 @@
 param(
   [string]$ServiceName = "OnlyUserActivity",
-  [string]$ProjectRoot = (Resolve-Path ".").Path,
+  [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
   [string]$NodePath = (Get-Command node -ErrorAction Stop).Source,
-  [string]$NssmPath = (Join-Path (Resolve-Path ".").Path "nssm.exe"),
+  [string]$NssmPath = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "nssm.exe"),
   [string]$LogDir = ""
 )
 
