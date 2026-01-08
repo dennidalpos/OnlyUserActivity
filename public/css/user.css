@@ -503,18 +503,18 @@ body {
 }
 
 .legend-ok {
-  background: #d4edda;
-  color: #155724;
+  background: #b8f0c3;
+  color: #14532d;
 }
 
 .legend-incomplete {
-  background: #fff3cd;
-  color: #856404;
+  background: #ffe1a6;
+  color: #7a4d00;
 }
 
 .legend-missing {
-  background: #f8d7da;
-  color: #721c24;
+  background: #ffb3b3;
+  color: #7f1d1d;
 }
 
 .legend-off {
@@ -561,18 +561,18 @@ body {
 }
 
 .calendar-day.day-ok {
-  background: #e7f5ec;
-  border-color: #c3e6cb;
+  background: #b8f0c3;
+  border-color: #2ea44f;
 }
 
 .calendar-day.day-incomplete {
-  background: #fff8e5;
-  border-color: #ffeeba;
+  background: #ffe1a6;
+  border-color: #d98c00;
 }
 
 .calendar-day.day-missing {
-  background: #fdecea;
-  border-color: #f5c6cb;
+  background: #ffb3b3;
+  border-color: #d12c2c;
 }
 
 .calendar-day.day-off {

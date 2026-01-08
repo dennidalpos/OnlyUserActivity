@@ -198,14 +198,14 @@
       hoursSelect.innerHTML = '';
       minutesSelect.innerHTML = '';
 
-      for (let i = 1; i <= 24; i += 1) {
+      for (let i = 0; i <= 24; i += 1) {
         const option = document.createElement('option');
         option.value = String(i);
         option.textContent = `${i}h`;
         hoursSelect.appendChild(option);
       }
 
-      [15, 30, 45].forEach(min => {
+      [0, 15, 30, 45].forEach(min => {
         const option = document.createElement('option');
         option.value = String(min);
         option.textContent = `${min}m`;
@@ -216,11 +216,11 @@
     function setDurationSelectValues(durationMinutesValue) {
       const hoursSelect = document.getElementById('durationHours');
       const minutesSelect = document.getElementById('durationMinutes');
-      const hours = Math.max(1, Math.floor(durationMinutesValue / 60));
-      const minutes = durationMinutesValue % 60 || 15;
+      const hours = Math.max(0, Math.floor(durationMinutesValue / 60));
+      const minutes = durationMinutesValue % 60;
 
       hoursSelect.value = String(Math.min(hours, 24));
-      minutesSelect.value = String([15, 30, 45].includes(minutes) ? minutes : 15);
+      minutesSelect.value = String([0, 15, 30, 45].includes(minutes) ? minutes : 0);
     }
 
     function setToday(anchor) {

@@ -47,6 +47,9 @@ class ActivityService {
 
     if (activityPayload.durationHours || activityPayload.durationMinutes) {
       const durationMinutes = (Number(activityPayload.durationHours) * 60) + Number(activityPayload.durationMinutes);
+      if (durationMinutes <= 0) {
+        throw new Error('La durata deve essere maggiore di 0');
+      }
       const sorted = existingActivities.slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
       const startTime = sorted.length > 0 ? sorted[sorted.length - 1].endTime : '00:00';
       const endTime = addMinutesToTime(startTime, durationMinutes);
@@ -99,6 +102,9 @@ class ActivityService {
     const updatePayload = { ...updates };
     if (updatePayload.durationHours || updatePayload.durationMinutes) {
       const durationMinutes = (Number(updatePayload.durationHours) * 60) + Number(updatePayload.durationMinutes);
+      if (durationMinutes <= 0) {
+        throw new Error('La durata deve essere maggiore di 0');
+      }
       const endTime = addMinutesToTime(current.startTime, durationMinutes);
 
       if (!endTime) {

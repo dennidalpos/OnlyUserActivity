@@ -55,22 +55,32 @@ const buildActivitySchema = () => Joi.object({
     }),
   durationHours: Joi.number()
     .integer()
-    .min(1)
+    .min(0)
     .max(24)
     .required()
     .messages({
       'number.base': 'Le ore devono essere un numero',
-      'number.min': 'Le ore devono essere almeno 1',
+      'number.min': 'Le ore non possono essere negative',
       'number.max': 'Le ore non possono superare 24',
       'any.required': 'Le ore sono obbligatorie'
     }),
   durationMinutes: Joi.number()
     .integer()
-    .valid(15, 30, 45)
+    .valid(0, 15, 30, 45)
     .required()
     .messages({
-      'any.only': 'I minuti devono essere 15, 30 o 45',
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45',
       'any.required': 'I minuti sono obbligatori'
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
   activityType: Joi.string()
     .valid(...ACTIVITY_TYPES)
@@ -96,18 +106,28 @@ const buildActivitySchema = () => Joi.object({
 const buildActivityUpdateSchema = () => Joi.object({
   durationHours: Joi.number()
     .integer()
-    .min(1)
+    .min(0)
     .max(24)
     .messages({
       'number.base': 'Le ore devono essere un numero',
-      'number.min': 'Le ore devono essere almeno 1',
+      'number.min': 'Le ore non possono essere negative',
       'number.max': 'Le ore non possono superare 24'
     }),
   durationMinutes: Joi.number()
     .integer()
-    .valid(15, 30, 45)
+    .valid(0, 15, 30, 45)
     .messages({
-      'any.only': 'I minuti devono essere 15, 30 o 45'
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45'
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
   activityType: Joi.string()
     .valid(...ACTIVITY_TYPES)

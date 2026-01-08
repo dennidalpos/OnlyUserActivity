@@ -94,7 +94,7 @@ async function seedUserActivities(user, shiftType, activityTypes, monthStart, mo
 
       await activityService.createActivity(user.userKey, {
         date,
-        durationHours: Math.max(1, hours),
+        durationHours: hours,
         durationMinutes: mins,
         activityType: getRandomItem(activityTypes),
         notes: 'Dato di test generato automaticamente'
@@ -130,6 +130,7 @@ async function main() {
 
     const shiftType = i < USERS_PER_SHIFT ? shiftFeriali : shift247;
     const includeIrregularities = i < 4;
+    await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay, includeIrregularities);
     await seedUserActivities(user, shiftType, activityTypes, firstDay, lastDay, includeIrregularities);
   }
 
