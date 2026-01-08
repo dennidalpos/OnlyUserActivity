@@ -76,6 +76,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+app.use((req, res, next) => {
+  res.locals.uiHelpEnabled = config.env !== 'production';
+  next();
+});
+
 app.use('/admin', session({
   secret: config.admin.sessionSecret,
   resave: false,

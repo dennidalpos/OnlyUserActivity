@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
   <style>
     .settings-container {
@@ -172,7 +173,7 @@
       color: #666;
       margin-top: 4px;
     }
-    .help-icon {
+    .ui-help-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -195,7 +196,7 @@
     }
   </style>
 </head>
-<body>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
     <div class="container">
       <h1>Activity Tracker</h1>
@@ -220,7 +221,7 @@
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
       <div style="margin-bottom: 20px;">
-        <button type="button" onclick="restartServer()" class="btn btn-danger" style="background: #dc3545; border-color: #dc3545;">
+        <button type="button" onclick="restartServer(this)" class="btn btn-danger" style="background: #dc3545; border-color: #dc3545;" data-ui-help="Riavvia il server applicando le configurazioni salvate." data-ui-severity="warn">
           🔄 Riavvia Server
         </button>
         <span style="margin-left: 10px; font-size: 14px; color: #666;">
@@ -238,24 +239,24 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="serverPort">Porta Server
-              <span class="help-icon" data-help="Porta di ascolto HTTP/HTTPS (1-65535). Su Windows Server 2022 usare una porta libera.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Porta di ascolto HTTP/HTTPS (1-65535). Su Windows Server 2022 usare una porta libera.">ⓘ</span>
             </label>
             <input type="number" id="serverPort" value="<%= settings.server.port %>" placeholder="3001" min="1" max="65535">
           </div>
           <div class="form-group">
             <label for="serverHost">Host Server
-              <span class="help-icon" data-help="Interfaccia di ascolto. Usa 0.0.0.0 per tutte le interfacce o 127.0.0.1 per locale.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Interfaccia di ascolto. Usa 0.0.0.0 per tutte le interfacce o 127.0.0.1 per locale.">ⓘ</span>
             </label>
             <input type="text" id="serverHost" value="<%= settings.server.host %>" placeholder="0.0.0.0">
           </div>
           <div class="form-group">
             <label for="serverTrustProxy">Trust Proxy
-              <span class="help-icon" data-help="Numero di proxy attendibili per ottenere l'IP reale e gestire cookie secure dietro proxy/terminazione TLS.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Numero di proxy attendibili per ottenere l'IP reale e gestire cookie secure dietro proxy/terminazione TLS.">ⓘ</span>
             </label>
             <input type="number" id="serverTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Salva le impostazioni di rete del server." data-ui-severity="info">Salva Configurazione Server</button>
       </form>
     </div>
 
@@ -270,65 +271,65 @@
           <label>
             <input type="checkbox" id="ldapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
             Abilita autenticazione LDAP/AD
-            <span class="help-icon" data-help="Attiva l'autenticazione su Active Directory/LDAP. Richiede riavvio del server.">ⓘ</span>
+            <span class="ui-help-icon" data-ui-help="Attiva l'autenticazione su Active Directory/LDAP. Richiede riavvio del server.">ⓘ</span>
           </label>
         </div>
         <div class="form-grid">
           <div class="form-group">
             <label for="ldapUrl">URL LDAP/LDAPS
-              <span class="help-icon" data-help="Endpoint LDAP. Usa ldaps:// per connessioni sicure (porta 636).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Endpoint LDAP. Usa ldaps:// per connessioni sicure (porta 636).">ⓘ</span>
             </label>
             <input type="text" id="ldapUrl" value="<%= settings.ldap.url %>" placeholder="ldaps://dc.company.local:636">
           </div>
           <div class="form-group">
             <label for="ldapBaseDN">Base DN
-              <span class="help-icon" data-help="Base DN per la ricerca utenti (es. DC=company,DC=local).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Base DN per la ricerca utenti (es. DC=company,DC=local).">ⓘ</span>
             </label>
             <input type="text" id="ldapBaseDN" value="<%= settings.ldap.baseDN %>" placeholder="DC=company,DC=local">
           </div>
           <div class="form-group">
             <label for="ldapBindDN">Bind DN
-              <span class="help-icon" data-help="DN dell'account di servizio usato per interrogare LDAP.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="DN dell'account di servizio usato per interrogare LDAP.">ⓘ</span>
             </label>
             <input type="text" id="ldapBindDN" value="<%= settings.ldap.bindDN %>" placeholder="CN=ServiceAccount,CN=Users,DC=company,DC=local">
           </div>
           <div class="form-group">
             <label for="ldapBindPassword">Bind Password
-              <span class="help-icon" data-help="Password dell'account di servizio per il bind LDAP.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Password dell'account di servizio per il bind LDAP.">ⓘ</span>
             </label>
             <input type="password" id="ldapBindPassword" value="<%= settings.ldap.bindPassword %>" placeholder="********">
             <div class="field-help">Usato per il test bind e la ricerca utenti.</div>
           </div>
           <div class="form-group">
             <label for="ldapUserSearchFilter">User Search Filter
-              <span class="help-icon" data-help="Filtro LDAP per cercare l'utente (es. (sAMAccountName={{username}})).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Filtro LDAP per cercare l'utente (es. (sAMAccountName={{username}})).">ⓘ</span>
             </label>
             <input type="text" id="ldapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>" placeholder="(sAMAccountName={{username}})">
           </div>
           <div class="form-group">
             <label for="ldapGroupSearchBase">Group Search Base
-              <span class="help-icon" data-help="OU o DN dove cercare i gruppi LDAP (opzionale).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="OU o DN dove cercare i gruppi LDAP (opzionale).">ⓘ</span>
             </label>
             <input type="text" id="ldapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>" placeholder="OU=Groups,DC=company,DC=local">
           </div>
           <div class="form-group">
             <label for="ldapRequiredGroup">Gruppo Richiesto
-              <span class="help-icon" data-help="Gruppo richiesto per autorizzare l'accesso (CN o nome gruppo).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Gruppo richiesto per autorizzare l'accesso (CN o nome gruppo).">ⓘ</span>
             </label>
             <input type="text" id="ldapRequiredGroup" value="<%= settings.ldap.requiredGroup %>" placeholder="Domain Users">
           </div>
           <div class="form-group">
             <label for="ldapTimeout">Timeout (ms)
-              <span class="help-icon" data-help="Timeout di connessione e query LDAP in millisecondi.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Timeout di connessione e query LDAP in millisecondi.">ⓘ</span>
             </label>
             <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
           </div>
         </div>
         <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
-          <button type="button" onclick="testLdapBind()" class="btn btn-success">Test Bind LDAP</button>
+          <button type="button" onclick="testLdapBind(this)" class="btn btn-success" data-ui-help="Verifica la connessione LDAP con le credenziali correnti." data-ui-severity="info">Test Bind LDAP</button>
           <span style="font-size: 13px; color: #666;">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
-        <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Salva le impostazioni LDAP/AD." data-ui-severity="info">Salva Configurazione LDAP</button>
       </form>
     </div>
 
@@ -342,32 +343,32 @@
           <label>
             <input type="checkbox" id="httpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
             Abilita HTTPS diretto
-            <span class="help-icon" data-help="Abilita HTTPS nativo. Verifica i percorsi dei certificati su Windows Server 2022.">ⓘ</span>
+            <span class="ui-help-icon" data-ui-help="Abilita HTTPS nativo. Verifica i percorsi dei certificati su Windows Server 2022.">ⓘ</span>
           </label>
         </div>
         <div class="form-grid">
           <div class="form-group">
             <label for="httpsCertPath">Percorso Certificato
-              <span class="help-icon" data-help="Percorso assoluto del certificato (.pem). Esempio Windows: C:\\OnlyUserActivity\\certs\\cert.pem">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Percorso assoluto del certificato (.pem). Esempio Windows: C:\\OnlyUserActivity\\certs\\cert.pem">ⓘ</span>
             </label>
             <div style="display: flex; gap: 8px; align-items: center;">
               <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsCertPath')">Esplora</button>
+              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsCertPath', this)" data-ui-help="Copia un percorso suggerito per il certificato HTTPS." data-ui-severity="info">Esplora</button>
             </div>
             <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsCertPath %></code></div>
           </div>
           <div class="form-group">
             <label for="httpsKeyPath">Percorso Chiave Privata
-              <span class="help-icon" data-help="Percorso assoluto della chiave privata (.pem).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Percorso assoluto della chiave privata (.pem).">ⓘ</span>
             </label>
             <div style="display: flex; gap: 8px; align-items: center;">
               <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsKeyPath')">Esplora</button>
+              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsKeyPath', this)" data-ui-help="Copia un percorso suggerito per la chiave privata HTTPS." data-ui-severity="info">Esplora</button>
             </div>
             <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsKeyPath %></code></div>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Salva Configurazione HTTPS</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Salva i percorsi dei certificati HTTPS." data-ui-severity="info">Salva Configurazione HTTPS</button>
       </form>
     </div>
 
@@ -380,7 +381,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="loggingLevel">Livello log
-              <span class="help-icon" data-help="Seleziona il livello di logging per il server.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Seleziona il livello di logging per il server.">ⓘ</span>
             </label>
             <select id="loggingLevel">
               <% ['trace','debug','info','warn','error','fatal'].forEach(level => { %>
@@ -392,21 +393,21 @@
             <label>
               <input type="checkbox" id="loggingToFile" <%= settings.logging.toFile ? 'checked' : '' %>>
               Salva log su file locale
-              <span class="help-icon" data-help="Salva i log su file nel server Windows (per consultazione locale).">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Salva i log su file nel server Windows (per consultazione locale).">ⓘ</span>
             </label>
           </div>
           <div class="form-group">
             <label for="loggingFilePath">Percorso file log
-              <span class="help-icon" data-help="Percorso assoluto del file log. Esempio: C:\\OnlyUserActivity\\logs\\activity-tracker.log">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Percorso assoluto del file log. Esempio: C:\\OnlyUserActivity\\logs\\activity-tracker.log">ⓘ</span>
             </label>
             <div style="display: flex; gap: 8px; align-items: center;">
               <input type="text" id="loggingFilePath" value="<%= settings.logging.filePath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('loggingFilePath')">Esplora</button>
+              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('loggingFilePath', this)" data-ui-help="Copia un percorso suggerito per il file di log." data-ui-severity="info">Esplora</button>
             </div>
             <div class="field-help">Il file verrà creato sul server Windows. Nessuna scrittura sul PC client.</div>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Salva Logging</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Salva le impostazioni di logging del server." data-ui-severity="info">Salva Logging</button>
       </form>
     </div>
 
@@ -422,13 +423,13 @@
           <h4>Test permessi storage</h4>
           <p>Verifica la possibilità di creare un file temporaneo nella directory dati configurata.</p>
           <div class="field-help">Usa il percorso impostato in "Storage".</div>
-          <button type="button" onclick="runStorageTest()" class="btn btn-primary">Esegui test</button>
+          <button type="button" onclick="runStorageTest(this)" class="btn btn-primary" data-ui-help="Verifica l'accesso alla directory di storage configurata." data-ui-severity="info">Esegui test</button>
         </div>
         <div class="settings-card">
           <h4>Verifica file HTTPS</h4>
           <p>Controlla che i file certificato/chiave siano accessibili dal server.</p>
           <div class="field-help">Usa i percorsi indicati in "Configurazione HTTPS".</div>
-          <button type="button" onclick="runHttpsTest()" class="btn btn-primary">Esegui test</button>
+          <button type="button" onclick="runHttpsTest(this)" class="btn btn-primary" data-ui-help="Verifica la leggibilità dei file HTTPS configurati." data-ui-severity="info">Esegui test</button>
         </div>
       </div>
     </div>
@@ -446,13 +447,13 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="advancedJwtSecret">JWT Secret
-                <span class="help-icon" data-help="Chiave di firma JWT. Cambiarla invalida i token esistenti.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Chiave di firma JWT. Cambiarla invalida i token esistenti.">ⓘ</span>
               </label>
               <input type="password" id="advancedJwtSecret" value="<%= settings.jwt.secret %>">
             </div>
             <div class="form-group">
               <label for="advancedJwtExpiresIn">JWT Expires In
-                <span class="help-icon" data-help="Durata del token (es. 8h, 1d).">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Durata del token (es. 8h, 1d).">ⓘ</span>
               </label>
               <input type="text" id="advancedJwtExpiresIn" value="<%= settings.jwt.expiresIn %>">
             </div>
@@ -460,7 +461,7 @@
               <label>
                 <input type="checkbox" id="advancedJwtRefreshEnabled" <%= settings.jwt.refreshEnabled ? 'checked' : '' %>>
                 Abilita refresh token
-                <span class="help-icon" data-help="Attiva il refresh token per sessioni prolungate.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Attiva il refresh token per sessioni prolungate.">ⓘ</span>
               </label>
             </div>
           </div>
@@ -471,19 +472,19 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="advancedStorageRootPath">Percorso dati
-                <span class="help-icon" data-help="Directory dati. Deve essere scrivibile dal servizio.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Directory dati. Deve essere scrivibile dal servizio.">ⓘ</span>
               </label>
               <input type="text" id="advancedStorageRootPath" value="<%= settings.storage.rootPath %>">
             </div>
             <div class="form-group">
               <label for="advancedAuditRetentionDays">Retention audit (giorni)
-                <span class="help-icon" data-help="Numero di giorni di conservazione log audit.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Numero di giorni di conservazione log audit.">ⓘ</span>
               </label>
               <input type="number" id="advancedAuditRetentionDays" value="<%= settings.storage.auditRetentionDays %>" min="1" max="3650">
             </div>
             <div class="form-group">
               <label for="advancedAuditPayloadMode">Modalità payload audit
-                <span class="help-icon" data-help="partial per log parziale, full per log completi.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="partial per log parziale, full per log completi.">ⓘ</span>
               </label>
               <input type="text" id="advancedAuditPayloadMode" value="<%= settings.storage.auditPayloadMode %>">
             </div>
@@ -495,25 +496,25 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="advancedAdminSessionSecret">Session Secret
-                <span class="help-icon" data-help="Chiave sessione admin. Cambiarla invalida le sessioni attive.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Chiave sessione admin. Cambiarla invalida le sessioni attive.">ⓘ</span>
               </label>
               <input type="password" id="advancedAdminSessionSecret" value="<%= settings.admin.sessionSecret %>">
             </div>
             <div class="form-group">
               <label for="advancedAdminSessionMaxAge">Session Max Age (ms)
-                <span class="help-icon" data-help="Durata sessione admin in millisecondi.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Durata sessione admin in millisecondi.">ⓘ</span>
               </label>
               <input type="number" id="advancedAdminSessionMaxAge" value="<%= settings.admin.sessionMaxAge %>" min="60000" max="86400000">
             </div>
             <div class="form-group">
               <label for="advancedAdminDefaultUsername">Username default
-                <span class="help-icon" data-help="Username admin di default usato all'avvio iniziale.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Username admin di default usato all'avvio iniziale.">ⓘ</span>
               </label>
               <input type="text" id="advancedAdminDefaultUsername" value="<%= settings.admin.defaultUsername %>">
             </div>
             <div class="form-group">
               <label for="advancedAdminDefaultPassword">Password default
-                <span class="help-icon" data-help="Password admin di default. Cambiare subito dopo l'installazione.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Password admin di default. Cambiare subito dopo l'installazione.">ⓘ</span>
               </label>
               <input type="password" id="advancedAdminDefaultPassword" value="<%= settings.admin.defaultPassword %>">
             </div>
@@ -525,31 +526,31 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="advancedRateLimitWindowMs">Rate limit window (ms)
-                <span class="help-icon" data-help="Finestra temporale del rate limit.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Finestra temporale del rate limit.">ⓘ</span>
               </label>
               <input type="number" id="advancedRateLimitWindowMs" value="<%= settings.security.rateLimitWindowMs %>" min="1000" max="3600000">
             </div>
             <div class="form-group">
               <label for="advancedRateLimitMaxRequests">Rate limit max richieste
-                <span class="help-icon" data-help="Numero massimo di richieste per finestra.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Numero massimo di richieste per finestra.">ⓘ</span>
               </label>
               <input type="number" id="advancedRateLimitMaxRequests" value="<%= settings.security.rateLimitMaxRequests %>" min="1" max="10000">
             </div>
             <div class="form-group">
               <label for="advancedLoginRateLimitMax">Login max tentativi
-                <span class="help-icon" data-help="Numero massimo di tentativi di login prima del blocco.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Numero massimo di tentativi di login prima del blocco.">ⓘ</span>
               </label>
               <input type="number" id="advancedLoginRateLimitMax" value="<%= settings.security.loginRateLimitMax %>" min="1" max="50">
             </div>
             <div class="form-group">
               <label for="advancedLoginLockoutDurationMs">Durata lockout login (ms)
-                <span class="help-icon" data-help="Durata del blocco temporaneo dopo troppi tentativi.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Durata del blocco temporaneo dopo troppi tentativi.">ⓘ</span>
               </label>
               <input type="number" id="advancedLoginLockoutDurationMs" value="<%= settings.security.loginLockoutDurationMs %>" min="1000" max="3600000">
             </div>
             <div class="form-group">
               <label for="advancedCorsOrigin">CORS Origin
-                <span class="help-icon" data-help="Origine consentita per chiamate API cross-origin.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Origine consentita per chiamate API cross-origin.">ⓘ</span>
               </label>
               <input type="text" id="advancedCorsOrigin" value="<%= settings.security.corsOrigin %>">
             </div>
@@ -562,20 +563,20 @@
             <label>
               <input type="checkbox" id="advancedActivityStrictContinuity" <%= settings.activity.strictContinuity ? 'checked' : '' %>>
               Abilita continuità stretta
-              <span class="help-icon" data-help="Richiede continuità tra attività giornaliere.">ⓘ</span>
+              <span class="ui-help-icon" data-ui-help="Richiede continuità tra attività giornaliere.">ⓘ</span>
             </label>
           </div>
           <div class="form-grid">
             <div class="form-group">
               <label for="advancedActivityRequiredMinutes">Minuti richiesti
-                <span class="help-icon" data-help="Minuti minimi richiesti per la giornata lavorativa.">ⓘ</span>
+                <span class="ui-help-icon" data-ui-help="Minuti minimi richiesti per la giornata lavorativa.">ⓘ</span>
               </label>
               <input type="number" id="advancedActivityRequiredMinutes" value="<%= settings.activity.requiredMinutes %>" min="1" max="1440">
             </div>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Salva Impostazioni Avanzate</button>
+        <button type="submit" class="btn btn-primary" data-ui-help="Salva le impostazioni avanzate del sistema." data-ui-severity="info">Salva Impostazioni Avanzate</button>
         </form>
       </details>
     </div>
@@ -588,14 +589,14 @@
         <% activityTypes.forEach(type => { %>
         <div class="activity-type-tag">
           <%= type %>
-          <button onclick="removeActivityType('<%= type %>')" title="Rimuovi">&times;</button>
+          <button onclick="removeActivityType('<%= type %>', this)" title="Rimuovi" data-ui-help="Rimuove la categoria selezionata." data-ui-severity="warn">&times;</button>
         </div>
         <% }); %>
       </div>
 
       <form id="addActivityTypeForm" style="display: flex; gap: 8px; margin-top: 16px;">
         <input type="text" id="newActivityType" placeholder="Nuova categoria..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-        <button type="submit" class="btn btn-success">Aggiungi</button>
+        <button type="submit" class="btn btn-success" data-ui-help="Aggiunge una nuova categoria di attività." data-ui-severity="info">Aggiungi</button>
       </form>
     </div>
 
@@ -603,7 +604,7 @@
       <h3>Gestione Utenti Locali</h3>
       <p>Crea o elimina utenti con autenticazione locale. Gli utenti AD vengono gestiti automaticamente.</p>
 
-      <button onclick="showCreateUserForm()" class="btn btn-success" style="margin-bottom: 16px;">+ Nuovo Utente Locale</button>
+      <button onclick="showCreateUserForm(this)" class="btn btn-success" style="margin-bottom: 16px;" data-ui-help="Apri il modulo per creare un nuovo utente locale." data-ui-severity="info">+ Nuovo Utente Locale</button>
 
       <div id="createUserForm" style="display: none; background: #f8f9fa; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
         <h4>Crea Nuovo Utente</h4>
@@ -631,8 +632,8 @@
             </div>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button type="submit" class="btn btn-primary">Crea Utente</button>
-            <button type="button" onclick="hideCreateUserForm()" class="btn">Annulla</button>
+            <button type="submit" class="btn btn-primary" data-ui-help="Crea l'utente locale con i dati inseriti." data-ui-severity="info">Crea Utente</button>
+            <button type="button" onclick="hideCreateUserForm(this)" class="btn" data-ui-help="Chiude il modulo senza creare l'utente." data-ui-severity="warn">Annulla</button>
           </div>
         </form>
       </div>
@@ -701,10 +702,10 @@
             </td>
             <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
             <td>
-              <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>')" class="btn btn-primary btn-sm" style="margin-right: 4px;">Imposta</button>
+              <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm" style="margin-right: 4px;" data-ui-help="Salva i dati anagrafici dell'utente." data-ui-severity="info">Imposta</button>
               <% if (user.userType !== 'ad') { %>
-              <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-warning btn-sm" style="margin-right: 4px;">Reset Password</button>
-              <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>')" class="btn btn-danger btn-sm">Elimina</button>
+              <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm" style="margin-right: 4px;" data-ui-help="Reimposta la password dell'utente locale." data-ui-severity="warn">Reset Password</button>
+              <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm" data-ui-help="Elimina l'utente locale e disabilita l'accesso." data-ui-severity="warn">Elimina</button>
               <% } %>
             </td>
           </tr>
@@ -716,14 +717,34 @@
     <div class="settings-section">
       <h3>Reset Password Admin</h3>
       <p>Imposta una nuova password per l'account admin attualmente autenticato.</p>
-      <button onclick="resetAdminPassword()" class="btn btn-warning">Reset Password Admin</button>
+      <button onclick="resetAdminPassword(this)" class="btn btn-warning" data-ui-help="Reimposta la password dell'utente amministratore." data-ui-severity="warn">Reset Password Admin</button>
     </div>
   </main>
 
   <script>
     let ldapBindTestFingerprint = null;
+    let lastActionAnchor = null;
+
+    function setLastActionAnchor(anchor) {
+      if (anchor) {
+        lastActionAnchor = anchor;
+      }
+    }
 
     function showAlert(message, type = 'success') {
+      if (window.uiHelper && window.uiHelper.enabled) {
+        const severityMap = {
+          success: 'info',
+          info: 'info',
+          danger: 'error'
+        };
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('alertContainer'),
+          message,
+          severity: severityMap[type] || 'info'
+        });
+        return;
+      }
       const alertContainer = document.getElementById('alertContainer');
       const alert = document.createElement('div');
       alert.className = `alert alert-${type}`;
@@ -737,6 +758,7 @@
 
     document.getElementById('serverForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#serverForm button[type="submit"]'));
 
       const data = {
         port: document.getElementById('serverPort').value,
@@ -755,7 +777,7 @@
         if (result.success) {
           showAlert(result.data.message, 'success');
           if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
-            restartServer();
+            restartServer(lastActionAnchor);
           }
         } else {
           showAlert(result.error, 'danger');
@@ -767,6 +789,7 @@
 
     document.getElementById('ldapForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#ldapForm button[type="submit"]'));
 
       const data = {
         enabled: document.getElementById('ldapEnabled').checked,
@@ -804,7 +827,7 @@
         if (result.success) {
           showAlert(result.data.message, 'success');
           if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
-            restartServer();
+            restartServer(lastActionAnchor);
           }
         } else {
           showAlert(result.error, 'danger');
@@ -814,7 +837,8 @@
       }
     });
 
-    async function testLdapBind() {
+    async function testLdapBind(anchor) {
+      setLastActionAnchor(anchor);
       const payload = {
         url: document.getElementById('ldapUrl').value,
         bindDN: document.getElementById('ldapBindDN').value,
@@ -843,6 +867,7 @@
 
     document.getElementById('httpsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#httpsForm button[type="submit"]'));
 
       const data = {
         enabled: document.getElementById('httpsEnabled').checked,
@@ -873,6 +898,7 @@
 
     document.getElementById('addActivityTypeForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#addActivityTypeForm button[type="submit"]'));
 
       const newType = document.getElementById('newActivityType').value.trim();
       if (!newType) return;
@@ -896,7 +922,8 @@
       }
     });
 
-    async function removeActivityType(type) {
+    async function removeActivityType(type, anchor) {
+      setLastActionAnchor(anchor);
       if (!confirm(`Sei sicuro di voler rimuovere la categoria "${type}"?`)) {
         return;
       }
@@ -920,6 +947,7 @@
 
     document.getElementById('advancedSettingsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#advancedSettingsForm button[type="submit"]'));
 
       const data = {
         jwt: {
@@ -974,6 +1002,7 @@
 
     document.getElementById('loggingForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#loggingForm button[type="submit"]'));
 
       const data = {
         logging: {
@@ -1004,7 +1033,8 @@
       }
     });
 
-    function browseHttpsFile(targetId) {
+    function browseHttpsFile(targetId, anchor) {
+      setLastActionAnchor(anchor);
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       fileInput.style.display = 'none';
@@ -1020,7 +1050,8 @@
       document.body.removeChild(fileInput);
     }
 
-    async function runStorageTest() {
+    async function runStorageTest(anchor) {
+      setLastActionAnchor(anchor);
       try {
         const response = await fetch('/admin/api/settings/troubleshoot', {
           method: 'POST',
@@ -1043,7 +1074,8 @@
       }
     }
 
-    async function runHttpsTest() {
+    async function runHttpsTest(anchor) {
+      setLastActionAnchor(anchor);
       try {
         const response = await fetch('/admin/api/settings/troubleshoot', {
           method: 'POST',
@@ -1067,24 +1099,20 @@
       }
     }
 
-    document.querySelectorAll('.help-icon').forEach(icon => {
-      icon.addEventListener('click', () => {
-        const message = icon.dataset.help || 'Nessun dettaglio disponibile.';
-        showAlert(message, 'info');
-      });
-    });
-
-    function showCreateUserForm() {
+    function showCreateUserForm(anchor) {
+      setLastActionAnchor(anchor);
       document.getElementById('createUserForm').style.display = 'block';
     }
 
-    function hideCreateUserForm() {
+    function hideCreateUserForm(anchor) {
+      setLastActionAnchor(anchor);
       document.getElementById('createUserForm').style.display = 'none';
       document.getElementById('userCreateForm').reset();
     }
 
     document.getElementById('userCreateForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#userCreateForm button[type="submit"]'));
 
       const data = {
         username: document.getElementById('newUsername').value,
@@ -1114,7 +1142,8 @@
       }
     });
 
-    async function deleteUser(userKey, username) {
+    async function deleteUser(userKey, username, anchor) {
+      setLastActionAnchor(anchor);
       if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) {
         return;
       }
@@ -1136,7 +1165,8 @@
       }
     }
 
-    async function updateUserInfo(userKey, userType) {
+    async function updateUserInfo(userKey, userType, anchor) {
+      setLastActionAnchor(anchor);
       const shiftValue = document.getElementById(`shift-${userKey}`).value;
       const updates = {
         shift: shiftValue || null
@@ -1169,7 +1199,8 @@
       }
     }
 
-    async function resetUserPassword(userKey, username) {
+    async function resetUserPassword(userKey, username, anchor) {
+      setLastActionAnchor(anchor);
       const newPassword = prompt(`Inserisci la nuova password per "${username}":`);
       if (!newPassword) {
         return;
@@ -1193,7 +1224,8 @@
       }
     }
 
-    async function resetAdminPassword() {
+    async function resetAdminPassword(anchor) {
+      setLastActionAnchor(anchor);
       const newPassword = prompt('Inserisci la nuova password admin:');
       if (!newPassword) {
         return;
@@ -1217,7 +1249,8 @@
       }
     }
 
-    async function restartServer() {
+    async function restartServer(anchor) {
+      setLastActionAnchor(anchor);
       if (!confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
         return;
       }
