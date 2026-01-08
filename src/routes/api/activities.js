@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const activityService = require('../../services/activity/activityService');
+const shiftTypesService = require('../../services/admin/shiftTypesService');
 const auditLogger = require('../../services/storage/auditLogger');
+const userStorage = require('../../services/storage/userStorage');
 const authenticateToken = require('../../middlewares/auth');
 const { validate, getActivitySchema, getActivityUpdateSchema, getActivityTypes } = require('../../middlewares/validation');
 const { AppError } = require('../../middlewares/errorHandler');
 const { validateDateFormat } = require('../../services/utils/timeUtils');
+const { extractYearMonth } = require('../../services/utils/dateUtils');
+const { findShiftType } = require('../../services/utils/shiftUtils');
 
 router.use(authenticateToken);
 
@@ -15,6 +19,44 @@ router.get('/types', async (req, res, next) => {
     res.json({
       success: true,
       data: types
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/month', async (req, res, next) => {
+  try {
+    const date = req.query.date;
+    if (!date) {
+      throw new AppError('Query parameter "date" richiesto', 400, 'MISSING_DATE');
+    }
+
+    const dateValidation = validateDateFormat(date);
+    if (!dateValidation.valid) {
+      throw new AppError(dateValidation.error, 400, 'INVALID_DATE');
+    }
+
+    const { year, month } = extractYearMonth(date);
+    const user = await userStorage.findByUserKey(req.user.userKey);
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const shiftType = findShiftType(shiftTypes, user?.shift);
+
+    const monthData = await activityService.getMonthCalendar(req.user.userKey, year, month, shiftType);
+    const irregularities = await activityService.getIrregularDaysOutsideMonth(req.user.userKey, year, month, shiftType);
+
+    res.json({
+      success: true,
+      data: {
+        month: {
+          year: monthData.year,
+          month: monthData.month,
+          requiredMinutes: monthData.requiredMinutes
+        },
+        days: monthData.days,
+        shift: shiftType,
+        irregularities
+      }
     });
   } catch (error) {
     next(error);

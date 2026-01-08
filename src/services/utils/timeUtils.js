@@ -36,6 +36,14 @@ function minutesToTime(minutes) {
   return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
+function addMinutesToTime(timeString, additionalMinutes) {
+  const totalMinutes = timeToMinutes(timeString) + additionalMinutes;
+  if (totalMinutes >= 24 * 60) {
+    return null;
+  }
+  return minutesToTime(totalMinutes);
+}
+
 function validateDateFormat(dateString) {
   if (!dateString || typeof dateString !== 'string') {
     return { valid: false, error: 'Data non valida' };
@@ -78,6 +86,7 @@ module.exports = {
   validateTimeStep,
   timeToMinutes,
   minutesToTime,
+  addMinutesToTime,
   validateDateFormat,
   calculateDuration,
   roundToQuarterHour

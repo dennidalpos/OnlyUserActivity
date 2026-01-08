@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/ui-helper.js"></script>
+  <script src="/js/help.js"></script>
+</head>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h2>Irregolarità di <%= user.displayName %> (<%= user.username %>)</h2>
+
+    <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
+      <p><strong>Periodo:</strong> dal <%= fromDate %> al <%= toDate %></p>
+      <p><strong>Turno:</strong> <%= shiftType ? shiftType.name : 'Nessun turno assegnato' %></p>
+    </div>
+
+    <% if (irregularities.length === 0) { %>
+      <p style="color: #666; margin-top: 10px;">Nessuna irregolarità rilevata nel periodo selezionato.</p>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th style="text-align: center;">Stato</th>
+            <th style="text-align: right;">Minuti inseriti</th>
+            <th style="text-align: right;">Minuti richiesti</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% irregularities.forEach(item => { %>
+            <tr>
+              <td><%= item.date %></td>
+              <td style="text-align: center;">
+                <span class="mini-badge" style="background: <%= item.status === 'INCOMPLETO' ? '#ffc107' : '#dc3545' %>; color: <%= item.status === 'INCOMPLETO' ? '#000' : '#fff' %>;">
+                  <%= item.status %>
+                </span>
+              </td>
+              <td style="text-align: right;"><%= item.totalMinutes %></td>
+              <td style="text-align: right;"><%= item.requiredMinutes %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+
+  <script>
+    helpSystem.init(adminDashboardHelp);
+  </script>
+</body>
+</html>

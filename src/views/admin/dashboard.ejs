@@ -219,16 +219,6 @@
         <h4>Assente</h4>
         <div class="value" style="color: #dc3545;"><%= summary.absentCount %></div>
       </div>
-      <% if (currentViewMode !== 'day' && summary.totalHours !== undefined) { %>
-      <div class="stat-card" style="border-left: 4px solid #007bff;">
-        <h4>Ore Totali</h4>
-        <div class="value" style="color: #007bff;"><%= summary.totalHours.toFixed(1) %>h</div>
-      </div>
-      <div class="stat-card" style="border-left: 4px solid #6c757d;">
-        <h4>Media Ore/Utente</h4>
-        <div class="value" style="color: #6c757d;"><%= summary.avgHoursPerUser.toFixed(1) %>h</div>
-      </div>
-      <% } %>
     </div>
 
     <form method="GET" action="/admin/dashboard" class="filter-form" style="margin-bottom: 15px;">
@@ -278,7 +268,11 @@
           const status = user.status || user.overallStatus;
         %>
         <tr>
-          <td><strong><%= user.username %></strong></td>
+          <td>
+            <a href="/admin/dashboard/users/<%= user.userKey %>/irregularities" class="nav-btn" style="padding: 4px 8px; font-size: 12px;">
+              <%= user.username %>
+            </a>
+          </td>
           <td><%= user.displayName %></td>
           <td style="text-align: center;">
             <span class="mini-badge" style="background: <%= user.userType === 'ad' ? '#007bff' : '#6c757d' %>; color: white;">
