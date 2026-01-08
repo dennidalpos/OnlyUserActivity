@@ -1,4 +1,4 @@
-const { Parser } = require('json2csv');
+const { writeToString } = require('@fast-csv/format');
 const ExcelJS = require('exceljs');
 const userStorage = require('../storage/userStorage');
 const activityStorage = require('../storage/activityStorage');
@@ -70,10 +70,10 @@ class ExportService {
       };
     }
 
-    return this.generateCSV(exportType === 'summary' ? userSummaries : allActivities, exportType);
+    return await this.generateCSV(exportType === 'summary' ? userSummaries : allActivities, exportType);
   }
 
-  generateCSV(data, exportType) {
+  async generateCSV(data, exportType) {
     let fields;
 
     if (exportType === 'summary') {
@@ -100,8 +100,11 @@ class ExportService {
       ];
     }
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(data);
+    const rows = data.map(item => fields.reduce((acc, field) => {
+      acc[field.label] = item[field.value];
+      return acc;
+    }, {}));
+    const csv = await writeToString(rows, { headers: true });
 
     return {
       data: csv,
