@@ -58,8 +58,10 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
+      upgradeInsecureRequests: null
     }
-  }
+  },
+  hsts: config.https.enabled ? undefined : false
 }));
 
 app.use('/api', cors({

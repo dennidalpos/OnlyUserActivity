@@ -5,7 +5,7 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   server: {
     host: process.env.SERVER_HOST || '0.0.0.0',
-    port: parseInt(process.env.SERVER_PORT, 10) || 3000,
+    port: parseInt(process.env.SERVER_PORT, 10) || 3001,
     trustProxy: parseInt(process.env.TRUST_PROXY, 10) || 0
   },
 
@@ -57,7 +57,7 @@ const config = {
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
     loginRateLimitMax: parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10) || 5,
     loginLockoutDurationMs: parseInt(process.env.LOGIN_LOCKOUT_DURATION_MS, 10) || 300000,
-    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000'
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3001'
   },
 
   activity: {

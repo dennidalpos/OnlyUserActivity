@@ -33,7 +33,7 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     res.render('admin/login', {
       title: 'Login Admin',
-      error: error.message
+      error: error.message || 'Errore durante il login'
     });
   }
 });
