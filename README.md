@@ -22,8 +22,8 @@ node scripts/create-user.js
 npm start
 
 # 5. Accedi
-# Utente: http://localhost:3000 (credenziali create)
-# Admin:  http://localhost:3000/admin (admin/admin)
+# Utente: http://localhost:3001 (credenziali create)
+# Admin:  http://localhost:3001/admin/auth/login (admin/admin)
 ```
 
 ## ✨ Caratteristiche Principali
@@ -95,7 +95,7 @@ cp .env.example .env
 
 ```env
 NODE_ENV=production
-SERVER_PORT=3000
+SERVER_PORT=3001
 
 # IMPORTANTE: Cambia questi secret in produzione!
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
@@ -134,7 +134,7 @@ LDAP_REQUIRED_GROUP=CN=Domain Users,CN=Users,DC=company,DC=local
 
 L'admin può modificare **tutti i parametri server** direttamente dall'interfaccia web, senza intervenire manualmente sul file `.env`.
 
-1. Accedi alla dashboard admin: `http://localhost:3000/admin`
+1. Accedi alla dashboard admin: `http://localhost:3001/admin/auth/login`
 2. Vai su **Configurazione** → **Impostazioni Avanzate**
 3. Modifica i parametri desiderati
 4. Salva e **riavvia** il server per applicare le modifiche
@@ -230,7 +230,7 @@ node scripts/create-user.js
 ```
 
 **Da web UI (Dashboard Admin):**
-1. Login admin: `http://localhost:3000/admin`
+1. Login admin: `http://localhost:3001/admin/auth/login`
 2. Vai su "Configurazione" → "Gestione Utenti Locali"
 3. Clicca "+ Nuovo Utente Locale"
 4. Compila form (username, password, nome, email, reparto)
@@ -248,7 +248,7 @@ Con `LDAP_ENABLED=true`, gli utenti vengono autenticati contro LDAP/AD.
 
 ### Configurazione Tipi di Turno
 
-1. Login admin: `http://localhost:3000/admin`
+1. Login admin: `http://localhost:3001/admin/auth/login`
 2. Vai su "Turni" nel menu principale
 3. Clicca "+ Aggiungi Nuovo Turno"
 4. Compila:
@@ -293,12 +293,26 @@ pm2 save
 pm2 startup  # Auto-start al boot
 ```
 
-Server disponibile su `http://localhost:3000`
+#### Installazione servizio Windows (auto-avvio)
+
+Per Windows Server puoi installare il webserver come servizio usando **NSSM**.
+
+1. Scarica `nssm.exe` da https://nssm.cc/ e salvalo in `tools\\nssm.exe`
+2. Apri PowerShell **come amministratore**
+3. Esegui:
+
+```powershell
+.\scripts\install-windows-service.ps1 -ServiceName "OnlyUserActivity"
+```
+
+Il servizio avvierà automaticamente il server con `src\\server.js` e scriverà i log in `logs\\service-stdout.log` e `logs\\service-stderr.log`.
+
+Server disponibile su `http://localhost:3001`
 
 ## 🖥️ Interfacce
 
 ### Dashboard Utente
-**URL:** `http://localhost:3000/user/auth/login`
+**URL:** `http://localhost:3001/user/auth/login`
 
 Funzionalità:
 - Login con credenziali locali o LDAP
@@ -309,7 +323,7 @@ Funzionalità:
 - Sistema help integrato
 
 ### Dashboard Admin
-**URL:** `http://localhost:3000/admin/auth/login`
+**URL:** `http://localhost:3001/admin/auth/login`
 
 Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 
@@ -367,7 +381,7 @@ Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 - **Impostazioni avanzate** - Tutti i parametri server in UI con troubleshooting e test LDAP
 
 ### API REST
-**Base URL:** `http://localhost:3000/api`
+**Base URL:** `http://localhost:3001/api`
 
 #### Endpoints Principali
 
@@ -403,13 +417,13 @@ Credenziali default: `admin` / `admin` (**CAMBIALE!**)
 **Esempio Completo:**
 ```bash
 # Login
-TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"mario","password":"Pass123!"}' \
   | jq -r '.data.token')
 
 # Crea attività
-curl -X POST http://localhost:3000/api/activities \
+curl -X POST http://localhost:3001/api/activities \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -421,7 +435,7 @@ curl -X POST http://localhost:3000/api/activities \
   }'
 
 # Get attività range
-curl -X GET "http://localhost:3000/api/activities/range?from=2026-01-01&to=2026-01-31" \
+curl -X GET "http://localhost:3001/api/activities/range?from=2026-01-01&to=2026-01-31" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
