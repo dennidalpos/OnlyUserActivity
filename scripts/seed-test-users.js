@@ -89,6 +89,11 @@ async function seedUserActivities(user, shiftType, activityTypes, fromDate, toDa
       continue;
     }
 
+    const existing = await activityService.getDayActivities(user.userKey, date);
+    if (existing.activities.length > 0) {
+      continue;
+    }
+
     const isIncomplete = incompleteDays.has(date);
     const rawTargetMinutes = isIncomplete
       ? Math.max(120, Math.floor(REQUIRED_MINUTES * getRandomItem([0.5, 0.65, 0.8])))
