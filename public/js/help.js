@@ -22,7 +22,7 @@ class HelpSystem {
           width: 56px;
           height: 56px;
           border-radius: 50%;
-          background: #007bff;
+          background: var(--primary, #667eea);
           color: white;
           border: none;
           font-size: 24px;
@@ -32,7 +32,7 @@ class HelpSystem {
           transition: all 0.3s;
         }
         .help-btn:hover {
-          background: #0056b3;
+          background: var(--primary-dark, #5568d3);
           transform: scale(1.1);
         }
         .help-modal {
@@ -68,7 +68,7 @@ class HelpSystem {
         }
         .help-modal-header {
           padding: 20px 24px;
-          border-bottom: 1px solid #ddd;
+          border-bottom: 1px solid var(--border, #ddd);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -76,7 +76,7 @@ class HelpSystem {
         .help-modal-header h2 {
           margin: 0;
           font-size: 24px;
-          color: #333;
+          color: var(--text, #333);
         }
         .help-modal-close {
           background: none;
@@ -101,13 +101,13 @@ class HelpSystem {
           margin-bottom: 32px;
         }
         .help-section h3 {
-          color: #007bff;
+          color: var(--primary, #667eea);
           margin-top: 0;
           margin-bottom: 12px;
           font-size: 20px;
         }
         .help-section h4 {
-          color: #333;
+          color: var(--text, #333);
           margin-top: 16px;
           margin-bottom: 8px;
           font-size: 16px;
@@ -115,7 +115,7 @@ class HelpSystem {
         .help-section p {
           margin: 8px 0;
           line-height: 1.6;
-          color: #555;
+          color: var(--muted, #555);
         }
         .help-section ul, .help-section ol {
           margin: 8px 0;
@@ -124,7 +124,7 @@ class HelpSystem {
         .help-section li {
           margin: 4px 0;
           line-height: 1.6;
-          color: #555;
+          color: var(--muted, #555);
         }
         .help-code {
           background: #f4f4f4;
@@ -134,15 +134,15 @@ class HelpSystem {
           margin: 8px 0;
         }
         .help-note {
-          background: #d1ecf1;
-          border-left: 4px solid #0c5460;
+          background: #e8f0fe;
+          border-left: 4px solid var(--primary, #667eea);
           padding: 12px;
           margin: 16px 0;
           border-radius: 4px;
         }
         .help-warning {
           background: #fff3cd;
-          border-left: 4px solid #856404;
+          border-left: 4px solid #f0ad4e;
           padding: 12px;
           margin: 16px 0;
           border-radius: 4px;

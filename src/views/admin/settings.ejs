@@ -4,197 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
-  <style>
-    .settings-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .settings-section {
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .settings-section h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      color: #333;
-      border-bottom: 2px solid #007bff;
-      padding-bottom: 8px;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: 600;
-      color: #555;
-    }
-    .form-group input[type="text"],
-    .form-group input[type="password"],
-    .form-group input[type="number"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .form-group select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: white;
-    }
-    .form-group input[type="checkbox"] {
-      margin-right: 8px;
-    }
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      margin-right: 8px;
-      margin-bottom: 8px;
-    }
-    .btn-primary {
-      background: #007bff;
-      color: white;
-    }
-    .btn-danger {
-      background: #dc3545;
-      color: white;
-    }
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 14px;
-    }
-    .activity-types-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .activity-type-tag {
-      background: #007bff;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .activity-type-tag button {
-      background: rgba(255,255,255,0.3);
-      border: none;
-      color: white;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 3px;
-    }
-    .users-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 16px;
-    }
-    .users-table th,
-    .users-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    .users-table th {
-      background: #f8f9fa;
-      font-weight: 600;
-    }
-    .alert {
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-    }
-    .alert-info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
-    }
-    .alert-success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .alert-danger {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .settings-subsection {
-      border: 1px solid #e5e5e5;
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 16px;
-      background: #fdfdfd;
-    }
-    .settings-subsection h4 {
-      margin: 0 0 12px;
-      color: #333;
-    }
-    .settings-card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      margin-top: 12px;
-    }
-    .settings-card {
-      border: 1px solid #e5e5e5;
-      border-radius: 6px;
-      padding: 16px;
-      background: #fff;
-    }
-    .settings-card p {
-      margin: 8px 0 16px;
-      color: #666;
-    }
-    .field-help {
-      font-size: 12px;
-      color: #666;
-      margin-top: 4px;
-    }
-    .ui-help-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #eef4ff;
-      color: #335;
-      font-size: 12px;
-      margin-left: 6px;
-      cursor: pointer;
-      border: 1px solid #cdd9f7;
-    }
-    .collapsible-summary {
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 18px;
-      color: #333;
-      padding: 8px 0;
-    }
-  </style>
 </head>
 <body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
@@ -220,11 +33,11 @@
       <div class="alert alert-info">
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
-      <div style="margin-bottom: 20px;">
-        <button type="button" onclick="restartServer(this)" class="btn btn-danger" style="background: #dc3545; border-color: #dc3545;">
+      <div class="mb-20">
+        <button type="button" onclick="restartServer(this)" class="btn btn-danger">
           🔄 Riavvia Server
         </button>
-        <span style="margin-left: 10px; font-size: 14px; color: #666;">
+        <span class="ml-10 text-muted text-small">
           Tutti gli utenti verranno temporaneamente disconnessi
         </span>
       </div>
@@ -258,21 +71,21 @@
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
-      <div class="settings-subsection" style="margin-top: 20px;">
+      <div class="settings-subsection mt-20">
         <h4>Import / Export Configurazione Completa</h4>
-        <p style="color: #666; margin-bottom: 12px;">
+        <p class="text-muted mb-12">
           Esporta o reimporta utenti, attività e impostazioni server in un unico file JSON.
         </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+        <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)">
             ⬇️ Esporta configurazione
           </button>
-          <input type="file" id="configImportFile" accept=".json" style="flex: 1; min-width: 240px;">
+          <input type="file" id="configImportFile" accept=".json" class="file-input">
           <button type="button" class="btn btn-primary" onclick="importConfiguration(this)">
             ⬆️ Importa configurazione
           </button>
         </div>
-        <p style="color: #999; font-size: 13px; margin-top: 10px;">
+        <p class="settings-warning mt-10">
           L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
         </p>
       </div>
@@ -334,9 +147,9 @@
             <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
           </div>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+        <div class="flex gap-12 align-center mt-12">
           <button type="button" onclick="testLdapBind(this)" class="btn btn-success">Test Bind LDAP</button>
-          <span style="font-size: 13px; color: #666;">Esegui il test prima di salvare le modifiche LDAP.</span>
+          <span class="text-muted text-small">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
       </form>
@@ -358,7 +171,7 @@
           <div class="form-group">
             <label for="httpsCertPath">Percorso Certificato
             </label>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="flex gap-8 align-center">
               <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
               <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsCertPath', this)">Esplora</button>
             </div>
@@ -367,7 +180,7 @@
           <div class="form-group">
             <label for="httpsKeyPath">Percorso Chiave Privata
             </label>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="flex gap-8 align-center">
               <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
               <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsKeyPath', this)">Esplora</button>
             </div>
@@ -403,7 +216,7 @@
           <div class="form-group">
             <label for="loggingFilePath">Percorso file log
             </label>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="flex gap-8 align-center">
               <input type="text" id="loggingFilePath" value="<%= settings.logging.filePath %>">
               <button type="button" class="btn btn-sm" onclick="browseHttpsFile('loggingFilePath', this)">Esplora</button>
             </div>
@@ -580,8 +393,8 @@
         <% }); %>
       </div>
 
-      <form id="addActivityTypeForm" style="display: flex; gap: 8px; margin-top: 16px;">
-        <input type="text" id="newActivityType" placeholder="Nuova categoria..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+      <form id="addActivityTypeForm" class="inline-form">
+        <input type="text" id="newActivityType" placeholder="Nuova categoria...">
         <button type="submit" class="btn btn-success">Aggiungi</button>
       </form>
     </div>
@@ -590,9 +403,9 @@
       <h3>Gestione Utenti Locali</h3>
       <p>Crea o elimina utenti con autenticazione locale. Gli utenti AD vengono gestiti automaticamente.</p>
 
-      <button onclick="showCreateUserForm(this)" class="btn btn-success" style="margin-bottom: 16px;">+ Nuovo Utente Locale</button>
+      <button onclick="showCreateUserForm(this)" class="btn btn-success mb-16">+ Nuovo Utente Locale</button>
 
-      <div id="createUserForm" style="display: none; background: #f8f9fa; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+      <div id="createUserForm" class="panel mb-16" style="display: none;">
         <h4>Crea Nuovo Utente</h4>
         <form id="userCreateForm">
           <div class="form-grid">
@@ -617,7 +430,7 @@
               <input type="text" id="newDepartment">
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div class="flex gap-8">
             <button type="submit" class="btn btn-primary">Crea Utente</button>
             <button type="button" onclick="hideCreateUserForm(this)" class="btn">Annulla</button>
           </div>
@@ -648,7 +461,7 @@
                 <input type="text"
                   id="displayName-<%= user.userKey %>"
                   value="<%= user.displayName %>"
-                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                  class="table-input">
               <% } %>
             </td>
             <td>
@@ -663,13 +476,13 @@
                 <input type="text"
                   id="dept-<%= user.userKey %>"
                   value="<%= user.department || '' %>"
-                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                  class="table-input">
               <% } %>
             </td>
             <td>
               <select
                 id="shift-<%= user.userKey %>"
-                style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                class="table-input">
                 <option value="" <%= !user.shift ? 'selected' : '' %>>- Nessuno -</option>
                 <% shiftTypes.forEach(shiftType => { %>
                 <option value="<%= shiftType.name %>" <%= user.shift === shiftType.name ? 'selected' : '' %>><%= shiftType.name %></option>
@@ -683,16 +496,18 @@
                 <input type="email"
                   id="email-<%= user.userKey %>"
                   value="<%= user.email || '' %>"
-                  style="width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                  class="table-input">
               <% } %>
             </td>
             <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
             <td>
-              <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm" style="margin-right: 4px;">Imposta</button>
-              <% if (user.userType !== 'ad') { %>
-              <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm" style="margin-right: 4px;">Reset Password</button>
-              <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
-              <% } %>
+              <div class="action-buttons">
+                <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm">Imposta</button>
+                <% if (user.userType !== 'ad') { %>
+                <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm">Reset Password</button>
+                <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
+                <% } %>
+              </div>
             </td>
           </tr>
           <% }); %>
