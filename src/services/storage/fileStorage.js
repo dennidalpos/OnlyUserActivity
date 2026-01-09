@@ -70,13 +70,27 @@ class FileStorage {
       const tempPath = `${filePath}.tmp`;
       const content = JSON.stringify(data, null, 2);
       await fs.writeFile(tempPath, content, 'utf8');
-      await fs.rename(tempPath, filePath);
+      await this.replaceFile(tempPath, filePath);
 
     } finally {
       if (release) {
         await release();
       }
     }
+  }
+
+  async replaceFile(tempPath, filePath) {
+    try {
+      await fs.rename(tempPath, filePath);
+      return;
+    } catch (error) {
+      if (!['EPERM', 'EXDEV', 'EBUSY'].includes(error.code)) {
+        throw error;
+      }
+    }
+
+    await fs.copyFile(tempPath, filePath);
+    await fs.unlink(tempPath);
   }
 
   async appendLine(filePath, line) {
