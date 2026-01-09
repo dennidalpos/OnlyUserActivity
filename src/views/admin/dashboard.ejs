@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
@@ -89,17 +90,17 @@
         <h4>Totale Utenti</h4>
         <div class="value"><%= summary.totalUsers %></div>
       </div>
-      <div class="stat-card" style="border-left: 4px solid #28a745;">
+      <div class="stat-card stat-card--success">
         <h4>OK</h4>
-        <div class="value" style="color: #28a745;"><%= summary.okCount %></div>
+        <div class="value"><%= summary.okCount %></div>
       </div>
-      <div class="stat-card" style="border-left: 4px solid #ffc107;">
+      <div class="stat-card stat-card--warning">
         <h4>Incompleto</h4>
-        <div class="value" style="color: #ffc107;"><%= summary.incompleteCount %></div>
+        <div class="value"><%= summary.incompleteCount %></div>
       </div>
-      <div class="stat-card" style="border-left: 4px solid #dc3545;">
+      <div class="stat-card stat-card--danger">
         <h4>Assente</h4>
-        <div class="value" style="color: #dc3545;"><%= summary.absentCount %></div>
+        <div class="value"><%= summary.absentCount %></div>
       </div>
     </div>
 
@@ -134,18 +135,18 @@
         <tr>
           <th>Utente</th>
           <th>Nome</th>
-          <th style="text-align: center;">Tipo</th>
+          <th class="text-center">Tipo</th>
           <th>Turno</th>
           <% if (currentViewMode === 'day') { %>
-          <th style="text-align: right;">Ore</th>
-          <th style="text-align: center;">Completamento</th>
+          <th class="text-right">Ore</th>
+          <th class="text-center">Completamento</th>
           <% } else { %>
-          <th style="text-align: right;">Ore Tot.</th>
-          <th style="text-align: right;">Media/Giorno</th>
-          <th style="text-align: center;">Giorni OK</th>
-          <th style="text-align: center;">Completamento</th>
+          <th class="text-right">Ore Tot.</th>
+          <th class="text-right">Media/Giorno</th>
+          <th class="text-center">Giorni OK</th>
+          <th class="text-center">Completamento</th>
           <% } %>
-          <th style="text-align: center;">Stato</th>
+          <th class="text-center">Stato</th>
         </tr>
       </thead>
       <tbody>
@@ -159,29 +160,29 @@
             </a>
           </td>
           <td><%= user.displayName %></td>
-          <td style="text-align: center;">
-            <span class="mini-badge" style="background: <%= user.userType === 'ad' ? '#007bff' : '#6c757d' %>; color: white;">
+          <td class="text-center">
+            <span class="mini-badge <%= user.userType === 'ad' ? 'mini-badge--info' : 'mini-badge--secondary' %>">
               <%= user.userType === 'ad' ? 'AD' : 'Local' %>
             </span>
           </td>
           <td><%= user.shift %></td>
           <% if (currentViewMode === 'day') { %>
-          <td style="text-align: right;"><%= user.totalHours.toFixed(2) %></td>
-          <td style="text-align: center;">
-            <span style="font-size: 12px;"><%= user.completionPercentage.toFixed(0) %>%</span>
+          <td class="text-right"><%= user.totalHours.toFixed(2) %></td>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completionPercentage.toFixed(0) %>%</span>
           </td>
           <% } else { %>
-          <td style="text-align: right;"><%= user.totalHours.toFixed(1) %></td>
-          <td style="text-align: right;"><%= user.avgHoursPerDay.toFixed(1) %></td>
-          <td style="text-align: center;">
-            <span style="font-size: 12px;"><%= user.completeDays %>/<%= user.totalDays %></span>
+          <td class="text-right"><%= user.totalHours.toFixed(1) %></td>
+          <td class="text-right"><%= user.avgHoursPerDay.toFixed(1) %></td>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completeDays %>/<%= user.totalDays %></span>
           </td>
-          <td style="text-align: center;">
-            <span style="font-size: 12px;"><%= user.completionRate.toFixed(0) %>%</span>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completionRate.toFixed(0) %>%</span>
           </td>
           <% } %>
-          <td style="text-align: center;">
-            <span class="mini-badge" style="background: <%= status === 'OK' ? '#28a745' : status === 'INCOMPLETO' ? '#ffc107' : '#dc3545' %>; color: <%= status === 'INCOMPLETO' ? '#000' : '#fff' %>;">
+          <td class="text-center">
+            <span class="mini-badge <%= status === 'OK' ? 'mini-badge--success' : status === 'INCOMPLETO' ? 'mini-badge--warning' : 'mini-badge--danger' %>">
               <%= status %>
             </span>
           </td>

@@ -4,150 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/ui-helper.js"></script>
-  <style>
-    * {
-      outline: none !important;
-    }
-
-    a, button {
-      text-decoration: none !important;
-    }
-
-    a:focus, a:active, a:visited, a:hover,
-    button:focus, button:active, button:visited {
-      text-decoration: none !important;
-      outline: none !important;
-    }
-
-    .export-section {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-
-    .quick-range-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .quick-btn {
-      padding: 8px 16px;
-      border: 1px solid #007bff;
-      background: white;
-      color: #007bff;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      text-decoration: none !important;
-      transition: all 0.2s;
-      font-family: inherit;
-    }
-
-    .quick-btn:hover {
-      background: #007bff;
-      color: white;
-      text-decoration: none !important;
-    }
-
-    .quick-btn:active, .quick-btn:focus {
-      background: #0056b3;
-      color: white;
-      text-decoration: none !important;
-      outline: none !important;
-      border-color: #0056b3;
-    }
-
-    .date-info {
-      background: #e7f3ff;
-      padding: 12px 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #004085;
-      border-left: 4px solid #007bff;
-    }
-
-    .user-selection-box {
-      border: 1px solid #ddd;
-      padding: 15px;
-      background: white;
-      border-radius: 4px;
-      margin-bottom: 15px;
-    }
-
-    .user-selection-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #eee;
-      font-weight: bold;
-    }
-
-    .user-selection-header input[type="checkbox"] {
-      margin-right: 10px;
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-
-    .user-list {
-      max-height: 200px;
-      overflow-y: auto;
-      padding-left: 28px;
-      margin-top: 10px;
-    }
-
-    .user-checkbox {
-      display: block;
-      margin: 8px 0;
-      cursor: pointer;
-    }
-
-    .user-checkbox input[type="checkbox"] {
-      margin-right: 8px;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-    }
-
-    .btn {
-      text-decoration: none !important;
-      outline: none !important;
-    }
-
-    .btn:focus, .btn:active, .btn:visited, .btn:hover {
-      text-decoration: none !important;
-      outline: none !important;
-      box-shadow: none !important;
-    }
-
-    .btn-primary {
-      background: #007bff;
-      color: white;
-      border: 1px solid #007bff;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.2s;
-    }
-
-    .btn-primary:hover {
-      background: #0056b3;
-      border-color: #0056b3;
-    }
-
-    .btn-primary:active, .btn-primary:focus {
-      background: #004085;
-      border-color: #004085;
-      outline: none !important;
-    }
-  </style>
 </head>
 <body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
@@ -202,14 +61,14 @@
         <div class="user-selection-box">
           <div class="user-selection-header">
             <input type="checkbox" id="selectAllUsers" checked onchange="toggleAllUsers(this)" data-ui-help="Seleziona o deseleziona tutti gli utenti per l'export." data-ui-severity="info">
-            <label for="selectAllUsers" style="margin: 0; cursor: pointer;">Tutti gli utenti (<%= users.length %>)</label>
+            <label for="selectAllUsers" class="label-inline">Tutti gli utenti (<%= users.length %>)</label>
           </div>
           <div class="user-list" id="userList">
             <% users.forEach(user => { %>
             <label class="user-checkbox">
               <input type="checkbox" name="userKeys" value="<%= user.userKey %>" onchange="updateSelectAll(this)" data-ui-help="Includi o escludi questo utente dall'export." data-ui-severity="info">
               <strong><%= user.username %></strong> - <%= user.displayName %>
-              <span style="color: #666; font-size: 12px;">(<%= user.userType === 'ad' ? 'AD' : 'Locale' %>)</span>
+              <span class="text-muted text-xs">(<%= user.userType === 'ad' ? 'AD' : 'Locale' %>)</span>
             </label>
             <% }); %>
           </div>

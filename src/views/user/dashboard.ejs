@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/user.css">
   <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
@@ -15,8 +16,8 @@
     </div>
     <div class="navbar-user">
       <span>
-        Benvenuto, <strong><%= user.displayName %></strong>
-        <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>" style="margin-left: 8px; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+        Login utente: <strong><%= user.username %></strong>
+        <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %> ml-8">
           <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
         </span>
       </span>
@@ -346,14 +347,14 @@
               <div class="activity-info">
                 <span class="activity-type badge badge-${activity.activityType}">${activityTypeFormatted}</span>
                 <span class="activity-duration">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="icon-inline icon-inline--spaced">
                     <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0z"/>
                     <path d="M8 4.5a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3.5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/>
                   </svg>
                   Durata: ${durationText}
                 </span>
                 <span class="activity-date">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 3px;">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="icon-inline icon-inline--spaced">
                     <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
                   </svg>
                   ${dateFormatted}
@@ -361,13 +362,13 @@
               </div>
               <div class="activity-actions">
                 <button onclick="editActivity('${activity.id}', this)" class="btn btn-sm btn-primary">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="icon-inline">
                     <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                   </svg>
                   Modifica
                 </button>
                 <button onclick="deleteActivity('${activity.id}', this)" class="btn btn-sm btn-danger">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="icon-inline">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                     <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                   </svg>
@@ -376,7 +377,7 @@
               </div>
             </div>
             ${activity.notes ? `<div class="activity-notes">
-              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 4px;">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="icon-inline icon-inline--spaced">
                 <path d="M5 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H5zm0 1h6a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
                 <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
               </svg>

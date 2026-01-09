@@ -20,7 +20,7 @@ function requestLogger(logger) {
         }, 'Request failed');
       }
 
-      originalSend.call(this, data);
+      return originalSend.call(this, data);
     };
 
     next();
