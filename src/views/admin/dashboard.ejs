@@ -7,133 +7,6 @@
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/js/ui-helper.js"></script>
   <script src="/js/help.js"></script>
-  <style>
-    * {
-      outline: none !important;
-    }
-
-    a, button {
-      text-decoration: none !important;
-    }
-
-    a:focus, a:active, a:visited, a:hover,
-    button:focus, button:active, button:visited {
-      text-decoration: none !important;
-      outline: none !important;
-    }
-
-    .nav-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      align-items: center;
-      flex-wrap: wrap;
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-    }
-    .nav-buttons {
-      display: flex;
-      gap: 5px;
-    }
-    .nav-btn {
-      padding: 8px 16px;
-      border: 1px solid #ddd;
-      background: white;
-      color: #333 !important;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: all 0.2s;
-      text-decoration: none !important;
-    }
-    .nav-btn:hover {
-      background: #007bff;
-      color: white !important;
-      border-color: #007bff;
-      text-decoration: none !important;
-    }
-    .nav-btn:active, .nav-btn:focus {
-      background: #0056b3;
-      color: white !important;
-      border-color: #0056b3;
-      text-decoration: none !important;
-      outline: none !important;
-    }
-    .view-mode-selector {
-      display: flex;
-      gap: 5px;
-      margin-left: auto;
-    }
-    .view-mode-btn {
-      padding: 8px 16px;
-      border: 1px solid #ddd;
-      background: white;
-      color: #333 !important;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      text-decoration: none !important;
-      transition: all 0.2s;
-    }
-    .view-mode-btn:hover {
-      background: #e9ecef;
-      text-decoration: none !important;
-    }
-    .view-mode-btn.active {
-      background: #007bff;
-      color: white !important;
-      border-color: #007bff;
-      text-decoration: none !important;
-    }
-    .view-mode-btn:active, .view-mode-btn:focus {
-      outline: none !important;
-      text-decoration: none !important;
-    }
-    .btn {
-      text-decoration: none !important;
-      outline: none !important;
-    }
-    .btn:focus, .btn:active, .btn:visited, .btn:hover {
-      text-decoration: none !important;
-      outline: none !important;
-      box-shadow: none !important;
-    }
-    .compact-table {
-      font-size: 13px;
-    }
-    .compact-table td, .compact-table th {
-      padding: 8px 10px;
-    }
-    .mini-badge {
-      padding: 3px 8px;
-      font-size: 11px;
-      border-radius: 3px;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .stat-card {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .stat-card h4 {
-      margin: 0 0 5px 0;
-      font-size: 12px;
-      color: #666;
-      text-transform: uppercase;
-    }
-    .stat-card .value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #333;
-    }
-  </style>
 </head>
 <body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
   <nav class="navbar">
@@ -171,28 +44,36 @@
           } else if (currentViewMode === 'month') {
             d.setMonth(d.getMonth() + (direction === 'prev' ? -1 : 1));
             newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'year') {
+            d.setFullYear(d.getFullYear() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
           }
 
           return `/admin/dashboard?viewMode=${currentViewMode}&date=${newDate}&username=${filters.username}&status=${filters.status}`;
         }
+
+        const periodFrom = fromDate || currentDate;
+        const periodTo = toDate || currentDate;
         %>
 
-        <a href="<%= getNavUrl('prev') %>" class="nav-btn" data-ui-help="Vai al periodo precedente nel monitoraggio." data-ui-severity="info">&larr; Precedente</a>
-        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn" data-ui-help="Torna rapidamente alla data odierna." data-ui-severity="info">Oggi</a>
-        <a href="<%= getNavUrl('next') %>" class="nav-btn" data-ui-help="Vai al periodo successivo nel monitoraggio." data-ui-severity="info">Successivo &rarr;</a>
+        <a href="<%= getNavUrl('prev') %>" class="nav-btn">&larr; Precedente</a>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn">Oggi</a>
+        <a href="<%= getNavUrl('next') %>" class="nav-btn">Successivo &rarr;</a>
       </div>
 
       <div class="view-mode-selector">
         <a href="/admin/dashboard?viewMode=day&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>" data-ui-help="Visualizza lo stato per una singola giornata." data-ui-severity="info">Giorno</a>
+           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>">Giorno</a>
         <a href="/admin/dashboard?viewMode=week&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>" data-ui-help="Visualizza il riepilogo settimanale." data-ui-severity="info">Settimana</a>
+           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>">Settimana</a>
         <a href="/admin/dashboard?viewMode=month&date=<%= currentDate %>"
-           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>" data-ui-help="Visualizza il riepilogo mensile." data-ui-severity="info">Mese</a>
+           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>">Mese</a>
+        <a href="/admin/dashboard?viewMode=year&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'year' ? 'active' : '' %>">Anno corrente</a>
       </div>
     </div>
 
-    <div style="background: #e9ecef; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
+    <div class="period-pill">
       <strong>
         <% if (currentViewMode === 'day') { %>
           <%= currentDate %>
@@ -201,6 +82,7 @@
         <% } %>
       </strong>
     </div>
+    <p class="period-note">Le irregolarità non vengono mostrate cambiando anno: per visualizzarle entra nello scope dell'anno desiderato.</p>
 
     <div class="stats-grid">
       <div class="stat-card">
@@ -221,27 +103,29 @@
       </div>
     </div>
 
-    <form method="GET" action="/admin/dashboard" class="filter-form" style="margin-bottom: 15px;">
+    <form method="GET" action="/admin/dashboard" class="filter-form filter-form--compact">
       <input type="hidden" name="viewMode" value="<%= currentViewMode %>">
       <input type="hidden" name="date" value="<%= currentDate %>">
       <div class="form-row">
         <div class="form-group">
           <label for="username">Cerca Utente:</label>
-          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username" data-ui-help="Filtra per username o parte di esso." data-ui-severity="info">
+          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username">
         </div>
         <div class="form-group">
           <label for="status">Stato:</label>
-          <select id="status" name="status" data-ui-help="Seleziona lo stato di completamento da visualizzare." data-ui-severity="info">
+          <select id="status" name="status">
             <option value="">Tutti</option>
             <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK</option>
             <option value="INCOMPLETO" <%= filters.status === 'INCOMPLETO' ? 'selected' : '' %>>Incompleto</option>
             <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary" data-ui-help="Applica i filtri selezionati alla tabella." data-ui-severity="info">Filtra</button>
-        <% if (filters.username || filters.status) { %>
-        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn" data-ui-help="Rimuove tutti i filtri applicati." data-ui-severity="warn">Reset</a>
-        <% } %>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">Filtra</button>
+          <% if (filters.username || filters.status) { %>
+          <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn btn-secondary">Reset</a>
+          <% } %>
+        </div>
       </div>
     </form>
 
@@ -251,6 +135,7 @@
           <th>Utente</th>
           <th>Nome</th>
           <th style="text-align: center;">Tipo</th>
+          <th>Turno</th>
           <% if (currentViewMode === 'day') { %>
           <th style="text-align: right;">Ore</th>
           <th style="text-align: center;">Completamento</th>
@@ -269,7 +154,7 @@
         %>
         <tr>
           <td>
-            <a href="/admin/dashboard/users/<%= user.userKey %>/irregularities" class="nav-btn" style="padding: 4px 8px; font-size: 12px;">
+            <a href="/admin/dashboard/users/<%= user.userKey %>/irregularities?from=<%= periodFrom %>&to=<%= periodTo %>" class="nav-btn nav-btn--mini">
               <%= user.username %>
             </a>
           </td>
@@ -279,6 +164,7 @@
               <%= user.userType === 'ad' ? 'AD' : 'Local' %>
             </span>
           </td>
+          <td><%= user.shift %></td>
           <% if (currentViewMode === 'day') { %>
           <td style="text-align: right;"><%= user.totalHours.toFixed(2) %></td>
           <td style="text-align: center;">
@@ -304,8 +190,5 @@
       </tbody>
     </table>
   </main>
-  <script>
-    helpSystem.init(adminDashboardHelp);
-  </script>
 </body>
 </html>

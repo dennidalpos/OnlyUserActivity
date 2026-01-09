@@ -20,7 +20,7 @@ router.use(requireAdminAuth);
 
 router.get('/dashboard', async (req, res) => {
   try {
-    const viewMode = req.query.viewMode || 'day';
+    const viewMode = req.query.viewMode || 'year';
     const date = req.query.date || getCurrentDate();
     const filters = {
       username: req.query.username || '',
@@ -34,6 +34,8 @@ router.get('/dashboard', async (req, res) => {
       data = await monitoringService.getDailyStatus(date, filters);
       viewData.users = data.users;
       viewData.summary = data.summary;
+      viewData.fromDate = date;
+      viewData.toDate = date;
     } else {
       const { fromDate, toDate } = calculateDateRange(date, viewMode);
       data = await monitoringService.getRangeStatus(fromDate, toDate, filters);
@@ -119,6 +121,15 @@ function calculateDateRange(date, viewMode) {
 
     fromDate = `${year}-${String(month).padStart(2, '0')}-01`;
     toDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  } else if (viewMode === 'year') {
+    const year = d.getFullYear();
+    const today = getCurrentDate();
+    const currentYear = today.split('-')[0];
+
+    fromDate = `${year}-01-01`;
+    toDate = year === Number(currentYear)
+      ? today
+      : `${year}-12-31`;
   } else {
     fromDate = toDate = date;
   }

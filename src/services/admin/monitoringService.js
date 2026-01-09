@@ -18,7 +18,16 @@ class MonitoringService {
 
       const shiftType = findShiftType(shiftTypes, user.shift);
       const dayData = await activityService.getDayActivities(user.userKey, date);
-      const status = this.determineStatus(dayData.summary, isWorkingDay(date, shiftType), isFutureDate(date));
+      const isRequired = isWorkingDay(date, shiftType);
+      const isFuture = isFutureDate(date);
+
+      if (!isRequired && !isFuture) {
+        dayData.summary.completionPercentage = 100;
+        dayData.summary.isComplete = true;
+        dayData.summary.requiredMinutes = 0;
+      }
+
+      const status = this.determineStatus(dayData.summary, isRequired, isFuture);
 
       if (filters.status && status !== filters.status) {
         continue;
@@ -29,6 +38,7 @@ class MonitoringService {
         username: user.username,
         displayName: user.displayName,
         userType: user.userType || 'local',
+        shift: shiftType?.name || user.shift || '—',
         totalMinutes: dayData.summary.totalMinutes,
         totalHours: dayData.summary.totalHours,
         completionPercentage: dayData.summary.completionPercentage,
@@ -79,6 +89,7 @@ class MonitoringService {
         username: user.username,
         displayName: user.displayName,
         userType: user.userType || 'local',
+        shift: shiftType?.name || user.shift || '—',
         ...stats
       });
     }

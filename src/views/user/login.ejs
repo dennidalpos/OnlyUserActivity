@@ -29,8 +29,6 @@
             required
             autofocus
             placeholder="Inserisci username"
-            data-ui-help="Inserisci il tuo username per accedere alla dashboard attività."
-            data-ui-severity="info"
           >
         </div>
 
@@ -42,29 +40,27 @@
             name="password"
             required
             placeholder="Inserisci password"
-            data-ui-help="Inserisci la password associata al tuo account."
-            data-ui-severity="info"
           >
         </div>
 
         <% if (ldapEnabled) { %>
         <div class="form-group">
           <label for="authMethod">Metodo di accesso</label>
-          <select id="authMethod" name="authMethod" data-ui-help="Seleziona LDAP per usare le credenziali di dominio o Locale per account locali." data-ui-severity="info">
+          <select id="authMethod" name="authMethod">
             <option value="local" selected>Locale</option>
             <option value="ldap">LDAP</option>
           </select>
         </div>
         <% } %>
 
-        <button type="submit" class="btn btn-primary btn-block" data-ui-help="Avvia la sessione e porta alla dashboard utente." data-ui-severity="info">
+        <button type="submit" class="btn btn-primary btn-block">
           Accedi
         </button>
       </form>
 
       <div class="login-footer">
         <p>Area riservata per utenti registrati</p>
-        <a href="/admin/auth/login" data-ui-help="Apri la pagina di login amministratore." data-ui-severity="info">Accesso Admin</a>
+        <a href="/admin/auth/login">Accesso Admin</a>
       </div>
     </div>
   </div>
