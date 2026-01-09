@@ -28,9 +28,9 @@
     <div class="header">
       <h2>Le Tue Attività</h2>
       <div class="date-selector">
-        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control" data-ui-help="Scegli la data di lavoro da visualizzare." data-ui-severity="info">
-        <button onclick="loadActivities(this)" class="btn btn-primary" data-ui-help="Carica le attività e aggiorna le statistiche della giornata." data-ui-severity="info">Carica</button>
-        <button onclick="setToday(this)" class="btn" data-ui-help="Imposta rapidamente la data odierna." data-ui-severity="info">Oggi</button>
+        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control">
+        <button onclick="loadActivities(this)" class="btn btn-primary">Carica</button>
+        <button onclick="setToday(this)" class="btn">Oggi</button>
       </div>
     </div>
 
@@ -75,7 +75,7 @@
     <div class="activity-section">
       <div class="section-header">
         <h3>Gestione Attività</h3>
-        <button onclick="showAddActivity(this)" class="btn btn-primary" data-ui-help="Apri il form per registrare una nuova attività." data-ui-severity="info">+ Nuova Attività</button>
+        <button onclick="showAddActivity(this)" class="btn btn-primary">+ Nuova Attività</button>
       </div>
 
       <div id="addActivityForm" class="activity-form" style="display: none;">
@@ -84,25 +84,25 @@
           <div class="form-row">
             <div class="form-group">
               <label>Ore</label>
-              <select id="durationHours" required data-ui-help="Seleziona le ore di durata." data-ui-severity="info"></select>
+              <select id="durationHours" required></select>
             </div>
             <div class="form-group">
               <label>Minuti</label>
-              <select id="durationMinutes" required data-ui-help="Seleziona i minuti di durata (15/30/45)." data-ui-severity="info"></select>
+              <select id="durationMinutes" required></select>
             </div>
             <div class="form-group">
               <label>Tipo Attività</label>
-              <select id="activityType" required data-ui-help="Scegli la categoria che descrive l'attività svolta." data-ui-severity="info">
+              <select id="activityType" required>
               </select>
             </div>
           </div>
           <div class="form-group">
             <label>Note</label>
-            <textarea id="notes" rows="2" placeholder="Descrizione attività..." data-ui-help="Inserisci dettagli utili o contesto per l'attività." data-ui-severity="info"></textarea>
+            <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary" data-ui-help="Salva l'attività o aggiorna quella selezionata." data-ui-severity="info">Salva</button>
-            <button type="button" onclick="cancelAdd(this)" class="btn" data-ui-help="Chiudi il form senza salvare." data-ui-severity="warn">Annulla</button>
+            <button type="submit" class="btn btn-primary">Salva</button>
+            <button type="button" onclick="cancelAdd(this)" class="btn">Annulla</button>
           </div>
         </form>
       </div>
@@ -116,9 +116,9 @@
       <div class="section-header">
         <h3>Calendario Mensile</h3>
         <div class="calendar-nav">
-          <button type="button" class="btn btn-sm" onclick="navigateMonth(-1, this)" data-ui-help="Vai al mese precedente." data-ui-severity="info">&larr;</button>
+          <button type="button" class="btn btn-sm" onclick="navigateMonth(-1, this)">&larr;</button>
           <span id="calendarMonthLabel"></span>
-          <button type="button" class="btn btn-sm" onclick="navigateMonth(1, this)" data-ui-help="Vai al mese successivo." data-ui-severity="info">&rarr;</button>
+          <button type="button" class="btn btn-sm" onclick="navigateMonth(1, this)">&rarr;</button>
         </div>
       </div>
 
@@ -138,6 +138,7 @@
           <button type="button" class="btn btn-primary" onclick="applyQuickDay('ferie', this)">Ferie</button>
           <button type="button" class="btn btn-primary" onclick="applyQuickDay('permesso', this, { label: 'Congedo' })">Congedo</button>
           <button type="button" class="btn btn-primary" onclick="applyQuickDay('lavoro', this, { label: 'Smart working', notes: 'Smart working' })">Smart working</button>
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('riposo', this)">Riposo</button>
         </div>
         <p class="calendar-hint">Seleziona un giorno dal calendario per applicare la giornata intera.</p>
       </div>
@@ -211,6 +212,9 @@
         option.textContent = `${min}m`;
         minutesSelect.appendChild(option);
       });
+
+      hoursSelect.value = '0';
+      minutesSelect.value = '0';
     }
 
     function setDurationSelectValues(durationMinutesValue) {
@@ -356,13 +360,13 @@
                 </span>
               </div>
               <div class="activity-actions">
-                <button onclick="editActivity('${activity.id}', this)" class="btn btn-sm btn-primary" data-ui-help="Modifica orari, categoria o note dell'attività selezionata." data-ui-severity="info">
+                <button onclick="editActivity('${activity.id}', this)" class="btn btn-sm btn-primary">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
                     <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                   </svg>
                   Modifica
                 </button>
-                <button onclick="deleteActivity('${activity.id}', this)" class="btn btn-sm btn-danger" data-ui-help="Elimina definitivamente l'attività selezionata." data-ui-severity="warn">
+                <button onclick="deleteActivity('${activity.id}', this)" class="btn btn-sm btn-danger">
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                     <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -393,7 +397,7 @@
       lastActionAnchor = anchor || document.getElementById('addActivityForm');
       editingActivityId = null;
       document.getElementById('addActivityForm').style.display = 'block';
-      setDurationSelectValues(requiredMinutes);
+      setDurationSelectValues(0);
       document.getElementById('activityType').value = activityTypes[0] || 'lavoro';
       document.getElementById('notes').value = '';
 
@@ -443,6 +447,12 @@
         activityType: document.getElementById('activityType').value,
         notes: document.getElementById('notes').value
       };
+
+      const totalMinutes = (data.durationHours * 60) + data.durationMinutes;
+      if (totalMinutes === 0) {
+        showError('La durata deve essere maggiore di 0');
+        return;
+      }
 
       if (!editingActivityId) {
         data.date = currentDate;
@@ -732,7 +742,6 @@
     loadActivities();
     loadMonthCalendar();
 
-    helpSystem.init(userDashboardHelp);
   </script>
 </body>
 </html>

@@ -45,7 +45,7 @@ class ActivityService {
 
     const existingActivities = await activityStorage.findByDate(userKey, activityPayload.date);
 
-    if (activityPayload.durationHours || activityPayload.durationMinutes) {
+    if (activityPayload.durationHours !== undefined || activityPayload.durationMinutes !== undefined) {
       const durationMinutes = (Number(activityPayload.durationHours) * 60) + Number(activityPayload.durationMinutes);
       if (durationMinutes <= 0) {
         throw new Error('La durata deve essere maggiore di 0');
@@ -100,7 +100,7 @@ class ActivityService {
     }
 
     const updatePayload = { ...updates };
-    if (updatePayload.durationHours || updatePayload.durationMinutes) {
+    if (updatePayload.durationHours !== undefined || updatePayload.durationMinutes !== undefined) {
       const durationMinutes = (Number(updatePayload.durationHours) * 60) + Number(updatePayload.durationMinutes);
       if (durationMinutes <= 0) {
         throw new Error('La durata deve essere maggiore di 0');

@@ -11,6 +11,7 @@ let ACTIVITY_TYPES = [
   'festività',
   'malattia',
   'permesso',
+  'riposo',
   'trasferta',
   'pausa',
   'altro'

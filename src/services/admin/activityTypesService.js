@@ -14,6 +14,7 @@ class ActivityTypesService {
       'festività',
       'malattia',
       'permesso',
+      'riposo',
       'trasferta',
       'pausa',
       'altro'
