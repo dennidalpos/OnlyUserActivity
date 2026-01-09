@@ -175,7 +175,7 @@
             <% [1,2,3,4,5,6,7].forEach(day => { %>
               <label class="shift-day-tag">
                 <input type="checkbox" name="workingDays" value="<%= day %>">
-                <%= dayLabels[day] %>
+                <span class="shift-day-label"><%= dayLabels[day] %></span>
               </label>
             <% }); %>
           </div>
