@@ -16,7 +16,7 @@
     </div>
     <div class="navbar-user">
       <span>
-        Benvenuto, <strong><%= user.displayName %></strong>
+        Login utente: <strong><%= user.username %></strong>
         <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %> ml-8">
           <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
         </span>

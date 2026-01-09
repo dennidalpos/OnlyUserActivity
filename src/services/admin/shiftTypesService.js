@@ -10,7 +10,8 @@ class ShiftTypesService {
   async getShiftTypes() {
     try {
       const shiftTypes = await fileStorage.readJSON(this.shiftTypesPath);
-      return shiftTypes || this.getDefaultShiftTypes();
+      const list = shiftTypes || this.getDefaultShiftTypes();
+      return list.map(shiftType => this.normalizeShiftType(shiftType));
     } catch (error) {
       return this.getDefaultShiftTypes();
     }
@@ -21,15 +22,25 @@ class ShiftTypesService {
       {
         id: '24-7',
         name: '24/7',
+        workingDays: [1, 2, 3, 4, 5, 6, 7],
         includeWeekends: true,
         includeHolidays: true,
+        contract: {
+          type: 'full-time',
+          weeklyHours: 40
+        },
         description: '24 ore su 24, 7 giorni su 7'
       },
       {
         id: 'feriali',
         name: 'Feriali',
+        workingDays: [1, 2, 3, 4, 5],
         includeWeekends: false,
         includeHolidays: false,
+        contract: {
+          type: 'full-time',
+          weeklyHours: 40
+        },
         description: 'Solo giorni feriali'
       }
     ];
@@ -52,18 +63,29 @@ class ShiftTypesService {
       throw new Error('ID e nome sono obbligatori');
     }
 
-    const newShiftType = {
-      id: shiftType.id,
-      name: shiftType.name,
-      includeWeekends: shiftType.includeWeekends === true,
-      includeHolidays: shiftType.includeHolidays === true,
-      description: shiftType.description || ''
-    };
+    const newShiftType = this.normalizeShiftType(shiftType);
+    newShiftType.id = shiftType.id;
+    newShiftType.name = shiftType.name;
+    newShiftType.description = shiftType.description || '';
 
     shiftTypes.push(newShiftType);
     await this.setShiftTypes(shiftTypes);
 
     return newShiftType;
+  }
+
+  normalizeShiftType(shiftType) {
+    const workingDays = this.normalizeWorkingDays(shiftType.workingDays, shiftType.includeWeekends);
+    const contract = this.normalizeContract(shiftType.contract || {});
+    return {
+      id: shiftType.id,
+      name: shiftType.name,
+      workingDays,
+      includeWeekends: shiftType.includeWeekends === true,
+      includeHolidays: shiftType.includeHolidays === true,
+      contract,
+      description: shiftType.description || ''
+    };
   }
 
   async updateShiftType(id, updates) {
@@ -74,12 +96,22 @@ class ShiftTypesService {
       throw new Error(`Tipo di turno "${id}" non trovato`);
     }
 
+    const base = shiftTypes[index];
+    const workingDays = updates.workingDays !== undefined
+      ? this.normalizeWorkingDays(updates.workingDays, updates.includeWeekends ?? base.includeWeekends)
+      : base.workingDays;
+    const contract = updates.contract !== undefined
+      ? this.normalizeContract(updates.contract || {})
+      : base.contract;
+
     const updatedShiftType = {
-      ...shiftTypes[index],
+      ...base,
       name: updates.name !== undefined ? updates.name : shiftTypes[index].name,
+      workingDays,
       includeWeekends: updates.includeWeekends !== undefined ? updates.includeWeekends === true : shiftTypes[index].includeWeekends,
       includeHolidays: updates.includeHolidays !== undefined ? updates.includeHolidays === true : shiftTypes[index].includeHolidays,
-      description: updates.description !== undefined ? updates.description : shiftTypes[index].description
+      contract,
+      description: updates.description !== undefined ? updates.description : base.description
     };
 
     shiftTypes[index] = updatedShiftType;
@@ -100,6 +132,32 @@ class ShiftTypesService {
     await this.setShiftTypes(shiftTypes);
 
     return { success: true, message: 'Tipo di turno eliminato con successo' };
+  }
+
+  normalizeWorkingDays(workingDays, includeWeekends) {
+    if (Array.isArray(workingDays) && workingDays.length > 0) {
+      return workingDays
+        .map(day => Number(day))
+        .filter(day => Number.isInteger(day) && day >= 1 && day <= 7);
+    }
+
+    if (includeWeekends === true) {
+      return [1, 2, 3, 4, 5, 6, 7];
+    }
+
+    return [1, 2, 3, 4, 5];
+  }
+
+  normalizeContract(contract) {
+    const type = typeof contract.type === 'string' && contract.type.length > 0
+      ? contract.type
+      : 'full-time';
+    const weeklyHours = Number(contract.weeklyHours);
+    return {
+      type,
+      weeklyHours: Number.isFinite(weeklyHours) && weeklyHours > 0 ? weeklyHours : null,
+      presetId: contract.presetId || ''
+    };
   }
 }
 

@@ -27,7 +27,17 @@ function isWorkingDay(dateString, shiftType) {
     return true;
   }
 
-  if (shiftType.includeWeekends === false && isWeekend(dateString)) {
+  const workingDays = Array.isArray(shiftType.workingDays) && shiftType.workingDays.length > 0
+    ? shiftType.workingDays
+    : null;
+  const date = new Date(`${dateString}T00:00:00`);
+  const isoDay = date.getDay() === 0 ? 7 : date.getDay();
+
+  if (workingDays && !workingDays.includes(isoDay)) {
+    return false;
+  }
+
+  if (!workingDays && shiftType.includeWeekends === false && isWeekend(dateString)) {
     return false;
   }
 

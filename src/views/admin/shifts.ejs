@@ -27,6 +27,30 @@
 
     <div id="alertContainer"></div>
 
+    <%
+      const dayLabels = {
+        1: 'Lun',
+        2: 'Mar',
+        3: 'Mer',
+        4: 'Gio',
+        5: 'Ven',
+        6: 'Sab',
+        7: 'Dom'
+      };
+      function formatContract(contract = {}) {
+        if (!contract || !contract.type) {
+          return 'Contratto non specificato';
+        }
+        const typeLabel = contract.type === 'part-time'
+          ? 'Part-time'
+          : contract.type === 'full-time'
+            ? 'Full-time'
+            : 'Personalizzato';
+        const hours = contract.weeklyHours ? `${contract.weeklyHours}h/settimana` : 'Ore non specificate';
+        return `${typeLabel} • ${hours}`;
+      }
+    %>
+
     <div class="shifts-section">
       <h3>Tipi di Turno</h3>
       <div class="alert alert-info">
@@ -58,6 +82,18 @@
                 Festività
               </div>
             </div>
+            <div class="shift-day-tags" aria-label="Giornate lavorative">
+              <% if (Array.isArray(shiftType.workingDays) && shiftType.workingDays.length > 0) { %>
+                <% shiftType.workingDays.forEach(day => { %>
+                  <span class="shift-day-tag"><%= dayLabels[day] || day %></span>
+                <% }); %>
+              <% } else { %>
+                <span class="shift-day-tag">Non specificato</span>
+              <% } %>
+            </div>
+            <div class="shift-contract">
+              <strong>Contratto:</strong> <%= formatContract(shiftType.contract) %>
+            </div>
           </div>
           <div class="shift-type-actions">
             <button onclick="editShiftType('<%= shiftType.id %>', this)" class="btn btn-primary btn-sm" data-ui-help="Modifica i dettagli del turno selezionato." data-ui-severity="info">Modifica</button>
@@ -65,6 +101,45 @@
           </div>
         </div>
         <% }); %>
+      </div>
+    </div>
+
+    <div class="shifts-section contract-presets">
+      <h3>Preset Contratti</h3>
+      <div class="alert alert-info">
+        Gestisci i preset di contratto per riutilizzarli rapidamente nella creazione dei turni.
+      </div>
+
+      <form id="contractPresetForm" class="inline-form">
+        <input type="text" id="presetId" placeholder="ID preset (es: full-time-40)" required>
+        <input type="text" id="presetName" placeholder="Nome preset (es: Full-time 40h)" required>
+        <select id="presetType">
+          <option value="full-time">Full-time</option>
+          <option value="part-time">Part-time</option>
+          <option value="custom">Personalizzato</option>
+        </select>
+        <input type="number" id="presetHours" placeholder="Ore settimanali" min="1" step="0.5" required>
+        <button type="submit" class="btn btn-primary">Aggiungi Preset</button>
+      </form>
+
+      <div class="contract-preset-list" id="contractPresetList">
+        <% if (contractPresets.length === 0) { %>
+          <p class="text-muted">Nessun preset contratto disponibile.</p>
+        <% } else { %>
+          <% contractPresets.forEach(preset => { %>
+            <div class="contract-preset-card" data-preset-id="<%= preset.id %>">
+              <div class="contract-preset-info">
+                <strong><%= preset.name %></strong>
+                <span class="contract-preset-meta">
+                  <%= preset.type === 'part-time' ? 'Part-time' : preset.type === 'full-time' ? 'Full-time' : 'Personalizzato' %>
+                  • <%= preset.weeklyHours %>h/settimana
+                </span>
+                <span class="contract-preset-meta">ID: <%= preset.id %></span>
+              </div>
+              <button type="button" class="btn btn-danger btn-sm" onclick="deleteContractPreset('<%= preset.id %>', this)">Elimina</button>
+            </div>
+          <% }); %>
+        <% } %>
       </div>
     </div>
   </main>
@@ -94,6 +169,19 @@
           <textarea id="shiftDescription" placeholder="Descrizione del turno..." data-ui-help="Descrizione facoltativa del turno." data-ui-severity="info"></textarea>
         </div>
 
+        <div class="form-group">
+          <label>Giornate lavorative:</label>
+          <div class="shift-day-tags" id="workingDaysGroup">
+            <% [1,2,3,4,5,6,7].forEach(day => { %>
+              <label class="shift-day-tag">
+                <input type="checkbox" name="workingDays" value="<%= day %>">
+                <%= dayLabels[day] %>
+              </label>
+            <% }); %>
+          </div>
+          <div class="help-text">Seleziona i giorni lavorativi (es: L M V). Se non selezionato, usa L-V per default.</div>
+        </div>
+
         <div class="checkbox-group">
           <input type="checkbox" id="includeWeekends" data-ui-help="Includi sabato e domenica nelle giornate del turno." data-ui-severity="info">
           <label for="includeWeekends">Includi Weekend (Sabato e Domenica)</label>
@@ -102,6 +190,31 @@
         <div class="checkbox-group">
           <input type="checkbox" id="includeHolidays" data-ui-help="Includi le festività nazionali nel turno." data-ui-severity="info">
           <label for="includeHolidays">Includi Festività</label>
+        </div>
+
+        <div class="form-group">
+          <label for="contractPreset">Preset contratto (opzionale):</label>
+          <select id="contractPreset">
+            <option value="">Nessun preset</option>
+            <% contractPresets.forEach(preset => { %>
+              <option value="<%= preset.id %>"><%= preset.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contractType">Tipo contratto:</label>
+            <select id="contractType">
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="custom">Personalizzato</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="weeklyHours">Ore settimanali:</label>
+            <input type="number" id="weeklyHours" min="1" step="0.5" placeholder="40">
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -114,6 +227,7 @@
 
   <script>
     let shiftTypesData = <%- JSON.stringify(shiftTypes) %>;
+    let contractPresetsData = <%- JSON.stringify(contractPresets) %>;
     let lastActionAnchor = null;
 
     function showAlert(message, type = 'success') {
@@ -147,6 +261,8 @@
       document.getElementById('editingShiftId').value = '';
       document.getElementById('shiftForm').reset();
       document.getElementById('shiftId').disabled = false;
+      setWorkingDaysSelection([1, 2, 3, 4, 5]);
+      document.getElementById('contractPreset').value = '';
       document.getElementById('shiftModal').style.display = 'flex';
     }
 
@@ -163,6 +279,11 @@
       document.getElementById('shiftDescription').value = shiftType.description || '';
       document.getElementById('includeWeekends').checked = shiftType.includeWeekends;
       document.getElementById('includeHolidays').checked = shiftType.includeHolidays;
+      setWorkingDaysSelection(shiftType.workingDays || []);
+      const contractPreset = shiftType.contract?.presetId || '';
+      document.getElementById('contractPreset').value = contractPreset;
+      document.getElementById('contractType').value = shiftType.contract?.type || 'full-time';
+      document.getElementById('weeklyHours').value = shiftType.contract?.weeklyHours || '';
       document.getElementById('shiftModal').style.display = 'flex';
     }
 
@@ -171,6 +292,34 @@
       document.getElementById('shiftModal').style.display = 'none';
       document.getElementById('shiftForm').reset();
     }
+
+    function setWorkingDaysSelection(days) {
+      const selected = new Set((days || []).map(Number));
+      document.querySelectorAll('input[name="workingDays"]').forEach(input => {
+        input.checked = selected.has(Number(input.value));
+      });
+    }
+
+    function getSelectedWorkingDays() {
+      return Array.from(document.querySelectorAll('input[name="workingDays"]:checked'))
+        .map(input => Number(input.value));
+    }
+
+    function applyContractPreset(presetId) {
+      const preset = contractPresetsData.find(item => item.id === presetId);
+      if (!preset) {
+        return;
+      }
+      document.getElementById('contractType').value = preset.type;
+      document.getElementById('weeklyHours').value = preset.weeklyHours;
+    }
+
+    document.getElementById('contractPreset').addEventListener('change', (event) => {
+      const presetId = event.target.value;
+      if (presetId) {
+        applyContractPreset(presetId);
+      }
+    });
 
     document.getElementById('shiftForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -181,8 +330,14 @@
         id: document.getElementById('shiftId').value.toLowerCase().trim(),
         name: document.getElementById('shiftName').value.trim(),
         description: document.getElementById('shiftDescription').value.trim(),
+        workingDays: getSelectedWorkingDays(),
         includeWeekends: document.getElementById('includeWeekends').checked,
-        includeHolidays: document.getElementById('includeHolidays').checked
+        includeHolidays: document.getElementById('includeHolidays').checked,
+        contract: {
+          type: document.getElementById('contractType').value,
+          weeklyHours: Number(document.getElementById('weeklyHours').value),
+          presetId: document.getElementById('contractPreset').value
+        }
       };
 
       try {
@@ -235,6 +390,58 @@
         }
       } catch (error) {
         showAlert('Errore nell\'eliminazione del turno', 'danger');
+      }
+    }
+
+    document.getElementById('contractPresetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      lastActionAnchor = e.submitter || document.querySelector('#contractPresetForm button[type=\"submit\"]');
+
+      const payload = {
+        id: document.getElementById('presetId').value.toLowerCase().trim(),
+        name: document.getElementById('presetName').value.trim(),
+        type: document.getElementById('presetType').value,
+        weeklyHours: Number(document.getElementById('presetHours').value)
+      };
+
+      try {
+        const response = await fetch('/admin/api/contract-presets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Preset contratto aggiunto con successo', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio del preset', 'danger');
+      }
+    });
+
+    async function deleteContractPreset(id, anchor) {
+      lastActionAnchor = anchor || document.querySelector(`[data-preset-id=\"${id}\"]`);
+      if (!confirm('Sei sicuro di voler eliminare questo preset contratto?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/contract-presets/${id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Preset contratto eliminato con successo', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\\'eliminazione del preset', 'danger');
       }
     }
   </script>

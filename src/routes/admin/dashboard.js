@@ -6,6 +6,7 @@ const exportService = require('../../services/admin/exportService');
 const settingsService = require('../../services/admin/settingsService');
 const activityTypesService = require('../../services/admin/activityTypesService');
 const shiftTypesService = require('../../services/admin/shiftTypesService');
+const contractPresetsService = require('../../services/admin/contractPresetsService');
 const serverService = require('../../services/admin/serverService');
 const auditLogger = require('../../services/storage/auditLogger');
 const userStorage = require('../../services/storage/userStorage');
@@ -246,10 +247,12 @@ router.get('/api/monitoring', async (req, res) => {
 router.get('/shifts', async (req, res) => {
   try {
     const shiftTypes = await shiftTypesService.getShiftTypes();
+    const contractPresets = await contractPresetsService.getPresets();
 
     res.render('admin/shifts', {
       title: 'Configurazione Turni',
-      shiftTypes
+      shiftTypes,
+      contractPresets
     });
   } catch (error) {
     res.render('errors/error', {
@@ -265,6 +268,72 @@ router.get('/api/shift-types', async (req, res) => {
     res.json({
       success: true,
       data: shiftTypes
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/contract-presets', async (req, res) => {
+  try {
+    const presets = await contractPresetsService.getPresets();
+    res.json({
+      success: true,
+      data: presets
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/contract-presets', async (req, res) => {
+  try {
+    const preset = await contractPresetsService.addPreset(req.body);
+
+    await auditLogger.log(
+      'CONTRACT_PRESET_ADD',
+      'admin',
+      { preset },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: preset
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/api/contract-presets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await contractPresetsService.removePreset(id);
+
+    await auditLogger.log(
+      'CONTRACT_PRESET_DELETE',
+      'admin',
+      { id },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
     });
   } catch (error) {
     res.status(500).json({

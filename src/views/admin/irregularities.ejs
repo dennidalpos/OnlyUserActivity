@@ -54,7 +54,7 @@
         </thead>
         <tbody>
           <% irregularities.forEach(item => { %>
-            <% const dayName = new Date(`${item.date}T00:00:00`).toLocaleDateString('it-IT', { weekday: 'short' }); %>
+            <% const dayName = new Date(`${item.date}T00:00:00`).toLocaleDateString('it-IT', { weekday: 'long' }); %>
             <tr>
               <td><%= item.date %></td>
               <td><%= dayName %></td>
