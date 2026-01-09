@@ -637,6 +637,28 @@ body {
   margin-top: 10px;
 }
 
+.irregularity-btn {
+  border: 1px solid transparent;
+}
+
+.irregularity-btn--missing {
+  background: #ffb3b3;
+  color: #7f1d1d;
+  border-color: #d12c2c;
+}
+
+.irregularity-btn--incomplete {
+  background: #ffe1a6;
+  color: #7a4d00;
+  border-color: #d98c00;
+}
+
+.irregularity-btn--ok {
+  background: #b8f0c3;
+  color: #14532d;
+  border-color: #2ea44f;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;

@@ -24,6 +24,14 @@
 
   <main class="container">
     <h2>Irregolarità di <%= user.displayName %> (<%= user.username %>)</h2>
+    <%
+      function formatMinutesAsTime(totalMinutes = 0) {
+        const minutesValue = Number.isFinite(totalMinutes) ? totalMinutes : 0;
+        const hours = Math.floor(minutesValue / 60);
+        const minutes = minutesValue % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+    %>
 
     <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
       <p><strong>Periodo:</strong> dal <%= fromDate %> al <%= toDate %></p>
@@ -37,22 +45,25 @@
         <thead>
           <tr>
             <th>Data</th>
+            <th>Giorno</th>
             <th style="text-align: center;">Stato</th>
-            <th style="text-align: right;">Minuti inseriti</th>
-            <th style="text-align: right;">Minuti richiesti</th>
+            <th style="text-align: right;">Ore inserite</th>
+            <th style="text-align: right;">Ore richieste</th>
           </tr>
         </thead>
         <tbody>
           <% irregularities.forEach(item => { %>
+            <% const dayName = new Date(`${item.date}T00:00:00`).toLocaleDateString('it-IT', { weekday: 'short' }); %>
             <tr>
               <td><%= item.date %></td>
+              <td><%= dayName %></td>
               <td style="text-align: center;">
                 <span class="mini-badge" style="background: <%= item.status === 'INCOMPLETO' ? '#ffc107' : '#dc3545' %>; color: <%= item.status === 'INCOMPLETO' ? '#000' : '#fff' %>;">
                   <%= item.status %>
                 </span>
               </td>
-              <td style="text-align: right;"><%= item.totalMinutes %></td>
-              <td style="text-align: right;"><%= item.requiredMinutes %></td>
+              <td style="text-align: right;"><%= formatMinutesAsTime(item.totalMinutes) %></td>
+              <td style="text-align: right;"><%= formatMinutesAsTime(item.requiredMinutes) %></td>
             </tr>
           <% }); %>
         </tbody>

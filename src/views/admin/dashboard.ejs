@@ -82,6 +82,7 @@
         <% } %>
       </strong>
     </div>
+    <p class="period-note">Le irregolarità non vengono mostrate cambiando anno: per visualizzarle entra nello scope dell'anno desiderato.</p>
 
     <div class="stats-grid">
       <div class="stat-card">
@@ -119,10 +120,12 @@
             <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Filtra</button>
-        <% if (filters.username || filters.status) { %>
-        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn btn-secondary">Reset</a>
-        <% } %>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">Filtra</button>
+          <% if (filters.username || filters.status) { %>
+          <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn btn-secondary">Reset</a>
+          <% } %>
+        </div>
       </div>
     </form>
 

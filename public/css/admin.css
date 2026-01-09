@@ -139,9 +139,9 @@ body {
 
 .filter-form {
   background: var(--surface);
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   border-radius: 10px;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
@@ -157,6 +157,13 @@ body {
 .filter-form--compact .btn {
   padding: 0.6rem 1.2rem;
   height: 42px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding-bottom: 2px;
 }
 
 .btn {
@@ -376,6 +383,12 @@ body {
   padding: 8px 14px;
   border-radius: 8px;
   margin-bottom: 14px;
+}
+
+.period-note {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .compact-table {

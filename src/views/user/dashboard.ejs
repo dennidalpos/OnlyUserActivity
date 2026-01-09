@@ -643,8 +643,14 @@
         return;
       }
 
+      const statusClass = (status) => {
+        if (status === 'OK') return 'ok';
+        if (status === 'Incompleto') return 'incomplete';
+        return 'missing';
+      };
+
       container.innerHTML = irregularities.map(item => `
-        <button type="button" class="btn btn-sm" onclick="selectCalendarDate('${item.date}')">
+        <button type="button" class="btn btn-sm irregularity-btn irregularity-btn--${statusClass(item.status)}" onclick="selectCalendarDate('${item.date}')">
           ${item.date} · ${item.status}
         </button>
       `).join('');

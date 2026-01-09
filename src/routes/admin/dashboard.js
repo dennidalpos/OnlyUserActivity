@@ -20,7 +20,7 @@ router.use(requireAdminAuth);
 
 router.get('/dashboard', async (req, res) => {
   try {
-    const viewMode = req.query.viewMode || 'day';
+    const viewMode = req.query.viewMode || 'year';
     const date = req.query.date || getCurrentDate();
     const filters = {
       username: req.query.username || '',
