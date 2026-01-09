@@ -93,7 +93,7 @@ async function seedUserActivities(user, shiftType, activityTypes, fromDate, toDa
 
     for (const minutes of segments) {
       const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60 || 15;
+      const mins = minutes % 60;
 
       await activityService.createActivity(user.userKey, {
         date,
