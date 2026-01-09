@@ -321,6 +321,15 @@
       }
     });
 
+    ['contractType', 'weeklyHours'].forEach((fieldId) => {
+      const field = document.getElementById(fieldId);
+      field.addEventListener('input', () => {
+        if (document.getElementById('contractPreset').value) {
+          document.getElementById('contractPreset').value = '';
+        }
+      });
+    });
+
     document.getElementById('shiftForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       lastActionAnchor = e.submitter || document.querySelector('#shiftForm button[type="submit"]');

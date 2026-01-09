@@ -41,6 +41,9 @@ Lo script crea utenti `testuser01` → `testuser10` con password `Password123!`,
 ### 🔄 Gestione Turni Configurabile (NUOVO v2.0)
 - ✅ **Configurazione turni da web** - Crea, modifica ed elimina tipi di turno personalizzati
 - ✅ **Opzioni flessibili** - Include weekend (sab/dom), include festività
+- ✅ **Giornate lavorative** - Seleziona i giorni attivi per turno (es: L/M/V)
+- ✅ **Contratti per turno** - Full-time, part-time o personalizzato con ore settimanali
+- ✅ **Preset contratti** - Crea preset riutilizzabili e modifica i dettagli direttamente nel form turno
 - ✅ **Turni illimitati** - Nessun limite al numero di turni configurabili
 - ✅ **Assegnazione dinamica** - Dropdown automaticamente popolato con turni configurati
 - ✅ **Turni default** - 24/7 e Feriali preconfigurati
