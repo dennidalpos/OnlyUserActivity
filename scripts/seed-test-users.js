@@ -84,11 +84,14 @@ async function seedUserActivities(user, shiftType, activityTypes, fromDate, toDa
     }
 
     const isIncomplete = incompleteDays.has(date);
-    const targetMinutes = isIncomplete
+    const rawTargetMinutes = isIncomplete
       ? Math.max(120, Math.floor(REQUIRED_MINUTES * getRandomItem([0.5, 0.65, 0.8])))
       : REQUIRED_MINUTES + getRandomItem([0, 30, 60]);
 
-    const activityCount = getRandomItem([1, 2, 3]);
+    const maxDailyMinutes = (24 * 60) - 15;
+    const targetMinutes = Math.min(rawTargetMinutes, maxDailyMinutes);
+    const maxSegments = Math.floor(targetMinutes / 15);
+    const activityCount = Math.min(getRandomItem([1, 2, 3]), Math.max(1, maxSegments));
     const segments = splitDuration(targetMinutes, activityCount);
 
     for (const minutes of segments) {
