@@ -79,7 +79,6 @@ class UIHelper {
 
       .ui-helper-tooltip[data-open="true"] {
         opacity: 1;
-        pointer-events: auto;
       }
 
       .ui-helper-tooltip__header {
