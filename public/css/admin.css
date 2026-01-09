@@ -752,19 +752,39 @@
 }
 
 .shift-day-tag {
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.shift-day-tag input {
+  margin: 0;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shift-day-label {
   background: #e2e8f0;
   color: #475569;
-  padding: 3px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.shift-day-tag input {
-  margin: 0;
+.shift-day-tag input:checked + .shift-day-label {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.shift-day-tag input:focus-visible + .shift-day-label {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .shift-contract {
