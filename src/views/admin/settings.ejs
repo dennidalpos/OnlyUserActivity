@@ -68,6 +68,19 @@
             </label>
             <input type="number" id="serverTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
           </div>
+          <div class="form-group">
+            <label for="defaultUserShift">Turno predefinito nuovi utenti
+              <span class="ui-help-icon" data-ui-help="Turno da assegnare automaticamente al primo login degli utenti LDAP.">ⓘ</span>
+            </label>
+            <select id="defaultUserShift">
+              <option value="" <%= !settings.server.defaultUserShift ? 'selected' : '' %>>- Nessuno -</option>
+              <% shiftTypes.forEach(shiftType => { %>
+                <option value="<%= shiftType.name %>" <%= settings.server.defaultUserShift === shiftType.name ? 'selected' : '' %>>
+                  <%= shiftType.name %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
@@ -621,7 +634,8 @@
       const data = {
         port: document.getElementById('serverPort').value,
         host: document.getElementById('serverHost').value,
-        trustProxy: document.getElementById('serverTrustProxy').value
+        trustProxy: document.getElementById('serverTrustProxy').value,
+        defaultUserShift: document.getElementById('defaultUserShift').value
       };
 
       try {
