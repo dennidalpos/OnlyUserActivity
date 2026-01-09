@@ -24,7 +24,13 @@ function splitDuration(totalMinutes, parts) {
     const max = Math.max(15, Math.floor(remaining / (parts - i)));
     const min = 15;
     const raw = i === parts - 1 ? remaining : min + Math.floor(Math.random() * (max - min + 1));
-    const rounded = Math.max(15, Math.round(raw / 15) * 15);
+    let rounded = Math.max(15, Math.floor(raw / 15) * 15);
+    const remainingSlots = parts - i - 1;
+    const minRemaining = remainingSlots * 15;
+    const maxAllowed = Math.max(15, remaining - minRemaining);
+    if (rounded > maxAllowed) {
+      rounded = maxAllowed;
+    }
     segments.push(rounded);
     remaining -= rounded;
   }
@@ -89,7 +95,8 @@ async function seedUserActivities(user, shiftType, activityTypes, fromDate, toDa
       : REQUIRED_MINUTES + getRandomItem([0, 30, 60]);
 
     const maxDailyMinutes = (24 * 60) - 15;
-    const targetMinutes = Math.min(rawTargetMinutes, maxDailyMinutes);
+    const cappedMinutes = Math.min(rawTargetMinutes, maxDailyMinutes);
+    const targetMinutes = Math.max(15, Math.floor(cappedMinutes / 15) * 15);
     const maxSegments = Math.floor(targetMinutes / 15);
     const activityCount = Math.min(getRandomItem([1, 2, 3]), Math.max(1, maxSegments));
     const segments = splitDuration(targetMinutes, activityCount);
