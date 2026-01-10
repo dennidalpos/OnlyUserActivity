@@ -1,4 +1,6 @@
-function requireAdminAuth(req, res, next) {
+const adminAuthService = require('../services/auth/adminAuthService');
+
+async function requireAdminAuth(req, res, next) {
   if (!req.session || !req.session.adminUser) {
     if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
       return res.status(401).json({
@@ -12,7 +14,26 @@ function requireAdminAuth(req, res, next) {
     return res.redirect('/admin/auth/login');
   }
 
-  req.adminUser = req.session.adminUser;
+  const sessionUser = req.session.adminUser;
+  const storedUser = await adminAuthService.getUser(sessionUser.username);
+
+  if (!storedUser || storedUser.passwordChangedAt !== sessionUser.passwordChangedAt) {
+    req.session.destroy(() => {
+      if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Sessione scaduta, effettua nuovamente il login'
+          }
+        });
+      }
+      return res.redirect('/admin/auth/login');
+    });
+    return;
+  }
+
+  req.adminUser = sessionUser;
   next();
 }
 

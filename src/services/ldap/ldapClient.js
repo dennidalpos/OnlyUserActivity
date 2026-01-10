@@ -66,10 +66,22 @@ class LDAPClient {
   }
 
   isGroupNameMatch(groupName, requiredGroup) {
-    if (!groupName || !requiredGroup) {
+    const normalizedGroupName = this.normalizeGroupName(groupName);
+    const normalizedRequired = this.normalizeGroupName(requiredGroup);
+    if (!normalizedGroupName || !normalizedRequired) {
       return false;
     }
-    return groupName.toLowerCase() === requiredGroup.toLowerCase();
+    return normalizedGroupName.toLowerCase() === normalizedRequired.toLowerCase();
+  }
+
+  normalizeGroupName(value) {
+    if (!value) {
+      return '';
+    }
+    const candidate = Array.isArray(value) ? value[0] : value;
+    const text = String(candidate).trim();
+    const cnMatch = text.match(/CN=([^,]+)/i);
+    return cnMatch ? cnMatch[1].trim() : text;
   }
 
   normalizeSidValue(value) {
@@ -125,9 +137,7 @@ class LDAPClient {
   }
 
   async resolvePrimaryGroupName(client, primaryGroupID) {
-    const primaryGroupValue = Array.isArray(primaryGroupID)
-      ? primaryGroupID[0]
-      : primaryGroupID;
+    const primaryGroupValue = this.normalizeGroupName(primaryGroupID);
     if (!primaryGroupValue) {
       return null;
     }
@@ -160,11 +170,11 @@ class LDAPClient {
 
     const entry = searchEntries[0];
     if (entry.cn) {
-      return entry.cn;
+      return this.normalizeGroupName(entry.cn);
     }
     const dn = entry.dn || entry.distinguishedName || '';
-    const cnMatch = dn.match(/CN=([^,]+)/i);
-    return cnMatch ? cnMatch[1] : null;
+    const normalized = this.normalizeGroupName(dn);
+    return normalized || null;
   }
 
   async unbind(client) {

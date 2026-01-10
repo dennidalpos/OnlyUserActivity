@@ -928,9 +928,12 @@ router.post('/api/admin/reset-password', async (req, res) => {
       req.adminUser.username
     );
 
-    res.json({
-      success: true,
-      message: 'Password admin aggiornata con successo'
+    req.session.destroy(() => {
+      res.json({
+        success: true,
+        message: 'Password admin aggiornata con successo. Effettua nuovamente il login.',
+        requiresLogin: true
+      });
     });
   } catch (error) {
     res.status(500).json({

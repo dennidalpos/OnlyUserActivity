@@ -85,17 +85,17 @@
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
       <div class="settings-subsection mt-20">
-        <h4>Import / Export Configurazione Server</h4>
+        <h4>Import / Export Configurazione Impostazioni</h4>
         <p class="text-muted mb-12">
-          Esporta o reimporta solo le impostazioni del server (porta, host, proxy e turno predefinito).
+          Esporta o reimporta tutte le impostazioni configurate in questa pagina (escluse utenze e attività).
         </p>
         <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportServerConfiguration(this)">
-            ⬇️ Esporta configurazione server
+            ⬇️ Esporta configurazione impostazioni
           </button>
           <input type="file" id="serverConfigImportFile" accept=".json" class="file-input">
           <button type="button" class="btn btn-primary" onclick="importServerConfiguration(this)">
-            ⬆️ Importa configurazione server
+            ⬆️ Importa configurazione impostazioni
           </button>
         </div>
       </div>
@@ -596,14 +596,14 @@
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'configurazione-server.json';
+        link.download = 'configurazione-impostazioni.json';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-        showAlert('Export configurazione server completato', 'success');
+        showAlert('Export configurazione impostazioni completato', 'success');
       } catch (error) {
-        showAlert('Errore durante l\'export della configurazione server', 'danger');
+        showAlert('Errore durante l\'export della configurazione impostazioni', 'danger');
       }
     }
 
@@ -615,7 +615,7 @@
         return;
       }
 
-      if (!confirm('L\'importazione sovrascriverà la configurazione server. Continuare?')) {
+      if (!confirm('L\'importazione sovrascriverà la configurazione impostazioni. Continuare?')) {
         return;
       }
 
@@ -630,7 +630,7 @@
         });
         const result = await response.json();
         if (result.success) {
-          showAlert(result.data.message || 'Import configurazione server completato', 'success');
+          showAlert(result.data.message || 'Import configurazione impostazioni completato', 'success');
           if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
             restartServer(lastActionAnchor);
           }
@@ -1184,7 +1184,12 @@
 
         const result = await response.json();
         if (result.success) {
-          showAlert('Password admin aggiornata con successo', 'success');
+          showAlert(result.message || 'Password admin aggiornata con successo', 'success');
+          if (result.requiresLogin) {
+            setTimeout(() => {
+              window.location.href = '/admin/auth/login';
+            }, 1000);
+          }
         } else {
           showAlert(result.error, 'danger');
         }

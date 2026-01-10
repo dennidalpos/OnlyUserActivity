@@ -768,36 +768,20 @@ class SettingsService {
     const settings = await this.getCurrentSettings();
     return {
       generatedAt: new Date().toISOString(),
-      server: settings.server
+      settings
     };
   }
 
   async importServerConfiguration(payload) {
-    if (!payload || typeof payload !== 'object' || !payload.server) {
-      throw new Error('File configurazione server non valido');
+    if (!payload || typeof payload !== 'object' || !payload.settings) {
+      throw new Error('File configurazione impostazioni non valido');
     }
 
-    const server = payload.server;
-    const updates = {};
-
-    if (server.hasOwnProperty('port')) {
-      updates.port = server.port;
-    }
-    if (server.hasOwnProperty('host')) {
-      updates.host = server.host;
-    }
-    if (server.hasOwnProperty('trustProxy')) {
-      updates.trustProxy = server.trustProxy;
-    }
-    if (server.hasOwnProperty('defaultUserShift')) {
-      updates.defaultUserShift = server.defaultUserShift;
-    }
-
-    const result = await this.updateServerSettings(updates);
+    await this.applySettingsSnapshot(payload.settings);
 
     return {
       success: true,
-      message: result.message || 'Configurazione server importata con successo'
+      message: 'Configurazione impostazioni importata con successo'
     };
   }
 
