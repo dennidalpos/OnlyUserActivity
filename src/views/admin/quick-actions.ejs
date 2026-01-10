@@ -30,22 +30,36 @@
     <div class="settings-section">
       <h3>Quick Action disponibili</h3>
       <div class="alert alert-info">
-        Configura le quick action visibili nel calendario utenti. Le modifiche sono immediate per tutti gli utenti.
+        Configura le quick action visibili nel calendario utenti per impostare la giornata intera.
       </div>
 
       <form id="quickActionForm" class="inline-form">
         <input type="hidden" id="quickActionId" value="">
         <input type="text" id="quickActionLabel" placeholder="Etichetta (es: Smart working)" required>
-        <label class="inline-checkbox">
-          <input type="checkbox" id="quickActionPause">
-          Pausa
-        </label>
         <input type="text" id="quickActionNotes" placeholder="Note (opzionale)">
         <button type="submit" class="btn btn-primary">Salva</button>
         <button type="button" class="btn" onclick="resetQuickActionForm()">Annulla</button>
       </form>
 
       <div id="quickActionsList" class="quick-actions-list"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Pulsanti rapidi (Nuova attività)</h3>
+      <div class="alert alert-info">
+        Configura il pulsante pausa disponibile nella creazione nuova attività. È consentita una sola pausa.
+      </div>
+
+      <form id="quickPauseForm" class="inline-form">
+        <input type="hidden" id="quickPauseId" value="">
+        <input type="text" id="quickPauseLabel" placeholder="Etichetta pausa (es: Pausa pranzo)" required>
+        <input type="text" id="quickPauseNotes" placeholder="Note (opzionale)">
+        <button type="submit" class="btn btn-primary">Salva pausa</button>
+        <button type="button" class="btn" onclick="resetQuickPauseForm()">Annulla</button>
+        <button type="button" class="btn btn-danger" onclick="deleteQuickPause(this)">Rimuovi pausa</button>
+      </form>
+
+      <div id="quickPausePreview" class="quick-actions-list"></div>
     </div>
   </main>
 
@@ -81,16 +95,16 @@
 
     function renderQuickActions() {
       const container = document.getElementById('quickActionsList');
-      if (!quickActions.length) {
+      const dayActions = quickActions.filter(action => action.activityType !== 'pausa');
+      if (!dayActions.length) {
         container.innerHTML = '<p class="text-muted">Nessuna quick action configurata.</p>';
         return;
       }
 
-      container.innerHTML = quickActions.map(action => `
+      container.innerHTML = dayActions.map(action => `
         <div class="quick-action-card" data-action-id="${action.id}">
           <div class="quick-action-info">
             <strong>${action.label}</strong>
-            ${action.activityType === 'pausa' ? '<span class="text-muted">Pausa</span>' : ''}
             ${action.notes ? `<span class="text-muted">${action.notes}</span>` : ''}
           </div>
           <div class="quick-action-actions">
@@ -104,7 +118,6 @@
     function resetQuickActionForm() {
       document.getElementById('quickActionId').value = '';
       document.getElementById('quickActionForm').reset();
-      document.getElementById('quickActionPause').checked = false;
     }
 
     function editQuickAction(id, anchor) {
@@ -116,14 +129,54 @@
       }
       document.getElementById('quickActionId').value = action.id;
       document.getElementById('quickActionLabel').value = action.label;
-      document.getElementById('quickActionPause').checked = action.activityType === 'pausa';
       document.getElementById('quickActionNotes').value = action.notes || '';
       document.getElementById('quickActionForm').scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function deleteQuickAction(id, anchor) {
+    function renderPauseAction() {
+      const preview = document.getElementById('quickPausePreview');
+      const pauseAction = quickActions.find(action => action.activityType === 'pausa');
+
+      if (!pauseAction) {
+        preview.innerHTML = '<p class="text-muted">Nessuna pausa configurata.</p>';
+        return;
+      }
+
+      preview.innerHTML = `
+        <div class="quick-action-card" data-action-id="${pauseAction.id}">
+          <div class="quick-action-info">
+            <strong>${pauseAction.label}</strong>
+            <span class="text-muted">Pausa</span>
+            ${pauseAction.notes ? `<span class="text-muted">${pauseAction.notes}</span>` : ''}
+          </div>
+          <div class="quick-action-actions">
+            <button type="button" class="btn btn-sm btn-primary" onclick="editQuickPause('${pauseAction.id}', this)">Modifica</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function resetQuickPauseForm() {
+      document.getElementById('quickPauseId').value = '';
+      document.getElementById('quickPauseForm').reset();
+    }
+
+    function editQuickPause(id, anchor) {
       setLastActionAnchor(anchor);
-      if (!confirm('Sei sicuro di voler eliminare questa quick action?')) {
+      const action = quickActions.find(item => item.id === id);
+      if (!action || action.activityType !== 'pausa') {
+        showAlert('Pausa non trovata', 'danger');
+        return;
+      }
+      document.getElementById('quickPauseId').value = action.id;
+      document.getElementById('quickPauseLabel').value = action.label;
+      document.getElementById('quickPauseNotes').value = action.notes || '';
+      document.getElementById('quickPauseForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function deleteQuickAction(id, anchor, { skipConfirm = false } = {}) {
+      setLastActionAnchor(anchor);
+      if (!skipConfirm && !confirm('Sei sicuro di voler eliminare questa quick action?')) {
         return;
       }
       try {
@@ -132,6 +185,7 @@
         if (result.success) {
           quickActions = result.data;
           renderQuickActions();
+          renderPauseAction();
           showAlert('Quick action eliminata', 'success');
         } else {
           showAlert(result.error || 'Errore nell\'eliminazione', 'danger');
@@ -148,7 +202,7 @@
       const payload = {
         label: document.getElementById('quickActionLabel').value.trim(),
         notes: document.getElementById('quickActionNotes').value.trim(),
-        isPause: document.getElementById('quickActionPause').checked
+        isPause: false
       };
 
       const id = document.getElementById('quickActionId').value;
@@ -175,7 +229,57 @@
       }
     });
 
+    document.getElementById('quickPauseForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setLastActionAnchor(event.submitter);
+
+      const payload = {
+        label: document.getElementById('quickPauseLabel').value.trim(),
+        notes: document.getElementById('quickPauseNotes').value.trim(),
+        isPause: true
+      };
+
+      const id = document.getElementById('quickPauseId').value;
+      const url = id ? `/admin/api/quick-actions/${id}` : '/admin/api/quick-actions';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          quickActions = result.data;
+          renderQuickActions();
+          renderPauseAction();
+          resetQuickPauseForm();
+          showAlert(id ? 'Pausa aggiornata' : 'Pausa creata', 'success');
+        } else {
+          showAlert(result.error || 'Errore nel salvataggio', 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio', 'danger');
+      }
+    });
+
+    async function deleteQuickPause(anchor) {
+      setLastActionAnchor(anchor);
+      const pauseAction = quickActions.find(action => action.activityType === 'pausa');
+      if (!pauseAction) {
+        showAlert('Nessuna pausa da eliminare', 'danger');
+        return;
+      }
+      if (!confirm('Sei sicuro di voler eliminare la pausa?')) {
+        return;
+      }
+      await deleteQuickAction(pauseAction.id, anchor, { skipConfirm: true });
+      resetQuickPauseForm();
+    }
+
     renderQuickActions();
+    renderPauseAction();
   </script>
 </body>
 </html>

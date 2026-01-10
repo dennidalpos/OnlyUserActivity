@@ -112,7 +112,8 @@
                 Orario feriale 08:30-17:00
               </button>
             </div>
-            <div class="form-hint">Inserisce due attività consecutive: 08:30-12:30 e 13:00-17:00.</div>
+            <div id="activityQuickActions" class="quick-actions quick-actions--inline"></div>
+            <div class="form-hint">Inserisce tre attività consecutive: 08:30-12:30, pausa 12:30-13:00 e 13:00-17:00.</div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Salva</button>
@@ -211,47 +212,58 @@
     }
 
     function renderQuickActions() {
-      const container = document.getElementById('calendarQuickActions');
-      if (!container) {
-        return;
-      }
-      if (!quickActions.length) {
-        container.innerHTML = '<span class="text-muted text-small">Nessuna quick action disponibile.</span>';
+      const calendarContainer = document.getElementById('calendarQuickActions');
+      const activityContainer = document.getElementById('activityQuickActions');
+
+      if (!calendarContainer) {
         return;
       }
 
-      container.innerHTML = quickActions.map(action => {
-        if (action.activityType === 'pausa') {
-          return `
-            <div class="quick-action-pause">
-              <span class="quick-action-label">${action.label}</span>
-              <label class="quick-action-select">
-                H
-                <select id="pauseHours">
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                </select>
-              </label>
-              <label class="quick-action-select">
-                M
-                <select id="pauseMinutes">
-                  <option value="0">0</option>
-                  <option value="30">30</option>
-                </select>
-              </label>
-              <button type="button" class="btn btn-primary btn-sm" onclick="applyPauseAction('${action.id}', this)">
-                Applica
-              </button>
-            </div>
-          `;
-        }
-        return `
+      const dayActions = quickActions.filter(action => action.activityType !== 'pausa');
+      const pauseAction = quickActions.find(action => action.activityType === 'pausa');
+
+      if (!dayActions.length) {
+        calendarContainer.innerHTML = '<span class="text-muted text-small">Nessuna quick action disponibile.</span>';
+      } else {
+        calendarContainer.innerHTML = dayActions.map(action => `
           <button type="button" class="btn btn-primary" onclick="applyQuickDay('${action.id}', this)">
             ${action.label}
           </button>
-        `;
-      }).join('');
+        `).join('');
+      }
+
+      if (!activityContainer) {
+        return;
+      }
+
+      if (!pauseAction) {
+        activityContainer.innerHTML = '';
+        return;
+      }
+
+      activityContainer.innerHTML = `
+        <div class="quick-action-pause">
+          <span class="quick-action-label">${pauseAction.label}</span>
+          <label class="quick-action-select">
+            H
+            <select id="pauseHours">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </label>
+          <label class="quick-action-select">
+            M
+            <select id="pauseMinutes">
+              <option value="0">0</option>
+              <option value="30">30</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary btn-sm" onclick="applyPauseAction('${pauseAction.id}', this)">
+            Applica pausa
+          </button>
+        </div>
+      `;
     }
 
     function populateActivityTypeSelect() {
@@ -897,8 +909,8 @@
 
     async function applyPauseAction(actionId, anchor) {
       lastActionAnchor = anchor || document.querySelector('.quick-actions');
-      if (!selectedCalendarDate) {
-        showError('Seleziona prima un giorno dal calendario');
+      if (!currentDate) {
+        showError('Seleziona prima una data');
         return;
       }
 
@@ -916,7 +928,7 @@
       }
 
       const payload = {
-        date: selectedCalendarDate,
+        date: currentDate,
         activityType: 'pausa',
         customType: action.label,
         durationHours: hours,
@@ -983,6 +995,14 @@
           endTime: '12:30',
           activityType: workType,
           notes: 'Orario feriale'
+        });
+
+        await createActivityWithTimes({
+          date: currentDate,
+          startTime: '12:30',
+          endTime: '13:00',
+          activityType: 'pausa',
+          notes: 'Pausa pranzo'
         });
 
         await createActivityWithTimes({
