@@ -265,12 +265,10 @@ router.get('/shifts', async (req, res) => {
 router.get('/quick-actions', async (req, res) => {
   try {
     const quickActions = await settingsService.getQuickActions();
-    const activityTypes = await activityTypesService.getActivityTypes();
 
     res.render('admin/quick-actions', {
       title: 'Quick Action',
-      quickActions,
-      activityTypes
+      quickActions
     });
   } catch (error) {
     res.render('errors/error', {

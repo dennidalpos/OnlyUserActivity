@@ -411,6 +411,7 @@
 
       if (activities.length === 0) {
         list.innerHTML = '<p class="no-data">Nessuna attività per questa data</p>';
+        window.currentActivities = activities;
         return;
       }
 
@@ -842,6 +843,11 @@
       lastActionAnchor = anchor || document.querySelector('.quick-actions');
       if (!selectedCalendarDate) {
         showError('Seleziona prima un giorno dal calendario');
+        return;
+      }
+
+      if (window.currentActivities && window.currentActivities.length > 0) {
+        showError('Esistono già attività per questa data. Rimuovile prima di applicare una quick action.');
         return;
       }
 

@@ -16,31 +16,31 @@ class SettingsService {
       {
         id: 'quick-malattia',
         label: 'Malattia',
-        activityType: 'malattia',
+        activityType: 'altro',
         notes: ''
       },
       {
         id: 'quick-ferie',
         label: 'Ferie',
-        activityType: 'ferie',
+        activityType: 'altro',
         notes: ''
       },
       {
         id: 'quick-congedo',
         label: 'Congedo',
-        activityType: 'permesso',
+        activityType: 'altro',
         notes: 'Congedo'
       },
       {
         id: 'quick-smart-working',
         label: 'Smart working',
-        activityType: 'lavoro',
+        activityType: 'altro',
         notes: 'Smart working'
       },
       {
         id: 'quick-riposo',
         label: 'Riposo',
-        activityType: 'riposo',
+        activityType: 'altro',
         notes: ''
       },
       {
@@ -1123,10 +1123,11 @@ class SettingsService {
 
   normalizeQuickActions(actions) {
     return actions
-      .filter(action => action && action.label && action.activityType)
+      .filter(action => action && action.label)
       .map((action) => {
         const label = String(action.label).trim();
-        const activityType = String(action.activityType).trim().toLowerCase();
+        const isPause = action.isPause === true || action.activityType === 'pausa';
+        const activityType = isPause ? 'pausa' : 'altro';
         return {
           id: action.id || this.generateQuickActionId(label, activityType),
           label,
@@ -1137,16 +1138,15 @@ class SettingsService {
   }
 
   async validateQuickActions(actions) {
-    const activityTypes = await activityTypesService.getActivityTypes();
-    const allowedTypes = new Set([...activityTypes, 'pausa']);
+    const allowedTypes = new Set(['altro', 'pausa']);
     const pauseCount = actions.filter(action => action.activityType === 'pausa').length;
     if (pauseCount > 1) {
       throw new Error('È consentita una sola quick action di tipo "pausa"');
     }
 
     actions.forEach((action) => {
-      if (!action.label || !action.activityType) {
-        throw new Error('Ogni quick action deve avere etichetta e tipo attività');
+      if (!action.label) {
+        throw new Error('Ogni quick action deve avere un\'etichetta');
       }
       if (!allowedTypes.has(action.activityType)) {
         throw new Error(`Tipo attività non valido per quick action: ${action.activityType}`);

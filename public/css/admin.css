@@ -549,6 +549,14 @@ main.container > h2 {
   margin-top: var(--space-4);
 }
 
+.inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
 .quick-action-card {
   display: flex;
   justify-content: space-between;

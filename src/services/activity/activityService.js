@@ -80,6 +80,19 @@ class ActivityService {
       throw error;
     }
 
+    const newDuration = calculateDuration(activityPayload.startTime, activityPayload.endTime);
+    if (activityPayload.activityType !== 'pausa') {
+      const existingMinutes = existingActivities.reduce((sum, activity) => {
+        if (activity.activityType === 'pausa') {
+          return sum;
+        }
+        return sum + calculateDuration(activity.startTime, activity.endTime);
+      }, 0);
+      if (existingMinutes + newDuration > 14 * 60) {
+        throw new Error('Le ore cumulate non possono superare le 14 ore');
+      }
+    }
+
     const continuityCheck = checkContinuity(activityPayload, existingActivities);
     if (!continuityCheck.isContiguous) {
       const error = new Error(
@@ -153,6 +166,20 @@ class ActivityService {
         error.code = 'TIME_OVERLAP';
         error.conflictingActivity = overlapCheck.conflictingActivity;
         throw error;
+      }
+    }
+
+    const existingActivities = await activityStorage.findByDate(userKey, date);
+    if (merged.activityType !== 'pausa') {
+      const existingMinutes = existingActivities.reduce((sum, activity) => {
+        if (activity.id === activityId || activity.activityType === 'pausa') {
+          return sum;
+        }
+        return sum + calculateDuration(activity.startTime, activity.endTime);
+      }, 0);
+      const updatedDuration = calculateDuration(merged.startTime, merged.endTime);
+      if (existingMinutes + updatedDuration > 14 * 60) {
+        throw new Error('Le ore cumulate non possono superare le 14 ore');
       }
     }
 

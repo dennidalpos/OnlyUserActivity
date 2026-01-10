@@ -36,12 +36,10 @@
       <form id="quickActionForm" class="inline-form">
         <input type="hidden" id="quickActionId" value="">
         <input type="text" id="quickActionLabel" placeholder="Etichetta (es: Smart working)" required>
-        <select id="quickActionType" required>
-          <% activityTypes.forEach(type => { %>
-            <option value="<%= type %>"><%= type.charAt(0).toUpperCase() + type.slice(1) %></option>
-          <% }); %>
-          <option value="pausa">Pausa</option>
-        </select>
+        <label class="inline-checkbox">
+          <input type="checkbox" id="quickActionPause">
+          Pausa
+        </label>
         <input type="text" id="quickActionNotes" placeholder="Note (opzionale)">
         <button type="submit" class="btn btn-primary">Salva</button>
         <button type="button" class="btn" onclick="resetQuickActionForm()">Annulla</button>
@@ -92,7 +90,7 @@
         <div class="quick-action-card" data-action-id="${action.id}">
           <div class="quick-action-info">
             <strong>${action.label}</strong>
-            <span class="text-muted">${action.activityType}</span>
+            ${action.activityType === 'pausa' ? '<span class="text-muted">Pausa</span>' : ''}
             ${action.notes ? `<span class="text-muted">${action.notes}</span>` : ''}
           </div>
           <div class="quick-action-actions">
@@ -106,6 +104,7 @@
     function resetQuickActionForm() {
       document.getElementById('quickActionId').value = '';
       document.getElementById('quickActionForm').reset();
+      document.getElementById('quickActionPause').checked = false;
     }
 
     function editQuickAction(id, anchor) {
@@ -117,7 +116,7 @@
       }
       document.getElementById('quickActionId').value = action.id;
       document.getElementById('quickActionLabel').value = action.label;
-      document.getElementById('quickActionType').value = action.activityType;
+      document.getElementById('quickActionPause').checked = action.activityType === 'pausa';
       document.getElementById('quickActionNotes').value = action.notes || '';
       document.getElementById('quickActionForm').scrollIntoView({ behavior: 'smooth' });
     }
@@ -148,8 +147,8 @@
 
       const payload = {
         label: document.getElementById('quickActionLabel').value.trim(),
-        activityType: document.getElementById('quickActionType').value,
-        notes: document.getElementById('quickActionNotes').value.trim()
+        notes: document.getElementById('quickActionNotes').value.trim(),
+        isPause: document.getElementById('quickActionPause').checked
       };
 
       const id = document.getElementById('quickActionId').value;
