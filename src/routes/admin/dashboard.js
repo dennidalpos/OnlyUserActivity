@@ -248,9 +248,31 @@ router.get('/shifts', async (req, res) => {
   try {
     const shiftTypes = await shiftTypesService.getShiftTypes();
     const contractPresets = await contractPresetsService.getPresets();
+    const settings = await settingsService.getCurrentSettings();
 
     res.render('admin/shifts', {
       title: 'Configurazione Turni',
+      shiftTypes,
+      contractPresets,
+      settings
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.get('/users', async (req, res) => {
+  try {
+    const users = await settingsService.listLocalUsers();
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const contractPresets = await contractPresetsService.getPresets();
+
+    res.render('admin/users', {
+      title: 'Gestione Utenti',
+      users,
       shiftTypes,
       contractPresets
     });
@@ -532,7 +554,6 @@ router.get('/settings', async (req, res) => {
   try {
     const settings = await settingsService.getCurrentSettings();
     const activityTypes = await activityTypesService.getActivityTypes();
-    const users = await settingsService.listLocalUsers();
     const shiftTypes = await shiftTypesService.getShiftTypes();
     const projectRoot = process.cwd();
     const defaultHttpsCertPath = path.join(projectRoot, 'certs', 'cert.pem');
@@ -542,7 +563,6 @@ router.get('/settings', async (req, res) => {
       title: 'Configurazione Server',
       settings,
       activityTypes,
-      users,
       shiftTypes,
       projectRoot,
       defaultHttpsCertPath,

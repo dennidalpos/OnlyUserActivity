@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users" class="active">Gestione Utenti</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container settings-container">
+    <h2><%= title %></h2>
+
+    <div id="alertContainer"></div>
+
+    <div class="settings-section">
+      <h3>Gestione Utenti</h3>
+      <p>Gestisci utenti AD e locali, con possibilità di modificare turno e preset contratti.</p>
+
+      <div class="form-grid mb-16">
+        <div class="form-group">
+          <label for="userTypeFilter">Filtro tipo utente</label>
+          <select id="userTypeFilter">
+            <option value="all">Tutti</option>
+            <option value="ad">AD</option>
+            <option value="local">Locali</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="userSearchInput">Ricerca utente</label>
+          <input type="text" id="userSearchInput" placeholder="Cerca per username o nome completo">
+        </div>
+      </div>
+
+      <button onclick="showCreateUserForm(this)" class="btn btn-success mb-16">+ Nuovo Utente Locale</button>
+
+      <div id="createUserForm" class="panel mb-16" style="display: none;">
+        <h4>Crea Nuovo Utente</h4>
+        <form id="userCreateForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="newUsername">Username:</label>
+              <input type="text" id="newUsername" required>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Password:</label>
+              <input type="password" id="newPassword" required>
+            </div>
+            <div class="form-group">
+              <label for="newDisplayName">Nome Completo:</label>
+              <input type="text" id="newDisplayName">
+            </div>
+            <div class="form-group">
+              <label for="newEmail">Email:</label>
+              <input type="text" id="newEmail">
+            </div>
+            <div class="form-group">
+              <label for="newDepartment">Reparto:</label>
+              <input type="text" id="newDepartment">
+            </div>
+            <div class="form-group">
+              <label for="newShift">Turno:</label>
+              <select id="newShift">
+                <option value="">- Nessuno -</option>
+                <% shiftTypes.forEach(shiftType => { %>
+                  <option value="<%= shiftType.name %>"><%= shiftType.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="newContractPreset">Preset contratto:</label>
+              <select id="newContractPreset">
+                <option value="">- Nessuno -</option>
+                <% contractPresets.forEach(preset => { %>
+                  <option value="<%= preset.id %>"><%= preset.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+          <div class="flex gap-8">
+            <button type="submit" class="btn btn-primary">Crea Utente</button>
+            <button type="button" onclick="hideCreateUserForm(this)" class="btn">Annulla</button>
+          </div>
+        </form>
+      </div>
+
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Nome Completo</th>
+            <th>Tipo</th>
+            <th>Reparto</th>
+            <th>Turno</th>
+            <th>Preset Contratto</th>
+            <th>Email</th>
+            <th>Ultimo Login</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <% users.forEach(user => { %>
+          <tr data-user-key="<%= user.userKey %>"
+            data-user-type="<%= user.userType %>"
+            data-username="<%= user.username.toLowerCase() %>"
+            data-display-name="<%= (user.displayName || '').toLowerCase() %>">
+            <td><%= user.username %></td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.displayName %>
+              <% } else { %>
+                <input type="text"
+                  id="displayName-<%= user.userKey %>"
+                  value="<%= user.displayName %>"
+                  class="table-input">
+              <% } %>
+            </td>
+            <td>
+              <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>">
+                <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
+              </span>
+            </td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.department || '-' %>
+              <% } else { %>
+                <input type="text"
+                  id="dept-<%= user.userKey %>"
+                  value="<%= user.department || '' %>"
+                  class="table-input">
+              <% } %>
+            </td>
+            <td>
+              <select
+                id="shift-<%= user.userKey %>"
+                class="table-input">
+                <option value="" <%= !user.shift ? 'selected' : '' %>>- Nessuno -</option>
+                <% shiftTypes.forEach(shiftType => { %>
+                <option value="<%= shiftType.name %>" <%= user.shift === shiftType.name ? 'selected' : '' %>><%= shiftType.name %></option>
+                <% }); %>
+              </select>
+            </td>
+            <td>
+              <select id="contract-<%= user.userKey %>" class="table-input">
+                <option value="" <%= !user.contractPreset ? 'selected' : '' %>>- Nessuno -</option>
+                <% contractPresets.forEach(preset => { %>
+                  <option value="<%= preset.id %>" <%= user.contractPreset === preset.id ? 'selected' : '' %>><%= preset.name %></option>
+                <% }); %>
+              </select>
+            </td>
+            <td>
+              <% if (user.userType === 'ad') { %>
+                <%= user.email || '-' %>
+              <% } else { %>
+                <input type="email"
+                  id="email-<%= user.userKey %>"
+                  value="<%= user.email || '' %>"
+                  class="table-input">
+              <% } %>
+            </td>
+            <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
+            <td>
+              <div class="action-buttons">
+                <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm">Imposta</button>
+                <% if (user.userType !== 'ad') { %>
+                <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm">Reset Password</button>
+                <% } %>
+                <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
+              </div>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let lastActionAnchor = null;
+
+    function setLastActionAnchor(anchor) {
+      if (anchor) {
+        lastActionAnchor = anchor;
+      }
+    }
+
+    function showAlert(message, type = 'success') {
+      if (window.uiHelper && window.uiHelper.enabled) {
+        const severityMap = {
+          success: 'info',
+          info: 'info',
+          danger: 'error'
+        };
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('alertContainer'),
+          message,
+          severity: severityMap[type] || 'info'
+        });
+        return;
+      }
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      alertContainer.appendChild(alert);
+
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    function showCreateUserForm(anchor) {
+      setLastActionAnchor(anchor);
+      document.getElementById('createUserForm').style.display = 'block';
+    }
+
+    function hideCreateUserForm(anchor) {
+      setLastActionAnchor(anchor);
+      document.getElementById('createUserForm').style.display = 'none';
+      document.getElementById('userCreateForm').reset();
+    }
+
+    function applyUserFilters() {
+      const typeFilter = document.getElementById('userTypeFilter').value;
+      const query = document.getElementById('userSearchInput').value.trim().toLowerCase();
+      const rows = document.querySelectorAll('#usersTableBody tr');
+
+      rows.forEach(row => {
+        const rowType = row.dataset.userType;
+        const username = row.dataset.username || '';
+        const displayName = row.dataset.displayName || '';
+        const matchesType = typeFilter === 'all' || rowType === typeFilter;
+        const matchesQuery = !query || username.includes(query) || displayName.includes(query);
+        row.style.display = matchesType && matchesQuery ? '' : 'none';
+      });
+    }
+
+    document.getElementById('userTypeFilter').addEventListener('change', applyUserFilters);
+    document.getElementById('userSearchInput').addEventListener('input', applyUserFilters);
+
+    document.getElementById('userCreateForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#userCreateForm button[type="submit"]'));
+
+      const data = {
+        username: document.getElementById('newUsername').value,
+        password: document.getElementById('newPassword').value,
+        displayName: document.getElementById('newDisplayName').value,
+        email: document.getElementById('newEmail').value,
+        department: document.getElementById('newDepartment').value,
+        shift: document.getElementById('newShift').value,
+        contractPreset: document.getElementById('newContractPreset').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Utente creato con successo', 'success');
+          hideCreateUserForm();
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nella creazione dell\'utente', 'danger');
+      }
+    });
+
+    async function deleteUser(userKey, username, anchor) {
+      setLastActionAnchor(anchor);
+      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Utente eliminato con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'eliminazione dell\'utente', 'danger');
+      }
+    }
+
+    async function updateUserInfo(userKey, userType, anchor) {
+      setLastActionAnchor(anchor);
+      const shiftValue = document.getElementById(`shift-${userKey}`).value;
+      const contractValue = document.getElementById(`contract-${userKey}`).value;
+      const updates = {
+        shift: shiftValue || null,
+        contractPreset: contractValue || null
+      };
+
+      if (userType !== 'ad') {
+        const displayNameValue = document.getElementById(`displayName-${userKey}`).value;
+        const deptValue = document.getElementById(`dept-${userKey}`).value;
+        const emailValue = document.getElementById(`email-${userKey}`).value;
+        updates.displayName = displayNameValue || null;
+        updates.department = deptValue || null;
+        updates.email = emailValue || null;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Informazioni utente aggiornate con successo', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'aggiornamento delle informazioni utente', 'danger');
+      }
+    }
+
+    async function resetUserPassword(userKey, username, anchor) {
+      setLastActionAnchor(anchor);
+      const newPassword = prompt(`Inserisci la nuova password per "${username}":`);
+      if (!newPassword) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/users/${userKey}/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Password reimpostata con successo', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel reset della password', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

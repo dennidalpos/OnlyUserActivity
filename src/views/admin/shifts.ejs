@@ -15,6 +15,7 @@
         <li><a href="/admin/dashboard">Dashboard</a></li>
         <li><a href="/admin/export">Export</a></li>
         <li><a href="/admin/shifts" class="active">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
         <li><a href="/admin/quick-actions">Quick Action</a></li>
         <li><a href="/admin/settings">Configurazione</a></li>
         <li><a href="/admin/auth/logout">Logout</a></li>
@@ -55,6 +56,62 @@
       <h3>Tipi di Turno</h3>
       <div class="alert alert-info">
         Configura i tipi di turno disponibili nel sistema. I turni configurati qui saranno disponibili per l'assegnazione agli utenti.
+      </div>
+
+      <div class="mb-20 panel">
+        <h4>Predefiniti nuovi utenti</h4>
+        <p class="text-muted">
+          Seleziona il turno e il preset contratto da applicare al primo accesso degli utenti.
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Turno predefinito</label>
+            <div class="shift-day-tags">
+              <label class="checkbox-inline">
+                <input type="checkbox"
+                  name="defaultShiftType"
+                  value=""
+                  <%= !settings.server.defaultUserShift ? 'checked' : '' %>
+                  onchange="setDefaultShift('', this)">
+                Nessuno
+              </label>
+              <% shiftTypes.forEach(shiftType => { %>
+                <label class="checkbox-inline">
+                  <input type="checkbox"
+                    name="defaultShiftType"
+                    value="<%= shiftType.name %>"
+                    <%= settings.server.defaultUserShift === shiftType.name ? 'checked' : '' %>
+                    onchange="setDefaultShift('<%= shiftType.name %>', this)">
+                  <%= shiftType.name %>
+                </label>
+              <% }); %>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Preset contratto predefinito</label>
+            <div class="shift-day-tags">
+              <label class="checkbox-inline">
+                <input type="checkbox"
+                  name="defaultContractPreset"
+                  value=""
+                  <%= !settings.server.defaultUserContractPreset ? 'checked' : '' %>
+                  onchange="setDefaultContractPreset('', this)">
+                Nessuno
+              </label>
+              <% contractPresets.forEach(preset => { %>
+                <label class="checkbox-inline">
+                  <input type="checkbox"
+                    name="defaultContractPreset"
+                    value="<%= preset.id %>"
+                    <%= settings.server.defaultUserContractPreset === preset.id ? 'checked' : '' %>
+                    onchange="setDefaultContractPreset('<%= preset.id %>', this)">
+                  <%= preset.name %>
+                </label>
+              <% }); %>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted text-small">Le modifiche richiedono il riavvio del server per essere applicate.</p>
       </div>
 
       <div class="mb-20">
@@ -253,6 +310,68 @@
       setTimeout(() => {
         alert.remove();
       }, 5000);
+    }
+
+    async function restartServer(anchor) {
+      lastActionAnchor = anchor || document.getElementById('alertContainer');
+      if (!confirm('Sei sicuro di voler riavviare il server?')) {
+        return;
+      }
+      try {
+        const response = await fetch('/admin/api/server/restart', { method: 'POST' });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.message || 'Riavvio del server in corso', 'success');
+        } else {
+          showAlert(result.error || 'Errore durante il riavvio', 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il riavvio del server', 'danger');
+      }
+    }
+
+    function toggleExclusiveCheckbox(name, current) {
+      document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+        if (input !== current) {
+          input.checked = false;
+        }
+      });
+      if (!current.checked) {
+        current.checked = true;
+      }
+    }
+
+    async function updateDefaults(payload, anchor) {
+      lastActionAnchor = anchor || document.querySelector('.shifts-section');
+      try {
+        const response = await fetch('/admin/api/settings/server', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio dei predefiniti', 'danger');
+      }
+    }
+
+    function setDefaultShift(value, anchor) {
+      toggleExclusiveCheckbox('defaultShiftType', anchor);
+      updateDefaults({ defaultUserShift: value });
+    }
+
+    function setDefaultContractPreset(value, anchor) {
+      toggleExclusiveCheckbox('defaultContractPreset', anchor);
+      updateDefaults({ defaultUserContractPreset: value });
     }
 
     function showAddShiftModal(anchor) {

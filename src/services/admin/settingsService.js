@@ -137,7 +137,12 @@ class SettingsService {
         host: this.resolveEnvValue(envSettings, 'SERVER_HOST', config.server.host),
         port: this.resolveEnvInt(envSettings, 'SERVER_PORT', config.server.port),
         trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy),
-        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift)
+        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift),
+        defaultUserContractPreset: this.resolveEnvValue(
+          envSettings,
+          'DEFAULT_USER_CONTRACT_PRESET',
+          config.server.defaultUserContractPreset
+        )
       },
       logging: {
         level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
@@ -338,6 +343,21 @@ class SettingsService {
     return matched.name;
   }
 
+  async normalizeDefaultUserContractPreset(defaultUserContractPreset) {
+    const trimmed = typeof defaultUserContractPreset === 'string' ? defaultUserContractPreset.trim() : '';
+    if (!trimmed) {
+      return '';
+    }
+
+    const presets = await contractPresetsService.getPresets();
+    const matched = presets.find(preset => preset.id === trimmed);
+    if (!matched) {
+      throw new Error('Preset contratto predefinito non valido. Seleziona un preset esistente.');
+    }
+
+    return matched.id;
+  }
+
   async updateServerSettings(serverSettings) {
     this.logSettings(' Aggiornamento configurazione server...');
 
@@ -364,6 +384,12 @@ class SettingsService {
     if (serverSettings.hasOwnProperty('defaultUserShift')) {
       const normalizedShift = await this.normalizeDefaultUserShift(serverSettings.defaultUserShift);
       updates.DEFAULT_USER_SHIFT = normalizedShift;
+    }
+    if (serverSettings.hasOwnProperty('defaultUserContractPreset')) {
+      const normalizedContractPreset = await this.normalizeDefaultUserContractPreset(
+        serverSettings.defaultUserContractPreset
+      );
+      updates.DEFAULT_USER_CONTRACT_PRESET = normalizedContractPreset;
     }
 
     await this.updateEnvFile(updates);
@@ -415,6 +441,12 @@ class SettingsService {
     if (server.hasOwnProperty('defaultUserShift')) {
       const normalizedShift = await this.normalizeDefaultUserShift(server.defaultUserShift);
       updates.DEFAULT_USER_SHIFT = normalizedShift;
+    }
+    if (server.hasOwnProperty('defaultUserContractPreset')) {
+      const normalizedContractPreset = await this.normalizeDefaultUserContractPreset(
+        server.defaultUserContractPreset
+      );
+      updates.DEFAULT_USER_CONTRACT_PRESET = normalizedContractPreset;
     }
 
     if (https.hasOwnProperty('enabled')) {
@@ -624,6 +656,7 @@ class SettingsService {
       email: user.email,
       department: user.department,
       shift: user.shift,
+      contractPreset: user.contractPreset,
       userType: user.userType || 'local',
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt
@@ -631,7 +664,15 @@ class SettingsService {
   }
 
   async createLocalUser(userData) {
-    const { username, password, displayName, email, department } = userData;
+    const {
+      username,
+      password,
+      displayName,
+      email,
+      department,
+      shift,
+      contractPreset
+    } = userData;
 
     if (!username || !password) {
       throw new Error('Username e password sono obbligatori');
@@ -643,6 +684,8 @@ class SettingsService {
     }
 
     const passwordHash = await hashPassword(password);
+    const defaultShift = config.server.defaultUserShift || null;
+    const defaultContractPreset = config.server.defaultUserContractPreset || null;
 
     const user = await userStorage.create({
       username,
@@ -650,6 +693,8 @@ class SettingsService {
       displayName: displayName || username,
       email: email || null,
       department: department || null,
+      shift: shift || defaultShift || null,
+      contractPreset: contractPreset || defaultContractPreset || null,
       userType: 'local'
     });
 
@@ -659,6 +704,7 @@ class SettingsService {
       displayName: user.displayName,
       email: user.email,
       department: user.department,
+      contractPreset: user.contractPreset,
       userType: user.userType
     };
   }
@@ -699,6 +745,10 @@ class SettingsService {
       shift: updates.shift
     };
 
+    if (updates.hasOwnProperty('contractPreset')) {
+      allowedUpdates.contractPreset = updates.contractPreset;
+    }
+
     if (user.userType !== 'ad') {
       if (updates.hasOwnProperty('department')) {
         allowedUpdates.department = updates.department;
@@ -720,6 +770,7 @@ class SettingsService {
         username: updatedUser.username,
         displayName: updatedUser.displayName,
         shift: updatedUser.shift,
+        contractPreset: updatedUser.contractPreset,
         department: updatedUser.department,
         email: updatedUser.email
       },
@@ -1063,6 +1114,7 @@ class SettingsService {
       SERVER_PORT: settings.server?.port,
       TRUST_PROXY: settings.server?.trustProxy,
       DEFAULT_USER_SHIFT: settings.server?.defaultUserShift,
+      DEFAULT_USER_CONTRACT_PRESET: settings.server?.defaultUserContractPreset,
       LDAP_ENABLED: settings.ldap?.enabled ? 'true' : 'false',
       LDAP_URL: settings.ldap?.url,
       LDAP_BASE_DN: settings.ldap?.baseDN,
