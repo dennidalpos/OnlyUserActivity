@@ -12,6 +12,7 @@ class AppError extends Error {
 function errorHandler(logger) {
   return (err, req, res, next) => {
     const requestId = req.id || 'unknown';
+    const log = req.log || logger || console;
 
     let statusCode = err.statusCode || 500;
     let code = err.code || 'INTERNAL_ERROR';
@@ -19,7 +20,7 @@ function errorHandler(logger) {
     let details = err.details || null;
 
     if (statusCode >= 500) {
-      req.log.error({
+      log.error({
         err,
         requestId,
         url: req.url,

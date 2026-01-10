@@ -534,7 +534,6 @@ router.get('/settings', async (req, res) => {
     const activityTypes = await activityTypesService.getActivityTypes();
     const users = await settingsService.listLocalUsers();
     const shiftTypes = await shiftTypesService.getShiftTypes();
-    const quickActions = await settingsService.getQuickActions();
     const projectRoot = process.cwd();
     const defaultHttpsCertPath = path.join(projectRoot, 'certs', 'cert.pem');
     const defaultHttpsKeyPath = path.join(projectRoot, 'certs', 'key.pem');
@@ -545,7 +544,6 @@ router.get('/settings', async (req, res) => {
       activityTypes,
       users,
       shiftTypes,
-      quickActionsCount: quickActions.length,
       projectRoot,
       defaultHttpsCertPath,
       defaultHttpsKeyPath

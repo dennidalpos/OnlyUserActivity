@@ -35,7 +35,7 @@
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
       <div class="mb-20">
-        <button type="button" onclick="restartServer(this)" class="btn btn-danger">
+        <button type="button" onclick="confirmRestartServer(this)" class="btn btn-danger">
           🔄 Riavvia Server
         </button>
         <span class="ml-10 text-muted text-small">
@@ -117,19 +117,6 @@
         <p class="settings-warning mt-10">
           L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
         </p>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>Quick Action utenti</h3>
-      <div class="alert alert-info">
-        Gestisci le quick action visibili nel calendario utenti.
-      </div>
-      <div class="settings-actions">
-        <button type="button" class="btn btn-primary" onclick="window.location.href='/admin/quick-actions'">
-          ⚡ Configura quick action
-        </button>
-        <span class="text-muted text-small">Totale configurate: <strong><%= quickActionsCount %></strong></span>
       </div>
     </div>
 
@@ -1292,12 +1279,15 @@
       }
     }
 
+    function confirmRestartServer(anchor) {
+      setLastActionAnchor(anchor);
+      if (confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
+        restartServer(anchor);
+      }
+    }
+
     async function restartServer(anchor) {
       setLastActionAnchor(anchor);
-      if (!confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
-        return;
-      }
-
       try {
         const response = await fetch('/admin/api/server/restart', {
           method: 'POST'
