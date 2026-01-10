@@ -20,29 +20,29 @@ class SettingsService {
         notes: 'Assenza'
       },
       {
-        id: 'quick-lavoro',
-        label: 'Lavoro',
-        notes: 'Lavoro'
-      },
-      {
         id: 'quick-lavoro-feriale',
         label: 'Lavoro feriale',
         notes: 'Lavoro feriale'
       },
       {
+        id: 'quick-part-time-4-ore',
+        label: 'Part-time 4 ore',
+        notes: 'Part-time 4 ore'
+      },
+      {
         id: 'quick-lavoro-3turni-mattino',
-        label: 'Lavoro su 3 turni - mattino',
-        notes: 'Lavoro su 3 turni - mattino'
+        label: 'Lavoro su turni - mattino',
+        notes: 'Lavoro su turni - mattino'
       },
       {
         id: 'quick-lavoro-3turni-pomeriggio',
-        label: 'Lavoro su 3 turni - pomeriggio',
-        notes: 'Lavoro su 3 turni - pomeriggio'
+        label: 'Lavoro su turni - pomeriggio',
+        notes: 'Lavoro su turni - pomeriggio'
       },
       {
         id: 'quick-lavoro-3turni-notte',
-        label: 'Lavoro su 3 turni - notte',
-        notes: 'Lavoro su 3 turni - notte'
+        label: 'Lavoro su turni - notte',
+        notes: 'Lavoro su turni - notte'
       },
       {
         id: 'quick-ferie',
@@ -975,8 +975,35 @@ class SettingsService {
     };
     const settings = await this.getCurrentSettings();
 
-    if (includeSection('settings')) {
+    const includeSettings = includeSection('settings');
+    const includeLogging = includeSection('logging');
+    const includeLdap = includeSection('ldap');
+    const includeHttps = includeSection('https');
+    const includeAdvanced = includeSection('advanced');
+
+    if (includeSettings) {
       payload.settings = settings;
+    } else {
+      const partialSettings = {};
+      if (includeLogging) {
+        partialSettings.logging = settings.logging;
+      }
+      if (includeLdap) {
+        partialSettings.ldap = settings.ldap;
+      }
+      if (includeHttps) {
+        partialSettings.https = settings.https;
+      }
+      if (includeAdvanced) {
+        partialSettings.jwt = settings.jwt;
+        partialSettings.storage = settings.storage;
+        partialSettings.admin = settings.admin;
+        partialSettings.security = settings.security;
+        partialSettings.activity = settings.activity;
+      }
+      if (Object.keys(partialSettings).length > 0) {
+        payload.settings = partialSettings;
+      }
     }
     if (includeSection('activityTypes')) {
       payload.activityTypes = await activityTypesService.getActivityTypes();
@@ -1074,11 +1101,57 @@ class SettingsService {
     const sections = Array.isArray(options.sections) ? options.sections : null;
     const includeSection = (name) => !sections || sections.includes(name);
 
-    if (includeSection('settings')) {
+    const includeSettings = includeSection('settings');
+    const includeLogging = includeSection('logging');
+    const includeLdap = includeSection('ldap');
+    const includeHttps = includeSection('https');
+    const includeAdvanced = includeSection('advanced');
+    const needsSettings = includeSettings || includeLogging || includeLdap || includeHttps || includeAdvanced;
+
+    if (needsSettings) {
       if (!payload.settings) {
         throw new Error('Configurazione completa priva delle impostazioni server');
       }
-      await this.applySettingsSnapshot(payload.settings);
+
+      if (includeSettings) {
+        await this.applySettingsSnapshot(payload.settings);
+      } else {
+        const partialSettings = {};
+        if (includeLogging) {
+          if (!payload.settings.logging) {
+            throw new Error('Configurazione completa priva della sezione logging');
+          }
+          partialSettings.logging = payload.settings.logging;
+        }
+        if (includeLdap) {
+          if (!payload.settings.ldap) {
+            throw new Error('Configurazione completa priva della sezione LDAP');
+          }
+          partialSettings.ldap = payload.settings.ldap;
+        }
+        if (includeHttps) {
+          if (!payload.settings.https) {
+            throw new Error('Configurazione completa priva della sezione HTTPS');
+          }
+          partialSettings.https = payload.settings.https;
+        }
+        if (includeAdvanced) {
+          const hasAdvancedSection = payload.settings.jwt
+            || payload.settings.storage
+            || payload.settings.admin
+            || payload.settings.security
+            || payload.settings.activity;
+          if (!hasAdvancedSection) {
+            throw new Error('Configurazione completa priva della sezione impostazioni avanzate');
+          }
+          partialSettings.jwt = payload.settings.jwt;
+          partialSettings.storage = payload.settings.storage;
+          partialSettings.admin = payload.settings.admin;
+          partialSettings.security = payload.settings.security;
+          partialSettings.activity = payload.settings.activity;
+        }
+        await this.applySettingsSnapshot(partialSettings);
+      }
     }
 
     if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {

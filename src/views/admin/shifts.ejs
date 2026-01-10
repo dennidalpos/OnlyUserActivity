@@ -259,21 +259,6 @@
           </select>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="contractType">Tipo contratto:</label>
-            <select id="contractType">
-              <option value="full-time">Full-time</option>
-              <option value="part-time">Part-time</option>
-              <option value="custom">Personalizzato</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="weeklyHours">Ore settimanali:</label>
-            <input type="number" id="weeklyHours" min="1" step="0.5" placeholder="40">
-          </div>
-        </div>
-
         <div class="modal-footer">
           <button type="button" onclick="closeShiftModal(this)" class="btn">Annulla</button>
           <button type="submit" class="btn btn-primary">Salva</button>
@@ -401,8 +386,6 @@
       setWorkingDaysSelection(shiftType.workingDays || []);
       const contractPreset = shiftType.contract?.presetId || '';
       document.getElementById('contractPreset').value = contractPreset;
-      document.getElementById('contractType').value = shiftType.contract?.type || 'full-time';
-      document.getElementById('weeklyHours').value = shiftType.contract?.weeklyHours || '';
       document.getElementById('shiftModal').style.display = 'flex';
     }
 
@@ -424,31 +407,6 @@
         .map(input => Number(input.value));
     }
 
-    function applyContractPreset(presetId) {
-      const preset = contractPresetsData.find(item => item.id === presetId);
-      if (!preset) {
-        return;
-      }
-      document.getElementById('contractType').value = preset.type;
-      document.getElementById('weeklyHours').value = preset.weeklyHours;
-    }
-
-    document.getElementById('contractPreset').addEventListener('change', (event) => {
-      const presetId = event.target.value;
-      if (presetId) {
-        applyContractPreset(presetId);
-      }
-    });
-
-    ['contractType', 'weeklyHours'].forEach((fieldId) => {
-      const field = document.getElementById(fieldId);
-      field.addEventListener('input', () => {
-        if (document.getElementById('contractPreset').value) {
-          document.getElementById('contractPreset').value = '';
-        }
-      });
-    });
-
     document.getElementById('shiftForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       lastActionAnchor = e.submitter || document.querySelector('#shiftForm button[type="submit"]');
@@ -462,8 +420,6 @@
         includeWeekends: document.getElementById('includeWeekends').checked,
         includeHolidays: document.getElementById('includeHolidays').checked,
         contract: {
-          type: document.getElementById('contractType').value,
-          weeklyHours: Number(document.getElementById('weeklyHours').value),
           presetId: document.getElementById('contractPreset').value
         }
       };

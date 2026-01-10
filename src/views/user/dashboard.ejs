@@ -62,6 +62,15 @@
       <div>
         <h3>Tipo di Turno Associato</h3>
         <p class="shift-name"><%= userShift ? userShift.name : 'Nessun turno assegnato' %></p>
+        <% if (userShift?.contract) { %>
+          <p class="text-muted text-small">
+            Contratto:
+            <%= userShift.contract.type === 'part-time' ? 'Part-time' : userShift.contract.type === 'full-time' ? 'Full-time' : 'Personalizzato' %>
+            <% if (userShift.contract.weeklyHours) { %>
+              · <%= userShift.contract.weeklyHours %>h/settimana
+            <% } %>
+          </p>
+        <% } %>
       </div>
       <% if (userShift) { %>
       <div class="shift-meta">
@@ -160,6 +169,7 @@
     let requiredMinutes = 480;
     let calendarDate = '<%= currentDate %>';
     let selectedCalendarDate = '<%= currentDate %>';
+    let currentActivitiesDate = '<%= currentDate %>';
 
     console.log('Dashboard script loaded. Token:', token ? 'present' : 'missing');
 
@@ -377,6 +387,7 @@
       if (activities.length === 0) {
         list.innerHTML = '<p class="no-data">Nessuna attività per questa data</p>';
         window.currentActivities = activities;
+        currentActivitiesDate = currentDate;
         return;
       }
 
@@ -444,6 +455,7 @@
       }).join('');
 
       window.currentActivities = activities;
+      currentActivitiesDate = currentDate;
       if (window.uiHelper) {
         window.uiHelper.bindHelpTargets(list);
       }
@@ -661,6 +673,22 @@
       });
     }
 
+    function formatDurationMinutes(totalMinutes) {
+      const minutesValue = Number(totalMinutes);
+      if (!Number.isFinite(minutesValue) || minutesValue <= 0) {
+        return '-';
+      }
+      const hours = Math.floor(minutesValue / 60);
+      const minutes = minutesValue % 60;
+      if (hours > 0 && minutes > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      if (hours > 0) {
+        return `${hours}h`;
+      }
+      return `${minutes}m`;
+    }
+
     function renderCalendar(days, year, month) {
       const grid = document.getElementById('calendarGrid');
       grid.innerHTML = '';
@@ -695,10 +723,11 @@
           const typeLabel = activity.customType
             ? activity.customType
             : activity.activityType;
+          const durationText = formatDurationMinutes(activity.durationMinutes);
           return `
             <li class="calendar-day-activity">
               <span class="calendar-day-activity-type">${typeLabel}</span>
-              <span class="calendar-day-activity-time">${activity.startTime}-${activity.endTime}</span>
+              <span class="calendar-day-activity-time">${durationText}</span>
             </li>
           `;
         }).join('');
@@ -803,6 +832,15 @@
       return quickActions.find(action => action.id === id);
     }
 
+    async function ensureSelectedDateActivitiesLoaded() {
+      if (currentActivitiesDate === selectedCalendarDate) {
+        return;
+      }
+      document.getElementById('activityDate').value = selectedCalendarDate;
+      currentDate = selectedCalendarDate;
+      await loadActivities();
+    }
+
     async function applyQuickDay(actionId, anchor) {
       lastActionAnchor = anchor || document.querySelector('.quick-actions');
       if (!selectedCalendarDate) {
@@ -810,7 +848,9 @@
         return;
       }
 
-      if (window.currentActivities && window.currentActivities.length > 0) {
+      await ensureSelectedDateActivitiesLoaded();
+
+      if (window.currentActivities && window.currentActivities.length > 0 && currentActivitiesDate === selectedCalendarDate) {
         showError('Esistono già attività per questa data. Rimuovile prima di applicare una quick action.');
         return;
       }
