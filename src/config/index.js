@@ -19,7 +19,15 @@ const config = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     toFile: process.env.LOG_TO_FILE === 'true',
-    filePath: process.env.LOG_FILE_PATH || path.join(process.cwd(), 'logs', 'activity-tracker.log')
+    filePath: process.env.LOG_FILE_PATH || path.join(process.cwd(), 'logs', 'activity-tracker.log'),
+    categories: {
+      ldap: process.env.LOG_LDAP === 'true',
+      http: process.env.LOG_HTTP === 'true',
+      server: process.env.LOG_SERVER === 'true',
+      settings: process.env.LOG_SETTINGS === 'true',
+      errors: process.env.LOG_ERRORS === 'true',
+      audit: process.env.LOG_AUDIT === 'true'
+    }
   },
 
   ldap: {

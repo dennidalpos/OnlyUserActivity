@@ -3,7 +3,7 @@ const config = require('../../config');
 
 class LDAPClient {
   shouldDebug() {
-    return process.env.LDAP_DEBUG === 'true';
+    return config.logging.categories.ldap === true;
   }
 
   logDebug(message, payload) {
@@ -86,7 +86,40 @@ class LDAPClient {
     if (!normalizedGroupName || !normalizedRequired) {
       return false;
     }
-    return normalizedGroupName.toLowerCase() === normalizedRequired.toLowerCase();
+
+    const groupLower = normalizedGroupName.toLowerCase();
+    const requiredLower = normalizedRequired.toLowerCase();
+
+    // Direct match
+    if (groupLower === requiredLower) {
+      return true;
+    }
+
+    // Handle common variations
+    const variations = this.getGroupNameVariations(requiredLower);
+    return variations.includes(groupLower);
+  }
+
+  getGroupNameVariations(groupName) {
+    const variations = [groupName];
+
+    // Common English-Italian and singular-plural variations for well-known groups
+    const wellKnownGroups = {
+      'domain users': ['domain user', 'utenti di dominio', 'utente di dominio'],
+      'domain admins': ['domain admin', 'domain administrators', 'amministratori di dominio'],
+      'administrators': ['administrator', 'amministratori'],
+      'users': ['user', 'utenti', 'utente']
+    };
+
+    for (const [canonical, aliases] of Object.entries(wellKnownGroups)) {
+      if (groupName === canonical) {
+        variations.push(...aliases);
+      } else if (aliases.includes(groupName)) {
+        variations.push(canonical, ...aliases.filter(a => a !== groupName));
+      }
+    }
+
+    return variations;
   }
 
   normalizeGroupName(value) {
@@ -127,6 +160,16 @@ class LDAPClient {
       return this.decodeSid(value);
     }
     if (typeof value === 'string') {
+      // If string already looks like a SID (S-1-5-...), return it
+      if (value.startsWith('S-') || value.startsWith('s-')) {
+        return value;
+      }
+      // If string contains binary data, convert to Buffer and decode
+      // This happens when LDAP returns binary data as a string
+      if (value.length > 0 && value.charCodeAt(0) <= 255) {
+        const buffer = Buffer.from(value, 'binary');
+        return this.decodeSid(buffer);
+      }
       return value;
     }
     if (value instanceof Uint8Array) {
@@ -153,6 +196,40 @@ class LDAPClient {
     return sid;
   }
 
+  encodeSid(sidString) {
+    if (!sidString || typeof sidString !== 'string') {
+      return null;
+    }
+    const parts = sidString.split('-');
+    if (parts.length < 4 || parts[0] !== 'S') {
+      return null;
+    }
+
+    const revision = parseInt(parts[1], 10);
+    const authority = parseInt(parts[2], 10);
+    const subAuthorities = parts.slice(3).map(p => parseInt(p, 10));
+
+    const buffer = Buffer.alloc(8 + (subAuthorities.length * 4));
+    buffer[0] = revision;
+    buffer[1] = subAuthorities.length;
+    buffer.writeUIntBE(authority, 2, 6);
+
+    for (let i = 0; i < subAuthorities.length; i++) {
+      buffer.writeUInt32LE(subAuthorities[i], 8 + (i * 4));
+    }
+
+    return buffer;
+  }
+
+  bufferToLdapHex(buffer) {
+    if (!buffer) {
+      return null;
+    }
+    return Array.from(buffer)
+      .map(byte => `\\${byte.toString(16).padStart(2, '0')}`)
+      .join('');
+  }
+
   async getDomainSid(client) {
     const opts = {
       filter: '(objectClass=*)',
@@ -162,66 +239,142 @@ class LDAPClient {
 
     const { searchEntries } = await client.search(config.ldap.baseDN, opts);
     if (!searchEntries || searchEntries.length === 0) {
+      this.logDebug('getDomainSid: no entries found');
       return null;
     }
 
-    return this.normalizeSidValue(searchEntries[0].objectSid);
+    const sid = this.normalizeSidValue(searchEntries[0].objectSid);
+    this.logDebug('getDomainSid: resolved', {
+      rawObjectSid: searchEntries[0].objectSid,
+      isBuffer: Buffer.isBuffer(searchEntries[0].objectSid),
+      sid
+    });
+    return sid;
   }
 
   async resolvePrimaryGroupName(client, primaryGroupID) {
     const primaryGroupValue = this.normalizePrimaryGroupId(primaryGroupID);
     if (!primaryGroupValue) {
+      this.logDebug('resolvePrimaryGroupName: invalid primaryGroupID', { primaryGroupID });
       return null;
     }
 
     const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
     let searchEntries = [];
-    const domainSid = await this.getDomainSid(client);
-    if (domainSid) {
-      const groupSid = `${domainSid}-${primaryGroupValue}`;
-      const opts = {
-        filter: `(objectSid=${groupSid})`,
-        scope: 'sub',
-        attributes: ['cn', 'distinguishedName']
-      };
 
-      const result = await client.search(groupBase, opts);
-      searchEntries = result.searchEntries || [];
-      this.logDebug('primaryGroupID lookup by objectSid', {
-        primaryGroupID,
-        primaryGroupValue,
-        domainSid,
-        groupSid,
-        searchBase: groupBase,
-        found: searchEntries.length
-      });
-    }
-
-    if (!searchEntries || searchEntries.length === 0) {
+    // Try primaryGroupToken first (more reliable and simpler)
+    try {
       const tokenOpts = {
         filter: `(primaryGroupToken=${primaryGroupValue})`,
         scope: 'sub',
-        attributes: ['cn', 'distinguishedName']
+        attributes: ['cn', 'distinguishedName', 'sAMAccountName']
       };
       const tokenResult = await client.search(groupBase, tokenOpts);
       searchEntries = tokenResult.searchEntries || [];
       this.logDebug('primaryGroupID lookup by primaryGroupToken', {
         primaryGroupValue,
         searchBase: groupBase,
-        found: searchEntries.length
+        found: searchEntries.length,
+        entries: searchEntries.map(e => ({
+          cn: e.cn,
+          dn: e.dn || e.distinguishedName,
+          sAMAccountName: e.sAMAccountName
+        }))
       });
-      if (searchEntries.length === 0) {
-        return null;
+    } catch (error) {
+      this.logDebug('primaryGroupToken search failed', { error: error.message });
+    }
+
+    // If primaryGroupToken didn't work, try objectSid approach
+    if ((!searchEntries || searchEntries.length === 0)) {
+      try {
+        const domainSid = await this.getDomainSid(client);
+        if (domainSid && domainSid.startsWith('S-')) {
+          const groupSid = `${domainSid}-${primaryGroupValue}`;
+          const sidBuffer = this.encodeSid(groupSid);
+          const hexSid = sidBuffer ? this.bufferToLdapHex(sidBuffer) : null;
+
+          if (hexSid) {
+            const opts = {
+              filter: `(objectSid=${hexSid})`,
+              scope: 'sub',
+              attributes: ['cn', 'distinguishedName', 'sAMAccountName']
+            };
+
+            const result = await client.search(groupBase, opts);
+            searchEntries = result.searchEntries || [];
+            this.logDebug('primaryGroupID lookup by objectSid', {
+              primaryGroupID,
+              primaryGroupValue,
+              domainSid,
+              groupSid,
+              hexSid,
+              searchBase: groupBase,
+              found: searchEntries.length,
+              entries: searchEntries.map(e => ({
+                cn: e.cn,
+                dn: e.dn || e.distinguishedName,
+                sAMAccountName: e.sAMAccountName
+              }))
+            });
+          }
+        }
+      } catch (error) {
+        this.logDebug('objectSid search failed', { error: error.message });
       }
     }
 
-    const entry = searchEntries[0];
-    if (entry.cn) {
-      return this.normalizeGroupName(entry.cn);
+    // Final fallback: use well-known RID to group name mapping
+    if (!searchEntries || searchEntries.length === 0) {
+      const wellKnownRids = {
+        '512': 'Domain Admins',
+        '513': 'Domain Users',
+        '514': 'Domain Guests',
+        '515': 'Domain Computers',
+        '516': 'Domain Controllers',
+        '519': 'Enterprise Admins',
+        '520': 'Group Policy Creator Owners'
+      };
+
+      const wellKnownName = wellKnownRids[primaryGroupValue];
+      if (wellKnownName) {
+        this.logDebug('resolvePrimaryGroupName: using well-known RID mapping', {
+          primaryGroupID,
+          primaryGroupValue,
+          groupName: wellKnownName
+        });
+        return wellKnownName;
+      }
+
+      this.logDebug('resolvePrimaryGroupName: no group found for primaryGroupID', {
+        primaryGroupID,
+        primaryGroupValue
+      });
+      return null;
     }
-    const dn = entry.dn || entry.distinguishedName || '';
-    const normalized = this.normalizeGroupName(dn);
-    return normalized || null;
+
+    const entry = searchEntries[0];
+    let groupName = null;
+
+    // Prefer cn, fallback to sAMAccountName, then DN
+    if (entry.cn) {
+      groupName = this.normalizeGroupName(entry.cn);
+    } else if (entry.sAMAccountName) {
+      groupName = this.normalizeGroupName(entry.sAMAccountName);
+    } else {
+      const dn = entry.dn || entry.distinguishedName || '';
+      groupName = this.normalizeGroupName(dn);
+    }
+
+    this.logDebug('resolvePrimaryGroupName: resolved', {
+      primaryGroupID,
+      primaryGroupValue,
+      groupName,
+      cn: entry.cn,
+      sAMAccountName: entry.sAMAccountName
+    });
+
+    return groupName || null;
   }
 
   async unbind(client) {

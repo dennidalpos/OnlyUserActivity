@@ -13,6 +13,12 @@ class SettingsService {
     this.envPath = path.join(process.cwd(), '.env');
   }
 
+  logSettings(message, ...args) {
+    if (config.logging.categories.settings) {
+      console.log(`[SETTINGS] ${message}`, ...args);
+    }
+  }
+
   resolveEnvValue(envSettings, key, fallback) {
     if (Object.prototype.hasOwnProperty.call(envSettings, key)) {
       return envSettings[key];
@@ -36,8 +42,8 @@ class SettingsService {
   }
 
   async getCurrentSettings() {
-    console.log('[SETTINGS] Lettura impostazioni correnti dal file .env...');
-    console.log('[SETTINGS] Path file .env:', this.envPath);
+    this.logSettings('Lettura impostazioni correnti dal file .env...');
+    this.logSettings('Path file .env:', this.envPath);
 
     let envSettings = {};
     try {
@@ -51,9 +57,9 @@ class SettingsService {
           envSettings[match[1]] = match[2];
         }
       }
-      console.log('[SETTINGS] File .env letto. Chiavi trovate:', Object.keys(envSettings).length);
+      this.logSettings(' File .env letto. Chiavi trovate:', Object.keys(envSettings).length);
     } catch (error) {
-      console.warn('[SETTINGS] File .env non trovato, uso valori di default');
+      this.logSettings(' File .env non trovato, uso valori di default');
     }
 
     const settings = {
@@ -82,7 +88,15 @@ class SettingsService {
       logging: {
         level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
         toFile: this.resolveEnvBoolean(envSettings, 'LOG_TO_FILE', config.logging.toFile),
-        filePath: this.resolveEnvValue(envSettings, 'LOG_FILE_PATH', config.logging.filePath)
+        filePath: this.resolveEnvValue(envSettings, 'LOG_FILE_PATH', config.logging.filePath),
+        categories: {
+          ldap: this.resolveEnvBoolean(envSettings, 'LOG_LDAP', config.logging.categories.ldap),
+          http: this.resolveEnvBoolean(envSettings, 'LOG_HTTP', config.logging.categories.http),
+          server: this.resolveEnvBoolean(envSettings, 'LOG_SERVER', config.logging.categories.server),
+          settings: this.resolveEnvBoolean(envSettings, 'LOG_SETTINGS', config.logging.categories.settings),
+          errors: this.resolveEnvBoolean(envSettings, 'LOG_ERRORS', config.logging.categories.errors),
+          audit: this.resolveEnvBoolean(envSettings, 'LOG_AUDIT', config.logging.categories.audit)
+        }
       },
       jwt: {
         secret: this.resolveEnvValue(envSettings, 'JWT_SECRET', config.jwt.secret),
@@ -113,30 +127,30 @@ class SettingsService {
       }
     };
 
-    console.log('[SETTINGS] Settings da restituire:', JSON.stringify(settings, null, 2));
+    this.logSettings(' Settings da restituire:', JSON.stringify(settings, null, 2));
     return settings;
   }
 
   async updateEnvFile(updates) {
-    console.log('[SETTINGS] Aggiornamento file .env in corso...');
-    console.log('[SETTINGS] Modifiche da applicare:', JSON.stringify(updates, null, 2));
+    this.logSettings(' Aggiornamento file .env in corso...');
+    this.logSettings(' Modifiche da applicare:', JSON.stringify(updates, null, 2));
 
     let envContent = '';
     let fileExists = true;
 
     try {
       envContent = await fs.readFile(this.envPath, 'utf-8');
-      console.log('[SETTINGS] File .env letto con successo');
+      this.logSettings(' File .env letto con successo');
     } catch (error) {
-      console.log('[SETTINGS] File .env non trovato, provo a copiare da .env.example');
+      this.logSettings(' File .env non trovato, provo a copiare da .env.example');
       fileExists = false;
 
       try {
         const examplePath = path.join(process.cwd(), '.env.example');
         envContent = await fs.readFile(examplePath, 'utf-8');
-        console.log('[SETTINGS] Template .env.example caricato');
+        this.logSettings(' Template .env.example caricato');
       } catch (exampleError) {
-        console.log('[SETTINGS] .env.example non trovato, creo file vuoto');
+        this.logSettings(' .env.example non trovato, creo file vuoto');
         envContent = '';
       }
     }
@@ -172,23 +186,23 @@ class SettingsService {
 
     for (const [key, value] of Object.entries(updates)) {
       if (!processedKeys.has(key)) {
-        console.log(`[SETTINGS] Aggiunta nuova chiave ${key}=${value}`);
+        this.logSettings(`Aggiunta nuova chiave ${key}=${value}`);
         updatedLines.push(`${key}=${value}`);
       }
     }
 
     const finalContent = updatedLines.join('\n');
     await fs.writeFile(this.envPath, finalContent, 'utf-8');
-    console.log('[SETTINGS] File .env salvato con successo');
-    console.log('[SETTINGS] Path: ' + this.envPath);
+    this.logSettings(' File .env salvato con successo');
+    this.logSettings(' Path: ' + this.envPath);
 
     if (!fileExists) {
-      console.log('[SETTINGS] IMPORTANTE: File .env creato per la prima volta. Riavviare il server per applicare le modifiche.');
+      this.logSettings(' IMPORTANTE: File .env creato per la prima volta. Riavviare il server per applicare le modifiche.');
     }
   }
 
   async updateLdapSettings(ldapSettings) {
-    console.log('[SETTINGS] Aggiornamento configurazione LDAP...');
+    this.logSettings(' Aggiornamento configurazione LDAP...');
 
     const updates = {};
 
@@ -222,7 +236,7 @@ class SettingsService {
 
     await this.updateEnvFile(updates);
 
-    console.log('[SETTINGS] Configurazione LDAP aggiornata con successo');
+    this.logSettings(' Configurazione LDAP aggiornata con successo');
 
     return {
       success: true,
@@ -231,7 +245,7 @@ class SettingsService {
   }
 
   async updateHttpsSettings(httpsSettings) {
-    console.log('[SETTINGS] Aggiornamento configurazione HTTPS...');
+    this.logSettings(' Aggiornamento configurazione HTTPS...');
 
     const updates = {};
 
@@ -247,7 +261,7 @@ class SettingsService {
 
     await this.updateEnvFile(updates);
 
-    console.log('[SETTINGS] Configurazione HTTPS aggiornata con successo');
+    this.logSettings(' Configurazione HTTPS aggiornata con successo');
 
     return {
       success: true,
@@ -271,14 +285,14 @@ class SettingsService {
   }
 
   async updateServerSettings(serverSettings) {
-    console.log('[SETTINGS] Aggiornamento configurazione server...');
+    this.logSettings(' Aggiornamento configurazione server...');
 
     const updates = {};
 
     if (serverSettings.port) {
       const port = parseInt(serverSettings.port, 10);
       if (isNaN(port) || port < 1 || port > 65535) {
-        console.error('[SETTINGS] Porta non valida:', serverSettings.port);
+        this.logSettings(' Porta non valida:', serverSettings.port);
         throw new Error('Porta non valida. Deve essere tra 1 e 65535.');
       }
       updates.SERVER_PORT = port.toString();
@@ -300,7 +314,7 @@ class SettingsService {
 
     await this.updateEnvFile(updates);
 
-    console.log('[SETTINGS] Configurazione server aggiornata con successo');
+    this.logSettings(' Configurazione server aggiornata con successo');
 
     return {
       success: true,
@@ -320,7 +334,7 @@ class SettingsService {
   }
 
   async updateAdvancedSettings(advancedSettings) {
-    console.log('[SETTINGS] Aggiornamento impostazioni avanzate...');
+    this.logSettings(' Aggiornamento impostazioni avanzate...');
 
     const updates = {};
     const server = advancedSettings.server || {};
@@ -367,6 +381,27 @@ class SettingsService {
     }
     if (logging.hasOwnProperty('filePath')) {
       updates.LOG_FILE_PATH = logging.filePath;
+    }
+    if (logging.hasOwnProperty('categories')) {
+      const { categories } = logging;
+      if (categories.hasOwnProperty('ldap')) {
+        updates.LOG_LDAP = categories.ldap ? 'true' : 'false';
+      }
+      if (categories.hasOwnProperty('http')) {
+        updates.LOG_HTTP = categories.http ? 'true' : 'false';
+      }
+      if (categories.hasOwnProperty('server')) {
+        updates.LOG_SERVER = categories.server ? 'true' : 'false';
+      }
+      if (categories.hasOwnProperty('settings')) {
+        updates.LOG_SETTINGS = categories.settings ? 'true' : 'false';
+      }
+      if (categories.hasOwnProperty('errors')) {
+        updates.LOG_ERRORS = categories.errors ? 'true' : 'false';
+      }
+      if (categories.hasOwnProperty('audit')) {
+        updates.LOG_AUDIT = categories.audit ? 'true' : 'false';
+      }
     }
 
     if (ldap.hasOwnProperty('enabled')) {

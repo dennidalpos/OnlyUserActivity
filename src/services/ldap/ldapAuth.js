@@ -36,39 +36,42 @@ class LDAPAuth {
           });
         }
 
+        // Check memberOf first
         const isMember = ldapClient.isMemberOfGroup(
           ldapUser.memberOf,
           config.ldap.requiredGroup
         );
 
-        let hasPrimaryGroup = false;
-        if (!isMember) {
-          const primaryGroupName = await ldapClient.resolvePrimaryGroupName(
+        // Always check primary group as well (e.g., "Domain Users" is often only primary group)
+        let isPrimaryGroup = false;
+        let primaryGroupName = null;
+        if (ldapUser.primaryGroupID) {
+          primaryGroupName = await ldapClient.resolvePrimaryGroupName(
             serviceClient,
             ldapUser.primaryGroupID
           );
-          hasPrimaryGroup = ldapClient.isGroupNameMatch(primaryGroupName, config.ldap.requiredGroup);
-          const normalizedRequired = ldapClient.normalizeGroupName(config.ldap.requiredGroup);
-          const primaryGroupIdValue = ldapClient.normalizePrimaryGroupId(ldapUser.primaryGroupID);
-          if (!hasPrimaryGroup && normalizedRequired && primaryGroupIdValue) {
-            if (normalizedRequired.toLowerCase() === 'domain users' && primaryGroupIdValue === '513') {
-              hasPrimaryGroup = true;
-            }
-          }
+          isPrimaryGroup = ldapClient.isGroupNameMatch(primaryGroupName, config.ldap.requiredGroup);
+
           if (ldapClient.shouldDebug()) {
-            console.debug('[ldap] primary group fallback', {
-              primaryGroupName,
-              hasPrimaryGroup,
-              requiredGroup: config.ldap.requiredGroup,
-              normalizedRequired,
+            console.debug('[ldap] primary group check', {
               primaryGroupID: ldapUser.primaryGroupID,
-              primaryGroupIdValue
+              primaryGroupName,
+              isPrimaryGroup,
+              requiredGroup: config.ldap.requiredGroup
             });
           }
         }
 
-        if (!isMember && !hasPrimaryGroup) {
+        if (!isMember && !isPrimaryGroup) {
           throw new Error(`Utente non appartiene al gruppo ${config.ldap.requiredGroup}`);
+        }
+
+        if (ldapClient.shouldDebug()) {
+          console.debug('[ldap] group check passed', {
+            isMember,
+            isPrimaryGroup,
+            primaryGroupName
+          });
         }
       }
 

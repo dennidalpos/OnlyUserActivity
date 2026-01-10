@@ -227,13 +227,14 @@
       <form id="loggingForm">
         <div class="form-grid">
           <div class="form-group">
-            <label for="loggingLevel">Livello log
+            <label for="loggingLevel">Livello log globale
             </label>
             <select id="loggingLevel">
               <% ['trace','debug','info','warn','error','fatal'].forEach(level => { %>
                 <option value="<%= level %>" <%= settings.logging.level === level ? 'selected' : '' %>><%= level %></option>
               <% }); %>
             </select>
+            <div class="field-help">Livello minimo per i log di sistema (Pino)</div>
           </div>
           <div class="form-group">
             <label>
@@ -251,6 +252,55 @@
             <div class="field-help">Il file verrà creato sul server Windows. Nessuna scrittura sul PC client.</div>
           </div>
         </div>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Categorie di Log</h4>
+        <div class="field-help" style="margin-bottom: 1rem;">Seleziona le categorie di log da abilitare. Ogni checkbox controlla una sezione specifica senza sovrapposizioni.</div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logLdap" <%= settings.logging.categories.ldap ? 'checked' : '' %>>
+              LDAP/AD
+            </label>
+            <div class="field-help">Autenticazione, gruppi, ricerche LDAP</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logHttp" <%= settings.logging.categories.http ? 'checked' : '' %>>
+              HTTP Requests
+            </label>
+            <div class="field-help">Richieste HTTP fallite (4xx, 5xx)</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logServer" <%= settings.logging.categories.server ? 'checked' : '' %>>
+              Server
+            </label>
+            <div class="field-help">Avvio, arresto, riavvio server</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logSettings" <%= settings.logging.categories.settings ? 'checked' : '' %>>
+              Settings
+            </label>
+            <div class="field-help">Modifiche configurazione e .env</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logErrors" <%= settings.logging.categories.errors ? 'checked' : '' %>>
+              Errors
+            </label>
+            <div class="field-help">Eccezioni non gestite ed errori critici</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logAudit" <%= settings.logging.categories.audit ? 'checked' : '' %>>
+              Audit Log
+            </label>
+            <div class="field-help">Log di audit strutturato (login, attività)</div>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary">Salva Logging</button>
       </form>
     </div>
@@ -952,7 +1002,15 @@
         logging: {
           level: document.getElementById('loggingLevel').value,
           toFile: document.getElementById('loggingToFile').checked,
-          filePath: document.getElementById('loggingFilePath').value
+          filePath: document.getElementById('loggingFilePath').value,
+          categories: {
+            ldap: document.getElementById('logLdap').checked,
+            http: document.getElementById('logHttp').checked,
+            server: document.getElementById('logServer').checked,
+            settings: document.getElementById('logSettings').checked,
+            errors: document.getElementById('logErrors').checked,
+            audit: document.getElementById('logAudit').checked
+          }
         }
       };
 

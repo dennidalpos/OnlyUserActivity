@@ -23,3 +23,15 @@ public/build/
 
 # temp files
 *.tmp
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+desktop.ini
