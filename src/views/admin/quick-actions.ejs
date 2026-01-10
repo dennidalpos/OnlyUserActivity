@@ -30,16 +30,12 @@
     <div class="settings-section">
       <h3>Quick Action disponibili</h3>
       <div class="alert alert-info">
-        Configura le quick action visibili nel calendario utenti. Le modifiche sono immediate per tutti gli utenti.
+        Configura le quick action visibili nel calendario utenti per impostare la giornata intera.
       </div>
 
       <form id="quickActionForm" class="inline-form">
         <input type="hidden" id="quickActionId" value="">
         <input type="text" id="quickActionLabel" placeholder="Etichetta (es: Smart working)" required>
-        <label class="inline-checkbox">
-          <input type="checkbox" id="quickActionPause">
-          Pausa
-        </label>
         <input type="text" id="quickActionNotes" placeholder="Note (opzionale)">
         <button type="submit" class="btn btn-primary">Salva</button>
         <button type="button" class="btn" onclick="resetQuickActionForm()">Annulla</button>
@@ -47,6 +43,7 @@
 
       <div id="quickActionsList" class="quick-actions-list"></div>
     </div>
+
   </main>
 
   <script>
@@ -90,7 +87,6 @@
         <div class="quick-action-card" data-action-id="${action.id}">
           <div class="quick-action-info">
             <strong>${action.label}</strong>
-            ${action.activityType === 'pausa' ? '<span class="text-muted">Pausa</span>' : ''}
             ${action.notes ? `<span class="text-muted">${action.notes}</span>` : ''}
           </div>
           <div class="quick-action-actions">
@@ -104,7 +100,6 @@
     function resetQuickActionForm() {
       document.getElementById('quickActionId').value = '';
       document.getElementById('quickActionForm').reset();
-      document.getElementById('quickActionPause').checked = false;
     }
 
     function editQuickAction(id, anchor) {
@@ -116,14 +111,13 @@
       }
       document.getElementById('quickActionId').value = action.id;
       document.getElementById('quickActionLabel').value = action.label;
-      document.getElementById('quickActionPause').checked = action.activityType === 'pausa';
       document.getElementById('quickActionNotes').value = action.notes || '';
       document.getElementById('quickActionForm').scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function deleteQuickAction(id, anchor) {
+    async function deleteQuickAction(id, anchor, { skipConfirm = false } = {}) {
       setLastActionAnchor(anchor);
-      if (!confirm('Sei sicuro di voler eliminare questa quick action?')) {
+      if (!skipConfirm && !confirm('Sei sicuro di voler eliminare questa quick action?')) {
         return;
       }
       try {
@@ -132,7 +126,6 @@
         if (result.success) {
           quickActions = result.data;
           renderQuickActions();
-          showAlert('Quick action eliminata', 'success');
         } else {
           showAlert(result.error || 'Errore nell\'eliminazione', 'danger');
         }
@@ -148,7 +141,7 @@
       const payload = {
         label: document.getElementById('quickActionLabel').value.trim(),
         notes: document.getElementById('quickActionNotes').value.trim(),
-        isPause: document.getElementById('quickActionPause').checked
+        isPause: false
       };
 
       const id = document.getElementById('quickActionId').value;

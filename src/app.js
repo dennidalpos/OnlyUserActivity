@@ -82,11 +82,13 @@ app.use((req, res, next) => {
 });
 
 app.use('/admin', session({
+  name: 'admin.sid',
   secret: config.admin.sessionSecret,
   resave: false,
   saveUninitialized: false,
   proxy: config.server.trustProxy > 0,
   cookie: {
+    path: '/admin',
     maxAge: config.admin.sessionMaxAge,
     httpOnly: true,
     secure: config.env === 'production' && config.https.enabled,
@@ -95,11 +97,13 @@ app.use('/admin', session({
 }));
 
 app.use('/user', session({
+  name: 'user.sid',
   secret: config.jwt.secret,
   resave: false,
   saveUninitialized: false,
   proxy: config.server.trustProxy > 0,
   cookie: {
+    path: '/user',
     maxAge: 8 * 60 * 60 * 1000,
     httpOnly: true,
     secure: config.env === 'production' && config.https.enabled,
@@ -136,6 +140,12 @@ app.get('/', (req, res) => {
 });
 
 app.use((req, res) => {
+  if (req.accepts(['html', 'json']) === 'html') {
+    return res.status(404).render('errors/error', {
+      title: 'Errore',
+      error: 'Risorsa non trovata'
+    });
+  }
   res.status(404).json({
     success: false,
     error: {

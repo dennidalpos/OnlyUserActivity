@@ -14,40 +14,54 @@ class SettingsService {
     this.quickActionsPath = path.join(config.storage.rootPath, 'admin', 'quick-actions.json');
     this.defaultQuickActions = [
       {
-        id: 'quick-malattia',
-        label: 'Malattia',
-        activityType: 'altro',
-        notes: ''
+        id: 'quick-assenza',
+        label: 'Assenza',
+        notes: 'Assenza'
+      },
+      {
+        id: 'quick-lavoro',
+        label: 'Lavoro',
+        notes: 'Lavoro'
+      },
+      {
+        id: 'quick-lavoro-feriale',
+        label: 'Lavoro feriale',
+        notes: 'Lavoro feriale'
+      },
+      {
+        id: 'quick-turno-mattino',
+        label: 'Turno mattino',
+        notes: 'Lavoro su 3 turni - mattino'
+      },
+      {
+        id: 'quick-turno-pomeriggio',
+        label: 'Turno pomeriggio',
+        notes: 'Lavoro su 3 turni - pomeriggio'
+      },
+      {
+        id: 'quick-turno-notte',
+        label: 'Turno notte',
+        notes: 'Lavoro su 3 turni - notte'
       },
       {
         id: 'quick-ferie',
         label: 'Ferie',
-        activityType: 'altro',
-        notes: ''
+        notes: 'Ferie'
+      },
+      {
+        id: 'quick-malattia',
+        label: 'Malattia',
+        notes: 'Malattia'
       },
       {
         id: 'quick-congedo',
         label: 'Congedo',
-        activityType: 'altro',
         notes: 'Congedo'
       },
       {
-        id: 'quick-smart-working',
-        label: 'Smart working',
-        activityType: 'altro',
-        notes: 'Smart working'
-      },
-      {
         id: 'quick-riposo',
-        label: 'Riposo',
-        activityType: 'altro',
-        notes: ''
-      },
-      {
-        id: 'quick-pausa',
-        label: 'Pausa',
-        activityType: 'pausa',
-        notes: ''
+        label: 'Turno di riposo',
+        notes: 'Turno di riposo'
       }
     ];
   }
@@ -1124,25 +1138,21 @@ class SettingsService {
   normalizeQuickActions(actions) {
     return actions
       .filter(action => action && action.label)
+      .filter(action => action.activityType !== 'pausa' && action.isPause !== true)
       .map((action) => {
         const label = String(action.label).trim();
-        const isPause = action.isPause === true || action.activityType === 'pausa';
-        const activityType = isPause ? 'pausa' : 'altro';
+        const activityType = 'altro';
         return {
           id: action.id || this.generateQuickActionId(label, activityType),
           label,
-          activityType,
+          activityType: 'altro',
           notes: action.notes ? String(action.notes) : ''
         };
       });
   }
 
   async validateQuickActions(actions) {
-    const allowedTypes = new Set(['altro', 'pausa']);
-    const pauseCount = actions.filter(action => action.activityType === 'pausa').length;
-    if (pauseCount > 1) {
-      throw new Error('È consentita una sola quick action di tipo "pausa"');
-    }
+    const allowedTypes = new Set(['altro']);
 
     actions.forEach((action) => {
       if (!action.label) {

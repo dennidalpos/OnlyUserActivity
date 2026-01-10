@@ -35,7 +35,7 @@
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
       <div class="mb-20">
-        <button type="button" onclick="restartServer(this)" class="btn btn-danger">
+        <button type="button" onclick="confirmRestartServer(this)" class="btn btn-danger">
           🔄 Riavvia Server
         </button>
         <span class="ml-10 text-muted text-small">
@@ -88,7 +88,7 @@
       <div class="settings-subsection mt-20">
         <h4>Import / Export Configurazione Impostazioni</h4>
         <p class="text-muted mb-12">
-          Esporta o reimporta tutte le impostazioni configurate in questa pagina (escluse utenze e attività).
+          Esporta o reimporta tutte le impostazioni configurate in questa pagina, incluse le quick action (escluse utenze e attività).
         </p>
         <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportServerConfiguration(this)">
@@ -103,7 +103,7 @@
       <div class="settings-subsection mt-20">
         <h4>Import / Export Configurazione Completa</h4>
         <p class="text-muted mb-12">
-          Esporta o reimporta utenti, attività e impostazioni server in un unico file JSON.
+          Esporta o reimporta utenti, attività, quick action e impostazioni server in un unico file JSON.
         </p>
         <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)">
@@ -117,19 +117,6 @@
         <p class="settings-warning mt-10">
           L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
         </p>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>Quick Action utenti</h3>
-      <div class="alert alert-info">
-        Gestisci le quick action visibili nel calendario utenti.
-      </div>
-      <div class="settings-actions">
-        <button type="button" class="btn btn-primary" onclick="window.location.href='/admin/quick-actions'">
-          ⚡ Configura quick action
-        </button>
-        <span class="text-muted text-small">Totale configurate: <strong><%= quickActionsCount %></strong></span>
       </div>
     </div>
 
@@ -1292,12 +1279,15 @@
       }
     }
 
+    function confirmRestartServer(anchor) {
+      setLastActionAnchor(anchor);
+      if (confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
+        restartServer(anchor);
+      }
+    }
+
     async function restartServer(anchor) {
       setLastActionAnchor(anchor);
-      if (!confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
-        return;
-      }
-
       try {
         const response = await fetch('/admin/api/server/restart', {
           method: 'POST'
@@ -1323,6 +1313,9 @@
   </script>
   <script>
     helpSystem.init(adminSettingsHelp);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadServerInfo();
+    });
   </script>
 </body>
 </html>

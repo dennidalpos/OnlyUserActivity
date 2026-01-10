@@ -9,6 +9,7 @@ Sistema Node.js/Express con dashboard EJS per tracciare le attività giornaliere
 - Dashboard admin per monitoraggio, gestione utenti, turni, impostazioni e logging.
 - Esportazione dati attività con report dettagliati e riepilogativi.
 - Gestione dei tipi di attività e preset contratti da UI admin.
+- Quick action per impostare rapidamente la giornata dal calendario utente.
 
 ## Requisiti
 
@@ -87,7 +88,6 @@ LOG_AUDIT=false
 
 - Le attività possono essere inserite con durata (ore/minuti) o con orari espliciti (HH:MM, step 15 minuti).
 - Il tipo attività `altro` richiede la specifica del tipo personalizzato.
-- È disponibile un pulsante rapido per creare l'orario feriale 08:30-17:00 con pausa 12:30-13:00.
 
 ## Export dati
 
@@ -102,9 +102,3 @@ node scripts/create-user.js
 node scripts/seed-test-users.js
 node scripts/restart-server.js
 ```
-
-## Prompt operativo per Claude
-
-Prompt suggerito per analisi e manutenzione:
-
-"Sei un auditor software. Analizza il progetto Activity Tracker (Node.js + Express + EJS) considerando sicurezza, qualità, edge case e corrispondenza tra backend e UI. Fornisci un report per file/endpoint con motivazioni tecniche e suggerisci correzioni concrete."
