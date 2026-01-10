@@ -8,10 +8,14 @@
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
-  <div class="container text-center mt-40">
-    <h1>Si è verificato un errore</h1>
-    <p><%= error %></p>
-    <a href="/admin/dashboard" class="btn btn-primary">Torna alla Dashboard</a>
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-box text-center">
+        <h1 class="text-danger mb-4">Errore</h1>
+        <p class="text-secondary mb-6"><%= error %></p>
+        <a href="/admin/dashboard" class="btn btn-primary btn-block">Torna alla Dashboard</a>
+      </div>
+    </div>
   </div>
 </body>
 </html>

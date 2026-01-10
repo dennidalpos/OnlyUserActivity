@@ -1,3 +1,7 @@
+/**
+ * UIHelper - Tooltip system for contextual help
+ * Styles are defined in admin.css (.ui-helper-tooltip, .ui-help-icon)
+ */
 class UIHelper {
   constructor({ enabled = true } = {}) {
     this.enabled = enabled;
@@ -12,7 +16,6 @@ class UIHelper {
       return;
     }
 
-    this.injectStyles();
     this.ensureTooltip();
     this.bindHelpTargets();
 
@@ -35,95 +38,6 @@ class UIHelper {
         this.hide();
       }
     });
-  }
-
-  injectStyles() {
-    if (document.getElementById('ui-helper-styles')) {
-      return;
-    }
-    const style = document.createElement('style');
-    style.id = 'ui-helper-styles';
-    style.textContent = `
-      .ui-help-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #eef4ff;
-        color: #335;
-        font-size: 12px;
-        margin-left: 6px;
-        cursor: pointer;
-        border: 1px solid #cdd9f7;
-      }
-
-      .ui-helper-tooltip {
-        position: absolute;
-        min-width: 220px;
-        max-width: 320px;
-        background: #fff;
-        color: #2a2a2a;
-        border-radius: 8px;
-        padding: 12px 14px;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-        border: 1px solid #e2e2e2;
-        z-index: 20000;
-        font-size: 13px;
-        line-height: 1.4;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      .ui-helper-tooltip[data-open="true"] {
-        opacity: 1;
-      }
-
-      .ui-helper-tooltip__header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 700;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        margin-bottom: 6px;
-      }
-
-      .ui-helper-tooltip__dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex: none;
-      }
-
-      .ui-helper-tooltip--info .ui-helper-tooltip__dot {
-        background: #2f6fed;
-      }
-
-      .ui-helper-tooltip--warn .ui-helper-tooltip__dot {
-        background: #d38b06;
-      }
-
-      .ui-helper-tooltip--error .ui-helper-tooltip__dot {
-        background: #d93025;
-      }
-
-      .ui-helper-tooltip--info {
-        border-color: #cfdcff;
-      }
-
-      .ui-helper-tooltip--warn {
-        border-color: #f0d6a8;
-      }
-
-      .ui-helper-tooltip--error {
-        border-color: #f3b4ae;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   ensureTooltip() {

@@ -1,3 +1,7 @@
+/**
+ * HelpSystem - Global help modal system
+ * Styles are defined in admin.css (.help-btn, .help-modal, .help-section, etc.)
+ */
 class HelpSystem {
   constructor() {
     this.modalHTML = `
@@ -12,148 +16,9 @@ class HelpSystem {
         </div>
       </div>
     `;
-
-    this.styles = `
-      <style>
-        .help-btn {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: var(--primary, #667eea);
-          color: white;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-          z-index: 999;
-          transition: all 0.3s;
-        }
-        .help-btn:hover {
-          background: var(--primary-dark, #5568d3);
-          transform: scale(1.1);
-        }
-        .help-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 10000;
-        }
-        .help-modal-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.5);
-        }
-        .help-modal-content {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          border-radius: 8px;
-          max-width: 800px;
-          width: 90%;
-          max-height: 80vh;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .help-modal-header {
-          padding: 20px 24px;
-          border-bottom: 1px solid var(--border, #ddd);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .help-modal-header h2 {
-          margin: 0;
-          font-size: 24px;
-          color: var(--text, #333);
-        }
-        .help-modal-close {
-          background: none;
-          border: none;
-          font-size: 32px;
-          color: #999;
-          cursor: pointer;
-          padding: 0;
-          width: 32px;
-          height: 32px;
-          line-height: 1;
-        }
-        .help-modal-close:hover {
-          color: #333;
-        }
-        .help-modal-body {
-          padding: 24px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        .help-section {
-          margin-bottom: 32px;
-        }
-        .help-section h3 {
-          color: var(--primary, #667eea);
-          margin-top: 0;
-          margin-bottom: 12px;
-          font-size: 20px;
-        }
-        .help-section h4 {
-          color: var(--text, #333);
-          margin-top: 16px;
-          margin-bottom: 8px;
-          font-size: 16px;
-        }
-        .help-section p {
-          margin: 8px 0;
-          line-height: 1.6;
-          color: var(--muted, #555);
-        }
-        .help-section ul, .help-section ol {
-          margin: 8px 0;
-          padding-left: 24px;
-        }
-        .help-section li {
-          margin: 4px 0;
-          line-height: 1.6;
-          color: var(--muted, #555);
-        }
-        .help-code {
-          background: #f4f4f4;
-          padding: 12px;
-          border-radius: 4px;
-          font-family: monospace;
-          margin: 8px 0;
-        }
-        .help-note {
-          background: #e8f0fe;
-          border-left: 4px solid var(--primary, #667eea);
-          padding: 12px;
-          margin: 16px 0;
-          border-radius: 4px;
-        }
-        .help-warning {
-          background: #fff3cd;
-          border-left: 4px solid #f0ad4e;
-          padding: 12px;
-          margin: 16px 0;
-          border-radius: 4px;
-        }
-      </style>
-    `;
   }
 
   init(helpContent) {
-    document.head.insertAdjacentHTML('beforeend', this.styles);
-
     document.body.insertAdjacentHTML('beforeend', this.modalHTML);
 
     const helpBtn = document.createElement('button');
@@ -181,16 +46,16 @@ const helpSystem = new HelpSystem();
 
 const userDashboardHelp = `
   <div class="help-section">
-    <h3>Dashboard Utente - Gestione Attività</h3>
-    <p>Benvenuto nella tua dashboard personale per il tracciamento delle attività lavorative giornaliere.</p>
+    <h3>Dashboard Utente - Gestione Attivita</h3>
+    <p>Benvenuto nella tua dashboard personale per il tracciamento delle attivita lavorative giornaliere.</p>
   </div>
 
   <div class="help-section">
-    <h4>Inserimento Attività</h4>
+    <h4>Inserimento Attivita</h4>
     <ol>
-      <li>Clicca su "+ Nuova Attività"</li>
+      <li>Clicca su "+ Nuova Attivita"</li>
       <li>Inserisci l'orario di inizio e fine (step di 15 minuti)</li>
-      <li>Seleziona il tipo di attività dal menu a tendina</li>
+      <li>Seleziona il tipo di attivita dal menu a tendina</li>
       <li>Aggiungi eventuali note descrittive</li>
       <li>Clicca "Salva"</li>
     </ol>
@@ -204,8 +69,8 @@ const userDashboardHelp = `
     <ul>
       <li><strong>Ore Lavorate:</strong> Totale ore inserite per la giornata selezionata</li>
       <li><strong>Straordinari:</strong> Ore oltre le 8 ore standard (evidenziate in verde)</li>
-      <li><strong>Attività:</strong> Numero di attività registrate</li>
-      <li><strong>Stato Giornata:</strong> Completa (≥8h) o Incompleta (&lt;8h)</li>
+      <li><strong>Attivita:</strong> Numero di attivita registrate</li>
+      <li><strong>Stato Giornata:</strong> Completa (8h+) o Incompleta (&lt;8h)</li>
     </ul>
   </div>
 
@@ -219,19 +84,19 @@ const userDashboardHelp = `
   </div>
 
   <div class="help-section">
-    <h4>Eliminazione Attività</h4>
-    <p>Per eliminare un'attività, clicca sul pulsante "Elimina" nella riga corrispondente.</p>
+    <h4>Eliminazione Attivita</h4>
+    <p>Per eliminare un'attivita, clicca sul pulsante "Elimina" nella riga corrispondente.</p>
     <div class="help-warning">
-      <strong>Attenzione:</strong> L'eliminazione è permanente e non può essere annullata.
+      <strong>Attenzione:</strong> L'eliminazione e permanente e non puo essere annullata.
     </div>
   </div>
 
   <div class="help-section">
     <h4>Navigazione Date</h4>
     <ul>
-      <li>Usa il selettore di data per visualizzare attività di giorni diversi</li>
+      <li>Usa il selettore di data per visualizzare attivita di giorni diversi</li>
       <li>Clicca "Oggi" per tornare velocemente alla data corrente</li>
-      <li>Clicca "Carica" per aggiornare le attività della data selezionata</li>
+      <li>Clicca "Carica" per aggiornare le attivita della data selezionata</li>
     </ul>
   </div>
 `;
@@ -239,7 +104,7 @@ const userDashboardHelp = `
 const adminDashboardHelp = `
   <div class="help-section">
     <h3>Dashboard Admin - Monitoraggio</h3>
-    <p>Pannello di controllo per monitorare le attività di tutti gli utenti del sistema.</p>
+    <p>Pannello di controllo per monitorare le attivita di tutti gli utenti del sistema.</p>
   </div>
 
   <div class="help-section">
@@ -254,15 +119,15 @@ const adminDashboardHelp = `
   <div class="help-section">
     <h4>Interpretazione Stati</h4>
     <ul>
-      <li><strong>OK:</strong> Utente ha completato ≥8 ore</li>
-      <li><strong>Incompleto:</strong> Utente ha inserito attività ma &lt;8 ore</li>
-      <li><strong>Assente:</strong> Nessuna attività registrata</li>
+      <li><strong>OK:</strong> Utente ha completato 8+ ore</li>
+      <li><strong>Incompleto:</strong> Utente ha inserito attivita ma &lt;8 ore</li>
+      <li><strong>Assente:</strong> Nessuna attivita registrata</li>
     </ul>
   </div>
 
   <div class="help-section">
     <h4>Colonna Tipo Utente</h4>
-    <p>Indica la modalità di autenticazione dell'utente:</p>
+    <p>Indica la modalita di autenticazione dell'utente:</p>
     <ul>
       <li><strong>AD:</strong> Utente gestito da Active Directory</li>
       <li><strong>Locale:</strong> Utente con credenziali locali</li>
@@ -317,15 +182,15 @@ const adminSettingsHelp = `
   </div>
 
   <div class="help-section">
-    <h4>Gestione Categorie Attività</h4>
+    <h4>Gestione Categorie Attivita</h4>
     <p>Configura le categorie disponibili nel menu a tendina degli utenti:</p>
     <ul>
       <li>Aggiungi nuove categorie inserendo il nome e cliccando "Aggiungi"</li>
-      <li>Rimuovi categorie esistenti cliccando sulla "×" accanto al nome</li>
+      <li>Rimuovi categorie esistenti cliccando sulla "x" accanto al nome</li>
       <li>Le modifiche sono immediate e visibili a tutti gli utenti</li>
     </ul>
     <div class="help-note">
-      <strong>Nota:</strong> Non è possibile eliminare tutte le categorie. Deve rimanere almeno una categoria attiva.
+      <strong>Nota:</strong> Non e possibile eliminare tutte le categorie. Deve rimanere almeno una categoria attiva.
     </div>
   </div>
 
@@ -338,7 +203,7 @@ const adminSettingsHelp = `
       <li><strong>Utenti AD:</strong> Vengono creati automaticamente al primo login e non possono essere eliminati manualmente</li>
     </ul>
     <div class="help-warning">
-      <strong>Attenzione:</strong> L'eliminazione di un utente locale è permanente. I dati delle attività dell'utente verranno mantenuti.
+      <strong>Attenzione:</strong> L'eliminazione di un utente locale e permanente. I dati delle attivita dell'utente verranno mantenuti.
     </div>
   </div>
 `;
