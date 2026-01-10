@@ -125,7 +125,10 @@ class LDAPClient {
   }
 
   async resolvePrimaryGroupName(client, primaryGroupID) {
-    if (!primaryGroupID) {
+    const primaryGroupValue = Array.isArray(primaryGroupID)
+      ? primaryGroupID[0]
+      : primaryGroupID;
+    if (!primaryGroupValue) {
       return null;
     }
 
@@ -134,7 +137,7 @@ class LDAPClient {
       return null;
     }
 
-    const groupSid = `${domainSid}-${primaryGroupID}`;
+    const groupSid = `${domainSid}-${primaryGroupValue}`;
     const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
     const opts = {
       filter: `(objectSid=${groupSid})`,
@@ -142,9 +145,17 @@ class LDAPClient {
       attributes: ['cn', 'distinguishedName']
     };
 
-    const { searchEntries } = await client.search(groupBase, opts);
+    let { searchEntries } = await client.search(groupBase, opts);
     if (!searchEntries || searchEntries.length === 0) {
-      return null;
+      const tokenOpts = {
+        filter: `(primaryGroupToken=${primaryGroupValue})`,
+        scope: 'sub',
+        attributes: ['cn', 'distinguishedName']
+      };
+      ({ searchEntries } = await client.search(groupBase, tokenOpts));
+      if (!searchEntries || searchEntries.length === 0) {
+        return null;
+      }
     }
 
     const entry = searchEntries[0];
