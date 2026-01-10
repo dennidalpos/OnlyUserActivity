@@ -2,6 +2,20 @@ const { Client } = require('ldapts');
 const config = require('../../config');
 
 class LDAPClient {
+  shouldDebug() {
+    return process.env.LDAP_DEBUG === 'true';
+  }
+
+  logDebug(message, payload) {
+    if (this.shouldDebug()) {
+      if (payload !== undefined) {
+        console.debug(`[ldap] ${message}`, payload);
+      } else {
+        console.debug(`[ldap] ${message}`);
+      }
+    }
+  }
+
   createClient() {
     return this.createClientWithConfig(config.ldap);
   }
@@ -55,13 +69,14 @@ class LDAPClient {
       return false;
     }
 
-    const groupLower = requiredGroup.toLowerCase();
+    const normalizedRequired = this.normalizeGroupName(requiredGroup);
+    if (!normalizedRequired) {
+      return false;
+    }
+    const requiredLower = normalizedRequired.toLowerCase();
     return memberOf.some(group => {
-      const cnMatch = group.match(/CN=([^,]+)/i);
-      if (cnMatch) {
-        return cnMatch[1].toLowerCase() === groupLower;
-      }
-      return group.toLowerCase().includes(groupLower);
+      const normalizedGroup = this.normalizeGroupName(group);
+      return normalizedGroup && normalizedGroup.toLowerCase() === requiredLower;
     });
   }
 
@@ -82,6 +97,23 @@ class LDAPClient {
     const text = String(candidate).trim();
     const cnMatch = text.match(/CN=([^,]+)/i);
     return cnMatch ? cnMatch[1].trim() : text;
+  }
+
+  normalizePrimaryGroupId(value) {
+    if (Array.isArray(value)) {
+      return this.normalizePrimaryGroupId(value[0]);
+    }
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return String(value);
+    }
+    const text = String(value).trim();
+    if (!text) {
+      return null;
+    }
+    return /^\d+$/.test(text) ? text : null;
   }
 
   normalizeSidValue(value) {
@@ -137,33 +169,48 @@ class LDAPClient {
   }
 
   async resolvePrimaryGroupName(client, primaryGroupID) {
-    const primaryGroupValue = this.normalizeGroupName(primaryGroupID);
+    const primaryGroupValue = this.normalizePrimaryGroupId(primaryGroupID);
     if (!primaryGroupValue) {
       return null;
     }
 
+    const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
+    let searchEntries = [];
     const domainSid = await this.getDomainSid(client);
-    if (!domainSid) {
-      return null;
+    if (domainSid) {
+      const groupSid = `${domainSid}-${primaryGroupValue}`;
+      const opts = {
+        filter: `(objectSid=${groupSid})`,
+        scope: 'sub',
+        attributes: ['cn', 'distinguishedName']
+      };
+
+      const result = await client.search(groupBase, opts);
+      searchEntries = result.searchEntries || [];
+      this.logDebug('primaryGroupID lookup by objectSid', {
+        primaryGroupID,
+        primaryGroupValue,
+        domainSid,
+        groupSid,
+        searchBase: groupBase,
+        found: searchEntries.length
+      });
     }
 
-    const groupSid = `${domainSid}-${primaryGroupValue}`;
-    const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
-    const opts = {
-      filter: `(objectSid=${groupSid})`,
-      scope: 'sub',
-      attributes: ['cn', 'distinguishedName']
-    };
-
-    let { searchEntries } = await client.search(groupBase, opts);
     if (!searchEntries || searchEntries.length === 0) {
       const tokenOpts = {
         filter: `(primaryGroupToken=${primaryGroupValue})`,
         scope: 'sub',
         attributes: ['cn', 'distinguishedName']
       };
-      ({ searchEntries } = await client.search(groupBase, tokenOpts));
-      if (!searchEntries || searchEntries.length === 0) {
+      const tokenResult = await client.search(groupBase, tokenOpts);
+      searchEntries = tokenResult.searchEntries || [];
+      this.logDebug('primaryGroupID lookup by primaryGroupToken', {
+        primaryGroupValue,
+        searchBase: groupBase,
+        found: searchEntries.length
+      });
+      if (searchEntries.length === 0) {
         return null;
       }
     }

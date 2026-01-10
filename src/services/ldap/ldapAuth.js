@@ -28,6 +28,14 @@ class LDAPAuth {
       }
 
       if (config.ldap.requiredGroup) {
+        if (ldapClient.shouldDebug()) {
+          console.debug('[ldap] required group check', {
+            requiredGroup: config.ldap.requiredGroup,
+            memberOf: ldapUser.memberOf,
+            primaryGroupID: ldapUser.primaryGroupID
+          });
+        }
+
         const isMember = ldapClient.isMemberOfGroup(
           ldapUser.memberOf,
           config.ldap.requiredGroup
@@ -40,6 +48,23 @@ class LDAPAuth {
             ldapUser.primaryGroupID
           );
           hasPrimaryGroup = ldapClient.isGroupNameMatch(primaryGroupName, config.ldap.requiredGroup);
+          const normalizedRequired = ldapClient.normalizeGroupName(config.ldap.requiredGroup);
+          const primaryGroupIdValue = ldapClient.normalizePrimaryGroupId(ldapUser.primaryGroupID);
+          if (!hasPrimaryGroup && normalizedRequired && primaryGroupIdValue) {
+            if (normalizedRequired.toLowerCase() === 'domain users' && primaryGroupIdValue === '513') {
+              hasPrimaryGroup = true;
+            }
+          }
+          if (ldapClient.shouldDebug()) {
+            console.debug('[ldap] primary group fallback', {
+              primaryGroupName,
+              hasPrimaryGroup,
+              requiredGroup: config.ldap.requiredGroup,
+              normalizedRequired,
+              primaryGroupID: ldapUser.primaryGroupID,
+              primaryGroupIdValue
+            });
+          }
         }
 
         if (!isMember && !hasPrimaryGroup) {
