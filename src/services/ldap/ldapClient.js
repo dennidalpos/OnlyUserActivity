@@ -110,7 +110,10 @@ class LDAPClient {
       return String(value);
     }
     const text = String(value).trim();
-    return text.length > 0 ? text : null;
+    if (!text) {
+      return null;
+    }
+    return /^\d+$/.test(text) ? text : null;
   }
 
   normalizeSidValue(value) {
@@ -171,41 +174,43 @@ class LDAPClient {
       return null;
     }
 
+    const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
+    let searchEntries = [];
     const domainSid = await this.getDomainSid(client);
-    if (!domainSid) {
-      return null;
+    if (domainSid) {
+      const groupSid = `${domainSid}-${primaryGroupValue}`;
+      const opts = {
+        filter: `(objectSid=${groupSid})`,
+        scope: 'sub',
+        attributes: ['cn', 'distinguishedName']
+      };
+
+      const result = await client.search(groupBase, opts);
+      searchEntries = result.searchEntries || [];
+      this.logDebug('primaryGroupID lookup by objectSid', {
+        primaryGroupID,
+        primaryGroupValue,
+        domainSid,
+        groupSid,
+        searchBase: groupBase,
+        found: searchEntries.length
+      });
     }
 
-    const groupSid = `${domainSid}-${primaryGroupValue}`;
-    const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
-    const opts = {
-      filter: `(objectSid=${groupSid})`,
-      scope: 'sub',
-      attributes: ['cn', 'distinguishedName']
-    };
-
-    let { searchEntries } = await client.search(groupBase, opts);
-    this.logDebug('primaryGroupID lookup by objectSid', {
-      primaryGroupID,
-      primaryGroupValue,
-      domainSid,
-      groupSid,
-      searchBase: groupBase,
-      found: (searchEntries || []).length
-    });
     if (!searchEntries || searchEntries.length === 0) {
       const tokenOpts = {
         filter: `(primaryGroupToken=${primaryGroupValue})`,
         scope: 'sub',
         attributes: ['cn', 'distinguishedName']
       };
-      ({ searchEntries } = await client.search(groupBase, tokenOpts));
+      const tokenResult = await client.search(groupBase, tokenOpts);
+      searchEntries = tokenResult.searchEntries || [];
       this.logDebug('primaryGroupID lookup by primaryGroupToken', {
         primaryGroupValue,
         searchBase: groupBase,
-        found: (searchEntries || []).length
+        found: searchEntries.length
       });
-      if (!searchEntries || searchEntries.length === 0) {
+      if (searchEntries.length === 0) {
         return null;
       }
     }
