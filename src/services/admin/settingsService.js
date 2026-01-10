@@ -14,14 +14,44 @@ class SettingsService {
     this.quickActionsPath = path.join(config.storage.rootPath, 'admin', 'quick-actions.json');
     this.defaultQuickActions = [
       {
-        id: 'quick-malattia',
-        label: 'Malattia',
-        notes: ''
+        id: 'quick-assenza',
+        label: 'Assenza',
+        notes: 'Assenza'
+      },
+      {
+        id: 'quick-lavoro',
+        label: 'Lavoro',
+        notes: 'Lavoro'
+      },
+      {
+        id: 'quick-lavoro-feriale',
+        label: 'Lavoro feriale',
+        notes: 'Lavoro feriale'
+      },
+      {
+        id: 'quick-turno-mattino',
+        label: 'Turno mattino',
+        notes: 'Lavoro su 3 turni - mattino'
+      },
+      {
+        id: 'quick-turno-pomeriggio',
+        label: 'Turno pomeriggio',
+        notes: 'Lavoro su 3 turni - pomeriggio'
+      },
+      {
+        id: 'quick-turno-notte',
+        label: 'Turno notte',
+        notes: 'Lavoro su 3 turni - notte'
       },
       {
         id: 'quick-ferie',
         label: 'Ferie',
-        notes: ''
+        notes: 'Ferie'
+      },
+      {
+        id: 'quick-malattia',
+        label: 'Malattia',
+        notes: 'Malattia'
       },
       {
         id: 'quick-congedo',
@@ -29,14 +59,9 @@ class SettingsService {
         notes: 'Congedo'
       },
       {
-        id: 'quick-smart-working',
-        label: 'Smart working',
-        notes: 'Smart working'
-      },
-      {
         id: 'quick-riposo',
-        label: 'Riposo',
-        notes: ''
+        label: 'Turno di riposo',
+        notes: 'Turno di riposo'
       }
     ];
   }
@@ -1113,6 +1138,7 @@ class SettingsService {
   normalizeQuickActions(actions) {
     return actions
       .filter(action => action && action.label)
+      .filter(action => action.activityType !== 'pausa' && action.isPause !== true)
       .map((action) => {
         const label = String(action.label).trim();
         const activityType = 'altro';
