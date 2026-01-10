@@ -126,7 +126,6 @@
         if (result.success) {
           quickActions = result.data;
           renderQuickActions();
-          showAlert('Quick action eliminata', 'success');
         } else {
           showAlert(result.error || 'Errore nell\'eliminazione', 'danger');
         }
