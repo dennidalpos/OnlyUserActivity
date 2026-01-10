@@ -14,7 +14,6 @@ let ACTIVITY_TYPES = [
   'permesso',
   'riposo',
   'trasferta',
-  'pausa',
   'altro'
 ];
 
@@ -95,7 +94,7 @@ const buildActivitySchema = () => Joi.object({
   startTime: timeStepSchema,
   endTime: timeStepSchema,
   activityType: Joi.string()
-    .valid(...ACTIVITY_TYPES)
+    .valid(...ACTIVITY_TYPES, 'pausa')
     .required()
     .messages({
       'any.only': `Tipo attività non valido. Valori ammessi: ${ACTIVITY_TYPES.join(', ')}`,
@@ -167,7 +166,7 @@ const buildActivityUpdateSchema = () => Joi.object({
   startTime: timeStepSchema,
   endTime: timeStepSchema,
   activityType: Joi.string()
-    .valid(...ACTIVITY_TYPES)
+    .valid(...ACTIVITY_TYPES, 'pausa')
     .messages({
       'any.only': `Tipo attività non valido`
     }),

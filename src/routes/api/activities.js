@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const activityService = require('../../services/activity/activityService');
 const shiftTypesService = require('../../services/admin/shiftTypesService');
+const settingsService = require('../../services/admin/settingsService');
 const auditLogger = require('../../services/storage/auditLogger');
 const userStorage = require('../../services/storage/userStorage');
 const authenticateToken = require('../../middlewares/auth');
@@ -12,6 +13,18 @@ const { extractYearMonth } = require('../../services/utils/dateUtils');
 const { findShiftType } = require('../../services/utils/shiftUtils');
 
 router.use(authenticateToken);
+
+router.get('/quick-actions', async (req, res, next) => {
+  try {
+    const actions = await settingsService.getQuickActions();
+    res.json({
+      success: true,
+      data: actions
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/types', async (req, res, next) => {
   try {

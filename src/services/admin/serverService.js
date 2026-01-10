@@ -72,7 +72,7 @@ class ServerService {
   getServerInfo() {
     return {
       hostname: os.hostname(),
-      env: process.env.NODE_ENV || 'development',
+      env: process.env.NODE_ENV || 'production',
       nodeVersion: process.version,
       platform: process.platform,
       uptime: this.formatUptime(process.uptime()),

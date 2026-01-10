@@ -17,6 +17,7 @@
         <li><a href="/admin/dashboard">Dashboard</a></li>
         <li><a href="/admin/export">Export</a></li>
         <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
         <li><a href="/admin/settings" class="active">Configurazione</a></li>
         <li><a href="/admin/auth/logout">Logout</a></li>
       </ul>
@@ -120,6 +121,19 @@
     </div>
 
     <div class="settings-section">
+      <h3>Quick Action utenti</h3>
+      <div class="alert alert-info">
+        Gestisci le quick action visibili nel calendario utenti.
+      </div>
+      <div class="settings-actions">
+        <button type="button" class="btn btn-primary" onclick="window.location.href='/admin/quick-actions'">
+          ⚡ Configura quick action
+        </button>
+        <span class="text-muted text-small">Totale configurate: <strong><%= quickActionsCount %></strong></span>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <h3>Informazioni Server</h3>
       <div class="alert alert-info">
         Visualizza lo stato del server applicativo e dell'ambiente in esecuzione.
@@ -192,7 +206,9 @@
           <button type="button" onclick="testLdapBind(this)" class="btn btn-success">Test Bind LDAP</button>
           <span class="text-muted text-small">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
-        <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
+        <div class="mt-12">
+          <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
+        </div>
       </form>
     </div>
 
@@ -235,38 +251,10 @@
     <div class="settings-section">
       <h3>Logging</h3>
       <div class="alert alert-info">
-        Configura il livello di logging e, se necessario, salva i log su file locale nel server Windows.
+        Configura le categorie di logging disponibili.
       </div>
       <form id="loggingForm">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="loggingLevel">Livello log globale
-            </label>
-            <select id="loggingLevel">
-              <% ['trace','debug','info','warn','error','fatal'].forEach(level => { %>
-                <option value="<%= level %>" <%= settings.logging.level === level ? 'selected' : '' %>><%= level %></option>
-              <% }); %>
-            </select>
-            <div class="field-help">Livello minimo per i log di sistema (Pino)</div>
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="loggingToFile" <%= settings.logging.toFile ? 'checked' : '' %>>
-              Salva log su file locale
-            </label>
-          </div>
-          <div class="form-group">
-            <label for="loggingFilePath">Percorso file log
-            </label>
-            <div class="flex gap-8 align-center">
-              <input type="text" id="loggingFilePath" value="<%= settings.logging.filePath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('loggingFilePath', this)">Esplora</button>
-            </div>
-            <div class="field-help">Il file verrà creato sul server Windows. Nessuna scrittura sul PC client.</div>
-          </div>
-        </div>
-
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Categorie di Log</h4>
+        <h4 style="margin-bottom: 0.75rem;">Categorie di Log</h4>
         <div class="field-help" style="margin-bottom: 1rem;">Seleziona le categorie di log da abilitare. Ogni checkbox controlla una sezione specifica senza sovrapposizioni.</div>
 
         <div class="form-grid">
@@ -1013,9 +1001,6 @@
 
       const data = {
         logging: {
-          level: document.getElementById('loggingLevel').value,
-          toFile: document.getElementById('loggingToFile').checked,
-          filePath: document.getElementById('loggingFilePath').value,
           categories: {
             ldap: document.getElementById('logLdap').checked,
             http: document.getElementById('logHttp').checked,

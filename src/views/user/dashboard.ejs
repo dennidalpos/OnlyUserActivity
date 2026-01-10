@@ -147,13 +147,7 @@
 
       <div class="calendar-actions">
         <h4>Imposta giornata intera</h4>
-        <div class="quick-actions">
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('malattia', this)">Malattia</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('ferie', this)">Ferie</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('permesso', this, { label: 'Congedo' })">Congedo</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('lavoro', this, { label: 'Smart working', notes: 'Smart working' })">Smart working</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('riposo', this)">Riposo</button>
-        </div>
+        <div class="quick-actions" id="calendarQuickActions"></div>
         <p class="calendar-hint">Seleziona un giorno dal calendario per applicare la giornata intera.</p>
       </div>
 
@@ -171,6 +165,7 @@
     let currentDate = '<%= currentDate %>';
     let editingActivityId = null;
     let activityTypes = [];
+    let quickActions = [];
     let requiredMinutes = 480;
     let calendarDate = '<%= currentDate %>';
     let selectedCalendarDate = '<%= currentDate %>';
@@ -194,6 +189,69 @@
         activityTypes = ['lavoro', 'meeting', 'formazione'];
         populateActivityTypeSelect();
       }
+    }
+
+    async function loadQuickActions() {
+      try {
+        const response = await fetch('/api/activities/quick-actions', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (result.success) {
+          quickActions = result.data || [];
+          renderQuickActions();
+        }
+      } catch (error) {
+        console.error('Error loading quick actions:', error);
+        quickActions = [];
+        renderQuickActions();
+      }
+    }
+
+    function renderQuickActions() {
+      const container = document.getElementById('calendarQuickActions');
+      if (!container) {
+        return;
+      }
+      if (!quickActions.length) {
+        container.innerHTML = '<span class="text-muted text-small">Nessuna quick action disponibile.</span>';
+        return;
+      }
+
+      container.innerHTML = quickActions.map(action => {
+        if (action.activityType === 'pausa') {
+          return `
+            <div class="quick-action-pause">
+              <span class="quick-action-label">${action.label}</span>
+              <label class="quick-action-select">
+                H
+                <select id="pauseHours">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                </select>
+              </label>
+              <label class="quick-action-select">
+                M
+                <select id="pauseMinutes">
+                  <option value="0">0</option>
+                  <option value="30">30</option>
+                </select>
+              </label>
+              <button type="button" class="btn btn-primary btn-sm" onclick="applyPauseAction('${action.id}', this)">
+                Applica
+              </button>
+            </div>
+          `;
+        }
+        return `
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('${action.id}', this)">
+            ${action.label}
+          </button>
+        `;
+      }).join('');
     }
 
     function populateActivityTypeSelect() {
@@ -360,7 +418,7 @@
         const hours = Math.floor(activity.durationMinutes / 60);
         const mins = activity.durationMinutes % 60;
         const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-        const typeLabel = activity.activityType === 'altro' && activity.customType
+        const typeLabel = activity.customType
           ? activity.customType
           : activity.activityType;
         const activityTypeFormatted = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
@@ -669,7 +727,7 @@
         const visibleActivities = activities.slice(0, maxVisible);
         const extraCount = activities.length - visibleActivities.length;
         const activitiesMarkup = visibleActivities.map(activity => {
-          const typeLabel = activity.activityType === 'altro' && activity.customType
+          const typeLabel = activity.customType
             ? activity.customType
             : activity.activityType;
           return `
@@ -776,24 +834,35 @@
       return { hours, minutes: remainder };
     }
 
-    async function applyQuickDay(activityType, anchor, options = {}) {
+    function resolveQuickAction(id) {
+      return quickActions.find(action => action.id === id);
+    }
+
+    async function applyQuickDay(actionId, anchor) {
       lastActionAnchor = anchor || document.querySelector('.quick-actions');
       if (!selectedCalendarDate) {
         showError('Seleziona prima un giorno dal calendario');
         return;
       }
 
+      const action = resolveQuickAction(actionId);
+      if (!action) {
+        showError('Quick action non trovata');
+        return;
+      }
+
       const duration = getQuickDayDurationParts();
       const payload = {
         date: selectedCalendarDate,
-        activityType,
+        activityType: action.activityType,
+        customType: action.label,
         durationHours: duration.hours,
         durationMinutes: duration.minutes,
-        notes: options.notes || ''
+        notes: action.notes || ''
       };
 
-      if (options.label && activityType === 'permesso') {
-        payload.notes = payload.notes ? `${payload.notes} (${options.label})` : options.label;
+      if (action.activityType !== 'altro') {
+        payload.customType = action.label;
       }
 
       try {
@@ -810,13 +879,65 @@
         if (result.success) {
           loadActivities();
           loadMonthCalendar();
-          showSuccess(`Giornata impostata: ${options.label || activityType}`);
+          showSuccess(`Giornata impostata: ${action.label}`);
         } else {
           showError(result.error?.message || 'Errore nel salvataggio');
         }
       } catch (error) {
         console.error('Quick day error:', error);
         showError('Errore nel salvataggio della giornata');
+      }
+    }
+
+    async function applyPauseAction(actionId, anchor) {
+      lastActionAnchor = anchor || document.querySelector('.quick-actions');
+      if (!selectedCalendarDate) {
+        showError('Seleziona prima un giorno dal calendario');
+        return;
+      }
+
+      const action = resolveQuickAction(actionId);
+      if (!action) {
+        showError('Quick action non trovata');
+        return;
+      }
+
+      const hours = Number(document.getElementById('pauseHours')?.value || 0);
+      const minutes = Number(document.getElementById('pauseMinutes')?.value || 0);
+      if (hours === 0 && minutes === 0) {
+        showError('La durata della pausa deve essere maggiore di 0');
+        return;
+      }
+
+      const payload = {
+        date: selectedCalendarDate,
+        activityType: 'pausa',
+        customType: action.label,
+        durationHours: hours,
+        durationMinutes: minutes,
+        notes: action.notes || ''
+      };
+
+      try {
+        const response = await fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          loadActivities();
+          loadMonthCalendar();
+          showSuccess(`Pausa inserita: ${hours}h ${minutes}m`);
+        } else {
+          showError(result.error?.message || 'Errore nel salvataggio');
+        }
+      } catch (error) {
+        showError('Errore nel salvataggio della pausa');
       }
     }
 
@@ -877,6 +998,7 @@
     console.log('Calling loadActivityTypes and loadActivities on page load...');
     populateDurationSelects();
     loadActivityTypes();
+    loadQuickActions();
     loadActivities();
     loadMonthCalendar();
 

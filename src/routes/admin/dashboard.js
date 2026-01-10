@@ -262,6 +262,116 @@ router.get('/shifts', async (req, res) => {
   }
 });
 
+router.get('/quick-actions', async (req, res) => {
+  try {
+    const quickActions = await settingsService.getQuickActions();
+    const activityTypes = await activityTypesService.getActivityTypes();
+
+    res.render('admin/quick-actions', {
+      title: 'Quick Action',
+      quickActions,
+      activityTypes
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.get('/api/quick-actions', async (req, res) => {
+  try {
+    const quickActions = await settingsService.getQuickActions();
+    res.json({
+      success: true,
+      data: quickActions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/quick-actions', async (req, res) => {
+  try {
+    const quickActions = await settingsService.addQuickAction(req.body);
+
+    await auditLogger.log(
+      'QUICK_ACTION_ADD',
+      'admin',
+      { quickAction: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: quickActions
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.put('/api/quick-actions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quickActions = await settingsService.updateQuickAction(id, req.body);
+
+    await auditLogger.log(
+      'QUICK_ACTION_UPDATE',
+      'admin',
+      { id, updates: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: quickActions
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/api/quick-actions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quickActions = await settingsService.removeQuickAction(id);
+
+    await auditLogger.log(
+      'QUICK_ACTION_DELETE',
+      'admin',
+      { id },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: quickActions
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 router.get('/api/shift-types', async (req, res) => {
   try {
     const shiftTypes = await shiftTypesService.getShiftTypes();
@@ -426,6 +536,7 @@ router.get('/settings', async (req, res) => {
     const activityTypes = await activityTypesService.getActivityTypes();
     const users = await settingsService.listLocalUsers();
     const shiftTypes = await shiftTypesService.getShiftTypes();
+    const quickActions = await settingsService.getQuickActions();
     const projectRoot = process.cwd();
     const defaultHttpsCertPath = path.join(projectRoot, 'certs', 'cert.pem');
     const defaultHttpsKeyPath = path.join(projectRoot, 'certs', 'key.pem');
@@ -436,6 +547,7 @@ router.get('/settings', async (req, res) => {
       activityTypes,
       users,
       shiftTypes,
+      quickActionsCount: quickActions.length,
       projectRoot,
       defaultHttpsCertPath,
       defaultHttpsKeyPath

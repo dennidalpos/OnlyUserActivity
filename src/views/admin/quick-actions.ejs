@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/quick-actions" class="active">Quick Action</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container settings-container">
+    <h2><%= title %></h2>
+
+    <div id="alertContainer"></div>
+
+    <div class="settings-section">
+      <h3>Quick Action disponibili</h3>
+      <div class="alert alert-info">
+        Configura le quick action visibili nel calendario utenti. Le modifiche sono immediate per tutti gli utenti.
+      </div>
+
+      <form id="quickActionForm" class="inline-form">
+        <input type="hidden" id="quickActionId" value="">
+        <input type="text" id="quickActionLabel" placeholder="Etichetta (es: Smart working)" required>
+        <select id="quickActionType" required>
+          <% activityTypes.forEach(type => { %>
+            <option value="<%= type %>"><%= type.charAt(0).toUpperCase() + type.slice(1) %></option>
+          <% }); %>
+          <option value="pausa">Pausa</option>
+        </select>
+        <input type="text" id="quickActionNotes" placeholder="Note (opzionale)">
+        <button type="submit" class="btn btn-primary">Salva</button>
+        <button type="button" class="btn" onclick="resetQuickActionForm()">Annulla</button>
+      </form>
+
+      <div id="quickActionsList" class="quick-actions-list"></div>
+    </div>
+  </main>
+
+  <script>
+    let quickActions = <%- JSON.stringify(quickActions) %>;
+    let lastActionAnchor = null;
+
+    function setLastActionAnchor(anchor) {
+      lastActionAnchor = anchor || document.getElementById('alertContainer');
+    }
+
+    function showAlert(message, type = 'success') {
+      if (window.uiHelper && window.uiHelper.enabled) {
+        const severityMap = {
+          success: 'info',
+          info: 'info',
+          danger: 'error'
+        };
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('alertContainer'),
+          message,
+          severity: severityMap[type] || 'info'
+        });
+        return;
+      }
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      alertContainer.appendChild(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
+
+    function renderQuickActions() {
+      const container = document.getElementById('quickActionsList');
+      if (!quickActions.length) {
+        container.innerHTML = '<p class="text-muted">Nessuna quick action configurata.</p>';
+        return;
+      }
+
+      container.innerHTML = quickActions.map(action => `
+        <div class="quick-action-card" data-action-id="${action.id}">
+          <div class="quick-action-info">
+            <strong>${action.label}</strong>
+            <span class="text-muted">${action.activityType}</span>
+            ${action.notes ? `<span class="text-muted">${action.notes}</span>` : ''}
+          </div>
+          <div class="quick-action-actions">
+            <button type="button" class="btn btn-sm btn-primary" onclick="editQuickAction('${action.id}', this)">Modifica</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteQuickAction('${action.id}', this)">Elimina</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function resetQuickActionForm() {
+      document.getElementById('quickActionId').value = '';
+      document.getElementById('quickActionForm').reset();
+    }
+
+    function editQuickAction(id, anchor) {
+      setLastActionAnchor(anchor);
+      const action = quickActions.find(item => item.id === id);
+      if (!action) {
+        showAlert('Quick action non trovata', 'danger');
+        return;
+      }
+      document.getElementById('quickActionId').value = action.id;
+      document.getElementById('quickActionLabel').value = action.label;
+      document.getElementById('quickActionType').value = action.activityType;
+      document.getElementById('quickActionNotes').value = action.notes || '';
+      document.getElementById('quickActionForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function deleteQuickAction(id, anchor) {
+      setLastActionAnchor(anchor);
+      if (!confirm('Sei sicuro di voler eliminare questa quick action?')) {
+        return;
+      }
+      try {
+        const response = await fetch(`/admin/api/quick-actions/${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (result.success) {
+          quickActions = result.data;
+          renderQuickActions();
+          showAlert('Quick action eliminata', 'success');
+        } else {
+          showAlert(result.error || 'Errore nell\'eliminazione', 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'eliminazione', 'danger');
+      }
+    }
+
+    document.getElementById('quickActionForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setLastActionAnchor(event.submitter);
+
+      const payload = {
+        label: document.getElementById('quickActionLabel').value.trim(),
+        activityType: document.getElementById('quickActionType').value,
+        notes: document.getElementById('quickActionNotes').value.trim()
+      };
+
+      const id = document.getElementById('quickActionId').value;
+      const url = id ? `/admin/api/quick-actions/${id}` : '/admin/api/quick-actions';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          quickActions = result.data;
+          renderQuickActions();
+          resetQuickActionForm();
+          showAlert(id ? 'Quick action aggiornata' : 'Quick action creata', 'success');
+        } else {
+          showAlert(result.error || 'Errore nel salvataggio', 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio', 'danger');
+      }
+    });
+
+    renderQuickActions();
+  </script>
+</body>
+</html>
