@@ -1097,11 +1097,17 @@ class SettingsService {
       await this.setQuickActions(payload.quickActions);
     }
 
-    if (includeSection('users') && Array.isArray(payload.users)) {
+    if (includeSection('users')) {
+      if (!Array.isArray(payload.users)) {
+        throw new Error('Configurazione completa priva della sezione utenti');
+      }
       await this.importUsersSnapshot(payload.users);
     }
 
-    if (includeSection('activities') && Array.isArray(payload.activities)) {
+    if (includeSection('activities')) {
+      if (!Array.isArray(payload.activities)) {
+        throw new Error('Configurazione completa priva della sezione attività');
+      }
       await this.importActivitiesSnapshot(payload.activities, payload.settings?.storage?.rootPath || config.storage.rootPath);
     }
 
