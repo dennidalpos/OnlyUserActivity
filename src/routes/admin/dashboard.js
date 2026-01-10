@@ -538,6 +538,47 @@ router.post('/api/settings/server', async (req, res) => {
   }
 });
 
+router.get('/api/settings/server/export', async (req, res) => {
+  try {
+    const payload = await settingsService.exportServerConfiguration();
+    const filename = `config_server_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(payload, null, 2));
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/api/settings/server/import', async (req, res) => {
+  try {
+    const result = await settingsService.importServerConfiguration(req.body);
+
+    await auditLogger.log(
+      'SETTINGS_UPDATE',
+      'admin',
+      { type: 'server-import', changes: req.body },
+      req.id,
+      req.ip,
+      req.adminUser.username
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 router.get('/api/settings/configuration/export', async (req, res) => {
   try {
     const payload = await settingsService.exportFullConfiguration();

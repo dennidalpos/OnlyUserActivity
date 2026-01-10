@@ -73,6 +73,19 @@ class LDAPAuth {
           }
         });
       } else {
+        const updates = {};
+        if (ldapUser.displayName && ldapUser.displayName !== user.displayName) {
+          updates.displayName = ldapUser.displayName;
+        }
+        if ((ldapUser.email || null) !== (user.email || null)) {
+          updates.email = ldapUser.email || null;
+        }
+        if ((ldapUser.department || null) !== (user.department || null)) {
+          updates.department = ldapUser.department || null;
+        }
+        if (Object.keys(updates).length > 0) {
+          user = await userStorage.update(user.userKey, updates);
+        }
         await userStorage.updateLastLogin(user.userKey);
       }
 

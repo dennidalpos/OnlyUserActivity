@@ -747,10 +747,6 @@ class SettingsService {
       throw new Error('Utente non trovato');
     }
 
-    if (user.userType === 'ad') {
-      throw new Error('Non è possibile eliminare utenti AD. Gli utenti AD vengono gestiti automaticamente.');
-    }
-
     const userPath = path.join(config.storage.rootPath, 'users', `${userKey}.json`);
     await fs.unlink(userPath);
 
@@ -765,6 +761,43 @@ class SettingsService {
     return {
       success: true,
       message: 'Utente eliminato con successo'
+    };
+  }
+
+  async exportServerConfiguration() {
+    const settings = await this.getCurrentSettings();
+    return {
+      generatedAt: new Date().toISOString(),
+      server: settings.server
+    };
+  }
+
+  async importServerConfiguration(payload) {
+    if (!payload || typeof payload !== 'object' || !payload.server) {
+      throw new Error('File configurazione server non valido');
+    }
+
+    const server = payload.server;
+    const updates = {};
+
+    if (server.hasOwnProperty('port')) {
+      updates.port = server.port;
+    }
+    if (server.hasOwnProperty('host')) {
+      updates.host = server.host;
+    }
+    if (server.hasOwnProperty('trustProxy')) {
+      updates.trustProxy = server.trustProxy;
+    }
+    if (server.hasOwnProperty('defaultUserShift')) {
+      updates.defaultUserShift = server.defaultUserShift;
+    }
+
+    const result = await this.updateServerSettings(updates);
+
+    return {
+      success: true,
+      message: result.message || 'Configurazione server importata con successo'
     };
   }
 
