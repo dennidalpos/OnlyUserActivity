@@ -16,7 +16,6 @@ class ActivityTypesService {
       'permesso',
       'riposo',
       'trasferta',
-      'pausa',
       'altro'
     ];
   }
@@ -24,7 +23,8 @@ class ActivityTypesService {
   async getActivityTypes() {
     try {
       const config = await fileStorage.readJSON(this.configPath);
-      return config?.activityTypes || this.defaultTypes;
+      const types = config?.activityTypes || this.defaultTypes;
+      return types.filter(type => type !== 'pausa');
     } catch (error) {
       return this.defaultTypes;
     }
@@ -41,7 +41,12 @@ class ActivityTypesService {
       }
     }
 
-    const uniqueTypes = [...new Set(types.map(t => t.trim().toLowerCase()))];
+    const uniqueTypes = [...new Set(types.map(t => t.trim().toLowerCase()))]
+      .filter(type => type !== 'pausa');
+
+    if (uniqueTypes.length === 0) {
+      throw new Error('I tipi di attività non possono essere vuoti');
+    }
 
     await fileStorage.writeJSON(this.configPath, {
       activityTypes: uniqueTypes,
@@ -58,6 +63,10 @@ class ActivityTypesService {
 
     const types = await this.getActivityTypes();
     const normalizedType = newType.trim().toLowerCase();
+
+    if (normalizedType === 'pausa') {
+      throw new Error('Il tipo di attività "pausa" è gestito solo come quick action');
+    }
 
     if (types.includes(normalizedType)) {
       throw new Error('Questo tipo di attività esiste già');

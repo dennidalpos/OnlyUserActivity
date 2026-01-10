@@ -1,11 +1,4 @@
-/* ==========================================================================
-   OnlyUserActivity - User Dashboard Styles
-   Dark theme with clean, user-friendly layout
-   ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Login Page (User-specific adjustments)
-   -------------------------------------------------------------------------- */
 .login-page {
   display: flex;
   align-items: center;
@@ -62,9 +55,6 @@
   color: var(--primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   User Navbar
-   -------------------------------------------------------------------------- */
 .navbar {
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-default);
@@ -99,18 +89,12 @@
   color: var(--text-primary);
 }
 
-/* --------------------------------------------------------------------------
-   Page Container
-   -------------------------------------------------------------------------- */
 .container {
   max-width: 1000px;
   margin: 0 auto;
   padding: var(--space-4);
 }
 
-/* --------------------------------------------------------------------------
-   Header with Date Selector
-   -------------------------------------------------------------------------- */
 .header {
   display: flex;
   justify-content: space-between;
@@ -149,9 +133,6 @@
   box-shadow: var(--shadow-focus);
 }
 
-/* --------------------------------------------------------------------------
-   Summary Cards
-   -------------------------------------------------------------------------- */
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -180,7 +161,6 @@
   margin: 0;
 }
 
-/* Progress Bar */
 .progress-bar-container {
   display: flex;
   align-items: center;
@@ -211,9 +191,6 @@
   text-align: right;
 }
 
-/* --------------------------------------------------------------------------
-   Shift Info Card
-   -------------------------------------------------------------------------- */
 .shift-info-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
@@ -258,9 +235,6 @@
   font-weight: 500;
 }
 
-/* --------------------------------------------------------------------------
-   Activity Section
-   -------------------------------------------------------------------------- */
 .activity-section {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
@@ -285,9 +259,6 @@
   margin: 0;
 }
 
-/* --------------------------------------------------------------------------
-   Activity Form
-   -------------------------------------------------------------------------- */
 .activity-form {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -322,9 +293,6 @@
   margin-top: var(--space-3);
 }
 
-/* --------------------------------------------------------------------------
-   Activities List
-   -------------------------------------------------------------------------- */
 .activities-list {
   margin-top: var(--space-4);
 }
@@ -391,7 +359,6 @@
   flex-shrink: 0;
 }
 
-/* Badge colors per activity type */
 .badge-lavoro {
   background-color: var(--primary-muted);
   color: var(--primary-hover);
@@ -448,7 +415,6 @@
   color: #c4b5fd;
 }
 
-/* Icon inline styling */
 .icon-inline {
   vertical-align: middle;
   flex-shrink: 0;
@@ -458,15 +424,13 @@
   margin-right: var(--space-1);
 }
 
-/* --------------------------------------------------------------------------
-   Calendar Section
-   -------------------------------------------------------------------------- */
 .calendar-section {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   margin-bottom: var(--space-5);
+  overflow: hidden;
 }
 
 .calendar-section h3 {
@@ -490,7 +454,6 @@
   text-align: center;
 }
 
-/* Calendar Legend */
 .calendar-legend {
   display: flex;
   gap: var(--space-3);
@@ -531,19 +494,21 @@
   border: 1px solid var(--border-default);
 }
 
-/* Calendar Grid */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: var(--space-1);
   margin-bottom: var(--space-4);
+  width: 100%;
 }
 
 .calendar-day {
   aspect-ratio: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: relative;
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -552,6 +517,10 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  padding: var(--space-2);
+  text-align: left;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .calendar-day:hover:not(.calendar-day-header):not(.calendar-day-empty) {
@@ -567,15 +536,18 @@
   color: var(--text-muted);
   text-transform: uppercase;
   cursor: default;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .calendar-day-empty {
   background: none;
   border: none;
   cursor: default;
+  padding: 0;
 }
 
-/* Calendar day states */
 .calendar-day.day-ok {
   background-color: var(--success-muted);
   border-color: var(--success);
@@ -608,7 +580,54 @@
   box-shadow: inset 0 0 0 2px var(--primary);
 }
 
-/* Calendar Actions */
+.calendar-day-number {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: inherit;
+}
+
+.calendar-day-activities {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-5) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  font-size: var(--text-xs);
+  min-width: 0;
+}
+
+.calendar-day-activity {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  line-height: 1.2;
+}
+
+.calendar-day-activity-type {
+  font-weight: 600;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 85px;
+}
+
+.calendar-day-activity-time {
+  color: var(--text-muted);
+  font-size: var(--text-2xs, 0.7rem);
+  white-space: nowrap;
+}
+
+.calendar-day-activity-more {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .calendar-actions {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -628,6 +647,49 @@
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.quick-actions--inline {
+  gap: var(--space-2);
+}
+
+.quick-action-pause {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.quick-action-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.quick-action-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.quick-action-select select {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.form-hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
 }
 
 .calendar-hint {
@@ -636,7 +698,6 @@
   color: var(--text-muted);
 }
 
-/* Calendar Irregularities */
 .calendar-irregularities {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -687,9 +748,6 @@
   opacity: 0.8;
 }
 
-/* --------------------------------------------------------------------------
-   Loading & No Data States
-   -------------------------------------------------------------------------- */
 .loading,
 .no-data {
   text-align: center;
@@ -698,9 +756,6 @@
   font-size: var(--text-sm);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .header {
     flex-direction: column;

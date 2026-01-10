@@ -66,6 +66,9 @@ function calculateDailySummary(activities) {
   const REQUIRED_MINUTES = config.activity.requiredMinutes;
 
   const totalMinutes = activities.reduce((sum, act) => {
+    if (act.activityType === 'pausa') {
+      return sum;
+    }
     const duration = calculateDuration(act.startTime, act.endTime);
     return sum + duration;
   }, 0);
@@ -92,6 +95,10 @@ function validateActivityType(activityType, customType) {
 
   if (!activityType) {
     return { valid: false, error: 'activityType è obbligatorio' };
+  }
+
+  if (activityType === 'pausa') {
+    return { valid: true };
   }
 
   if (!activityTypes.includes(activityType)) {

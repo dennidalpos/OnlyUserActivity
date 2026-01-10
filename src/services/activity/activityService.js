@@ -34,6 +34,8 @@ class ActivityService {
 
   async createActivity(userKey, activityData) {
     const activityPayload = { ...activityData };
+    const hasDuration = activityPayload.durationHours !== undefined || activityPayload.durationMinutes !== undefined;
+    const hasTimes = activityPayload.startTime || activityPayload.endTime;
     const typeValidation = validateActivityType(
       activityPayload.activityType,
       activityPayload.customType
@@ -45,7 +47,7 @@ class ActivityService {
 
     const existingActivities = await activityStorage.findByDate(userKey, activityPayload.date);
 
-    if (activityPayload.durationHours !== undefined || activityPayload.durationMinutes !== undefined) {
+    if (hasDuration) {
       const durationMinutes = (Number(activityPayload.durationHours) * 60) + Number(activityPayload.durationMinutes);
       if (durationMinutes <= 0) {
         throw new Error('La durata deve essere maggiore di 0');
@@ -64,6 +66,10 @@ class ActivityService {
     delete activityPayload.durationHours;
     delete activityPayload.durationMinutes;
 
+    if (hasTimes && (!activityPayload.startTime || !activityPayload.endTime)) {
+      throw new Error('Orario di inizio e fine devono essere specificati insieme');
+    }
+
     const overlapCheck = checkTimeOverlap(activityPayload, existingActivities);
     if (overlapCheck.hasOverlap) {
       const error = new Error(
@@ -72,6 +78,19 @@ class ActivityService {
       error.code = 'TIME_OVERLAP';
       error.conflictingActivity = overlapCheck.conflictingActivity;
       throw error;
+    }
+
+    const newDuration = calculateDuration(activityPayload.startTime, activityPayload.endTime);
+    if (activityPayload.activityType !== 'pausa') {
+      const existingMinutes = existingActivities.reduce((sum, activity) => {
+        if (activity.activityType === 'pausa') {
+          return sum;
+        }
+        return sum + calculateDuration(activity.startTime, activity.endTime);
+      }, 0);
+      if (existingMinutes + newDuration > 14 * 60) {
+        throw new Error('Le ore cumulate non possono superare le 14 ore');
+      }
     }
 
     const continuityCheck = checkContinuity(activityPayload, existingActivities);
@@ -100,7 +119,10 @@ class ActivityService {
     }
 
     const updatePayload = { ...updates };
-    if (updatePayload.durationHours !== undefined || updatePayload.durationMinutes !== undefined) {
+    const hasDuration = updatePayload.durationHours !== undefined || updatePayload.durationMinutes !== undefined;
+    const hasTimes = updatePayload.startTime || updatePayload.endTime;
+
+    if (hasDuration) {
       const durationMinutes = (Number(updatePayload.durationHours) * 60) + Number(updatePayload.durationMinutes);
       if (durationMinutes <= 0) {
         throw new Error('La durata deve essere maggiore di 0');
@@ -115,6 +137,10 @@ class ActivityService {
     }
     delete updatePayload.durationHours;
     delete updatePayload.durationMinutes;
+
+    if (hasTimes && (!updatePayload.startTime || !updatePayload.endTime)) {
+      throw new Error('Orario di inizio e fine devono essere specificati insieme');
+    }
 
     const merged = { ...current, ...updatePayload };
 
@@ -140,6 +166,20 @@ class ActivityService {
         error.code = 'TIME_OVERLAP';
         error.conflictingActivity = overlapCheck.conflictingActivity;
         throw error;
+      }
+    }
+
+    const existingActivities = await activityStorage.findByDate(userKey, date);
+    if (merged.activityType !== 'pausa') {
+      const existingMinutes = existingActivities.reduce((sum, activity) => {
+        if (activity.id === activityId || activity.activityType === 'pausa') {
+          return sum;
+        }
+        return sum + calculateDuration(activity.startTime, activity.endTime);
+      }, 0);
+      const updatedDuration = calculateDuration(merged.startTime, merged.endTime);
+      if (existingMinutes + updatedDuration > 14 * 60) {
+        throw new Error('Le ore cumulate non possono superare le 14 ore');
       }
     }
 
@@ -185,6 +225,22 @@ class ActivityService {
     const { firstDay, lastDay } = getMonthRange(year, month);
     const rangeData = await this.getActivitiesRange(userKey, firstDay, lastDay);
     const summaries = rangeData.dailySummaries || {};
+    const activitiesByDate = {};
+
+    (rangeData.activities || []).forEach(activity => {
+      if (!activitiesByDate[activity.date]) {
+        activitiesByDate[activity.date] = [];
+      }
+      activitiesByDate[activity.date].push({
+        id: activity.id,
+        activityType: activity.activityType,
+        customType: activity.customType || '',
+        startTime: activity.startTime,
+        endTime: activity.endTime,
+        durationMinutes: calculateDuration(activity.startTime, activity.endTime),
+        notes: activity.notes || ''
+      });
+    });
 
     const days = [];
     let cursor = firstDay;
@@ -221,7 +277,8 @@ class ActivityService {
         totalMinutes: summary.totalMinutes,
         requiredMinutes: summary.requiredMinutes,
         isRequired,
-        isFuture
+        isFuture,
+        activities: activitiesByDate[cursor] || []
       });
 
       cursor = addDays(cursor, 1);

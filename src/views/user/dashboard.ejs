@@ -95,9 +95,24 @@
               </select>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group" id="customTypeGroup" style="display: none;">
+              <label>Tipo Personalizzato</label>
+              <input type="text" id="customType" placeholder="Specifica il tipo di attività">
+            </div>
+          </div>
           <div class="form-group">
             <label>Note</label>
             <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Pulsanti rapidi</label>
+            <div class="quick-actions quick-actions--inline">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="applyWorkdaySchedule(this)">
+                Orario feriale 08:30-17:00
+              </button>
+            </div>
+            <div class="form-hint">Inserisce due attività consecutive: 08:30-12:30 e 13:00-17:00.</div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Salva</button>
@@ -132,13 +147,7 @@
 
       <div class="calendar-actions">
         <h4>Imposta giornata intera</h4>
-        <div class="quick-actions">
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('malattia', this)">Malattia</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('ferie', this)">Ferie</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('permesso', this, { label: 'Congedo' })">Congedo</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('lavoro', this, { label: 'Smart working', notes: 'Smart working' })">Smart working</button>
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('riposo', this)">Riposo</button>
-        </div>
+        <div class="quick-actions" id="calendarQuickActions"></div>
         <p class="calendar-hint">Seleziona un giorno dal calendario per applicare la giornata intera.</p>
       </div>
 
@@ -156,6 +165,7 @@
     let currentDate = '<%= currentDate %>';
     let editingActivityId = null;
     let activityTypes = [];
+    let quickActions = [];
     let requiredMinutes = 480;
     let calendarDate = '<%= currentDate %>';
     let selectedCalendarDate = '<%= currentDate %>';
@@ -181,6 +191,69 @@
       }
     }
 
+    async function loadQuickActions() {
+      try {
+        const response = await fetch('/api/activities/quick-actions', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (result.success) {
+          quickActions = result.data || [];
+          renderQuickActions();
+        }
+      } catch (error) {
+        console.error('Error loading quick actions:', error);
+        quickActions = [];
+        renderQuickActions();
+      }
+    }
+
+    function renderQuickActions() {
+      const container = document.getElementById('calendarQuickActions');
+      if (!container) {
+        return;
+      }
+      if (!quickActions.length) {
+        container.innerHTML = '<span class="text-muted text-small">Nessuna quick action disponibile.</span>';
+        return;
+      }
+
+      container.innerHTML = quickActions.map(action => {
+        if (action.activityType === 'pausa') {
+          return `
+            <div class="quick-action-pause">
+              <span class="quick-action-label">${action.label}</span>
+              <label class="quick-action-select">
+                H
+                <select id="pauseHours">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                </select>
+              </label>
+              <label class="quick-action-select">
+                M
+                <select id="pauseMinutes">
+                  <option value="0">0</option>
+                  <option value="30">30</option>
+                </select>
+              </label>
+              <button type="button" class="btn btn-primary btn-sm" onclick="applyPauseAction('${action.id}', this)">
+                Applica
+              </button>
+            </div>
+          `;
+        }
+        return `
+          <button type="button" class="btn btn-primary" onclick="applyQuickDay('${action.id}', this)">
+            ${action.label}
+          </button>
+        `;
+      }).join('');
+    }
+
     function populateActivityTypeSelect() {
       const select = document.getElementById('activityType');
       select.innerHTML = '';
@@ -190,6 +263,21 @@
         option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
         select.appendChild(option);
       });
+      updateCustomTypeVisibility();
+    }
+
+    function updateCustomTypeVisibility() {
+      const selected = document.getElementById('activityType').value;
+      const group = document.getElementById('customTypeGroup');
+      const customField = document.getElementById('customType');
+      if (selected === 'altro') {
+        group.style.display = 'block';
+        customField.required = true;
+      } else {
+        group.style.display = 'none';
+        customField.required = false;
+        customField.value = '';
+      }
     }
 
     function populateDurationSelects() {
@@ -238,6 +326,7 @@
 
     async function loadActivities(anchor) {
       lastActionAnchor = anchor || document.getElementById('activityDate');
+      resetActivityFormState();
       console.log('loadActivities called for date:', document.getElementById('activityDate')?.value);
       const date = document.getElementById('activityDate').value;
       currentDate = date;
@@ -322,6 +411,7 @@
 
       if (activities.length === 0) {
         list.innerHTML = '<p class="no-data">Nessuna attività per questa data</p>';
+        window.currentActivities = activities;
         return;
       }
 
@@ -329,7 +419,10 @@
         const hours = Math.floor(activity.durationMinutes / 60);
         const mins = activity.durationMinutes % 60;
         const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-        const activityTypeFormatted = activity.activityType.charAt(0).toUpperCase() + activity.activityType.slice(1);
+        const typeLabel = activity.customType
+          ? activity.customType
+          : activity.activityType;
+        const activityTypeFormatted = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
 
         const dateObj = new Date(currentDate + 'T00:00:00');
         const dateFormatted = dateObj.toLocaleDateString('it-IT', {
@@ -398,6 +491,8 @@
       document.getElementById('addActivityForm').style.display = 'block';
       setDurationSelectValues(0);
       document.getElementById('activityType').value = activityTypes[0] || 'lavoro';
+      updateCustomTypeVisibility();
+      document.getElementById('customType').value = '';
       document.getElementById('notes').value = '';
 
       document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
@@ -418,6 +513,8 @@
       document.getElementById('addActivityForm').style.display = 'block';
       setDurationSelectValues(activity.durationMinutes);
       document.getElementById('activityType').value = activity.activityType;
+      updateCustomTypeVisibility();
+      document.getElementById('customType').value = activity.customType || '';
       document.getElementById('notes').value = activity.notes || '';
 
       document.querySelector('#addActivityForm h4').textContent = 'Modifica Attività';
@@ -429,10 +526,15 @@
     function cancelAdd(anchor) {
       console.log('cancelAdd called');
       lastActionAnchor = anchor || document.getElementById('addActivityForm');
+      resetActivityFormState();
+    }
+
+    function resetActivityFormState() {
       document.getElementById('addActivityForm').style.display = 'none';
       editingActivityId = null;
       document.querySelector('#addActivityForm h4').textContent = 'Aggiungi Attività';
       document.querySelector('#addActivityForm button[type="submit"]').textContent = 'Salva';
+      document.getElementById('customType').value = '';
     }
 
     async function addActivity(event) {
@@ -440,10 +542,18 @@
       event.preventDefault();
       lastActionAnchor = event.submitter || document.querySelector('#addActivityForm button[type="submit"]');
 
+      if (editingActivityId && !window.currentActivities?.some(activity => activity.id === editingActivityId)) {
+        showError('Attività non trovata');
+        resetActivityFormState();
+        return;
+      }
+
+      const selectedType = document.getElementById('activityType').value;
       const data = {
         durationHours: Number(document.getElementById('durationHours').value),
         durationMinutes: Number(document.getElementById('durationMinutes').value),
-        activityType: document.getElementById('activityType').value,
+        activityType: selectedType,
+        customType: document.getElementById('customType').value.trim(),
         notes: document.getElementById('notes').value
       };
 
@@ -451,6 +561,10 @@
       if (totalMinutes === 0) {
         showError('La durata deve essere maggiore di 0');
         return;
+      }
+
+      if (selectedType !== 'altro') {
+        data.customType = '';
       }
 
       if (!editingActivityId) {
@@ -609,7 +723,31 @@
         cell.type = 'button';
         cell.className = 'calendar-day';
         const dateObj = new Date(`${day.date}T00:00:00`);
-        cell.innerHTML = `<span>${dateObj.getDate()}</span>`;
+        const activities = Array.isArray(day.activities) ? day.activities : [];
+        const maxVisible = 3;
+        const visibleActivities = activities.slice(0, maxVisible);
+        const extraCount = activities.length - visibleActivities.length;
+        const activitiesMarkup = visibleActivities.map(activity => {
+          const typeLabel = activity.customType
+            ? activity.customType
+            : activity.activityType;
+          return `
+            <li class="calendar-day-activity">
+              <span class="calendar-day-activity-type">${typeLabel}</span>
+              <span class="calendar-day-activity-time">${activity.startTime}-${activity.endTime}</span>
+            </li>
+          `;
+        }).join('');
+        const overflowMarkup = extraCount > 0
+          ? `<li class="calendar-day-activity calendar-day-activity-more">+${extraCount} altre</li>`
+          : '';
+        cell.innerHTML = `
+          <span class="calendar-day-number">${dateObj.getDate()}</span>
+          <ul class="calendar-day-activities">
+            ${activitiesMarkup}
+            ${overflowMarkup}
+          </ul>
+        `;
         cell.setAttribute('data-date', day.date);
 
         if (!day.isRequired) {
@@ -697,24 +835,40 @@
       return { hours, minutes: remainder };
     }
 
-    async function applyQuickDay(activityType, anchor, options = {}) {
+    function resolveQuickAction(id) {
+      return quickActions.find(action => action.id === id);
+    }
+
+    async function applyQuickDay(actionId, anchor) {
       lastActionAnchor = anchor || document.querySelector('.quick-actions');
       if (!selectedCalendarDate) {
         showError('Seleziona prima un giorno dal calendario');
         return;
       }
 
+      if (window.currentActivities && window.currentActivities.length > 0) {
+        showError('Esistono già attività per questa data. Rimuovile prima di applicare una quick action.');
+        return;
+      }
+
+      const action = resolveQuickAction(actionId);
+      if (!action) {
+        showError('Quick action non trovata');
+        return;
+      }
+
       const duration = getQuickDayDurationParts();
       const payload = {
         date: selectedCalendarDate,
-        activityType,
+        activityType: action.activityType,
+        customType: action.label,
         durationHours: duration.hours,
         durationMinutes: duration.minutes,
-        notes: options.notes || ''
+        notes: action.notes || ''
       };
 
-      if (options.label && activityType === 'permesso') {
-        payload.notes = payload.notes ? `${payload.notes} (${options.label})` : options.label;
+      if (action.activityType !== 'altro') {
+        payload.customType = action.label;
       }
 
       try {
@@ -731,7 +885,7 @@
         if (result.success) {
           loadActivities();
           loadMonthCalendar();
-          showSuccess(`Giornata impostata: ${options.label || activityType}`);
+          showSuccess(`Giornata impostata: ${action.label}`);
         } else {
           showError(result.error?.message || 'Errore nel salvataggio');
         }
@@ -741,11 +895,120 @@
       }
     }
 
+    async function applyPauseAction(actionId, anchor) {
+      lastActionAnchor = anchor || document.querySelector('.quick-actions');
+      if (!selectedCalendarDate) {
+        showError('Seleziona prima un giorno dal calendario');
+        return;
+      }
+
+      const action = resolveQuickAction(actionId);
+      if (!action) {
+        showError('Quick action non trovata');
+        return;
+      }
+
+      const hours = Number(document.getElementById('pauseHours')?.value || 0);
+      const minutes = Number(document.getElementById('pauseMinutes')?.value || 0);
+      if (hours === 0 && minutes === 0) {
+        showError('La durata della pausa deve essere maggiore di 0');
+        return;
+      }
+
+      const payload = {
+        date: selectedCalendarDate,
+        activityType: 'pausa',
+        customType: action.label,
+        durationHours: hours,
+        durationMinutes: minutes,
+        notes: action.notes || ''
+      };
+
+      try {
+        const response = await fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          loadActivities();
+          loadMonthCalendar();
+          showSuccess(`Pausa inserita: ${hours}h ${minutes}m`);
+        } else {
+          showError(result.error?.message || 'Errore nel salvataggio');
+        }
+      } catch (error) {
+        showError('Errore nel salvataggio della pausa');
+      }
+    }
+
+    async function createActivityWithTimes(payload) {
+      const response = await fetch('/api/activities', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Errore nel salvataggio');
+      }
+      return result.data;
+    }
+
+    async function applyWorkdaySchedule(anchor) {
+      lastActionAnchor = anchor || document.querySelector('.quick-actions--inline');
+      if (!currentDate) {
+        showError('Seleziona prima una data');
+        return;
+      }
+      if (window.currentActivities && window.currentActivities.length > 0) {
+        showError('Esistono già attività per questa data. Rimuovile prima di applicare l\'orario feriale.');
+        return;
+      }
+
+      const workType = activityTypes.includes('lavoro') ? 'lavoro' : (activityTypes[0] || 'lavoro');
+      try {
+        await createActivityWithTimes({
+          date: currentDate,
+          startTime: '08:30',
+          endTime: '12:30',
+          activityType: workType,
+          notes: 'Orario feriale'
+        });
+
+        await createActivityWithTimes({
+          date: currentDate,
+          startTime: '13:00',
+          endTime: '17:00',
+          activityType: workType,
+          notes: 'Orario feriale'
+        });
+
+        loadActivities();
+        loadMonthCalendar();
+        showSuccess('Orario feriale inserito con successo');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
     console.log('Calling loadActivityTypes and loadActivities on page load...');
     populateDurationSelects();
     loadActivityTypes();
+    loadQuickActions();
     loadActivities();
     loadMonthCalendar();
+
+    document.getElementById('activityType').addEventListener('change', updateCustomTypeVisibility);
 
   </script>
 </body>

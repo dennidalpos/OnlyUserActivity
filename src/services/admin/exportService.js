@@ -20,6 +20,8 @@ class ExportService {
 
       const activities = await activityStorage.findByRange(userKey, fromDate, toDate);
 
+      const metadataValue = user.metadata || {};
+
       let totalMinutes = 0;
 
       activities.forEach(act => {
@@ -30,6 +32,13 @@ class ExportService {
           username: user.username,
           displayName: user.displayName,
           userType: user.userType || 'local',
+          email: user.email || '',
+          department: user.department || '',
+          shift: user.shift || '',
+          createdAt: user.createdAt || '',
+          lastLoginAt: user.lastLoginAt || '',
+          updatedAt: user.updatedAt || '',
+          metadata: metadataValue,
           date: act.date,
           startTime: act.startTime,
           endTime: act.endTime,
@@ -45,6 +54,13 @@ class ExportService {
         username: user.username,
         displayName: user.displayName,
         userType: user.userType || 'local',
+        email: user.email || '',
+        department: user.department || '',
+        shift: user.shift || '',
+        createdAt: user.createdAt || '',
+        lastLoginAt: user.lastLoginAt || '',
+        updatedAt: user.updatedAt || '',
+        metadata: metadataValue,
         totalActivities: activities.length,
         totalMinutes,
         totalHours: (totalMinutes / 60).toFixed(2),
@@ -81,6 +97,13 @@ class ExportService {
         { label: 'Username', value: 'username' },
         { label: 'Nome Completo', value: 'displayName' },
         { label: 'Tipo Utente', value: 'userType' },
+        { label: 'Email', value: 'email' },
+        { label: 'Reparto', value: 'department' },
+        { label: 'Turno', value: 'shift' },
+        { label: 'Creato il', value: 'createdAt' },
+        { label: 'Ultimo accesso', value: 'lastLoginAt' },
+        { label: 'Aggiornato il', value: 'updatedAt' },
+        { label: 'Metadata', value: 'metadata' },
         { label: 'Totale Attività', value: 'totalActivities' },
         { label: 'Ore Totali', value: 'totalHours' },
         { label: 'Media Ore/Giorno', value: 'avgHoursPerDay' }
@@ -90,6 +113,13 @@ class ExportService {
         { label: 'Username', value: 'username' },
         { label: 'Nome Completo', value: 'displayName' },
         { label: 'Tipo Utente', value: 'userType' },
+        { label: 'Email', value: 'email' },
+        { label: 'Reparto', value: 'department' },
+        { label: 'Turno', value: 'shift' },
+        { label: 'Creato il', value: 'createdAt' },
+        { label: 'Ultimo accesso', value: 'lastLoginAt' },
+        { label: 'Aggiornato il', value: 'updatedAt' },
+        { label: 'Metadata', value: 'metadata' },
         { label: 'Data', value: 'date' },
         { label: 'Ora Inizio', value: 'startTime' },
         { label: 'Ora Fine', value: 'endTime' },
@@ -101,7 +131,8 @@ class ExportService {
     }
 
     const rows = data.map(item => fields.reduce((acc, field) => {
-      acc[field.label] = item[field.value];
+      const value = field.value === 'metadata' ? this.formatMetadataValue(item[field.value]) : item[field.value];
+      acc[field.label] = value;
       return acc;
     }, {}));
     const csv = await writeToString(rows, { headers: true });
@@ -124,6 +155,13 @@ class ExportService {
         { header: 'Username', key: 'username', width: 15 },
         { header: 'Nome Completo', key: 'displayName', width: 25 },
         { header: 'Tipo Utente', key: 'userType', width: 12 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Reparto', key: 'department', width: 18 },
+        { header: 'Turno', key: 'shift', width: 18 },
+        { header: 'Creato il', key: 'createdAt', width: 20 },
+        { header: 'Ultimo accesso', key: 'lastLoginAt', width: 20 },
+        { header: 'Aggiornato il', key: 'updatedAt', width: 20 },
+        { header: 'Metadata', key: 'metadata', width: 28 },
         { header: 'Data', key: 'date', width: 12 },
         { header: 'Ora Inizio', key: 'startTime', width: 12 },
         { header: 'Ora Fine', key: 'endTime', width: 12 },
@@ -142,12 +180,15 @@ class ExportService {
       detailSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
       activities.forEach(act => {
-        detailSheet.addRow(act);
+        detailSheet.addRow({
+          ...act,
+          metadata: this.formatMetadataValue(act.metadata)
+        });
       });
 
       detailSheet.autoFilter = {
         from: 'A1',
-        to: 'J1'
+        to: 'Q1'
       };
     }
 
@@ -157,6 +198,13 @@ class ExportService {
       { header: 'Username', key: 'username', width: 15 },
       { header: 'Nome Completo', key: 'displayName', width: 25 },
       { header: 'Tipo Utente', key: 'userType', width: 12 },
+      { header: 'Email', key: 'email', width: 25 },
+      { header: 'Reparto', key: 'department', width: 18 },
+      { header: 'Turno', key: 'shift', width: 18 },
+      { header: 'Creato il', key: 'createdAt', width: 20 },
+      { header: 'Ultimo accesso', key: 'lastLoginAt', width: 20 },
+      { header: 'Aggiornato il', key: 'updatedAt', width: 20 },
+      { header: 'Metadata', key: 'metadata', width: 28 },
       { header: 'Totale Attività', key: 'totalActivities', width: 15 },
       { header: 'Ore Totali', key: 'totalHours', width: 12 },
       { header: 'Media Ore/Giorno', key: 'avgHoursPerDay', width: 15 }
@@ -171,7 +219,10 @@ class ExportService {
     summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
     summaries.forEach(summary => {
-      summarySheet.addRow(summary);
+      summarySheet.addRow({
+        ...summary,
+        metadata: this.formatMetadataValue(summary.metadata)
+      });
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -185,6 +236,23 @@ class ExportService {
   countUniqueDays(activities) {
     const uniqueDates = new Set(activities.map(a => a.date));
     return uniqueDates.size;
+  }
+
+  formatMetadataValue(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        return String(value);
+      }
+    }
+    return String(value);
   }
 }
 

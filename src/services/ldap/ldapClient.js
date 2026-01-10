@@ -90,12 +90,10 @@ class LDAPClient {
     const groupLower = normalizedGroupName.toLowerCase();
     const requiredLower = normalizedRequired.toLowerCase();
 
-    // Direct match
     if (groupLower === requiredLower) {
       return true;
     }
 
-    // Handle common variations
     const variations = this.getGroupNameVariations(requiredLower);
     return variations.includes(groupLower);
   }
@@ -103,7 +101,6 @@ class LDAPClient {
   getGroupNameVariations(groupName) {
     const variations = [groupName];
 
-    // Common English-Italian and singular-plural variations for well-known groups
     const wellKnownGroups = {
       'domain users': ['domain user', 'utenti di dominio', 'utente di dominio'],
       'domain admins': ['domain admin', 'domain administrators', 'amministratori di dominio'],
@@ -160,12 +157,9 @@ class LDAPClient {
       return this.decodeSid(value);
     }
     if (typeof value === 'string') {
-      // If string already looks like a SID (S-1-5-...), return it
       if (value.startsWith('S-') || value.startsWith('s-')) {
         return value;
       }
-      // If string contains binary data, convert to Buffer and decode
-      // This happens when LDAP returns binary data as a string
       if (value.length > 0 && value.charCodeAt(0) <= 255) {
         const buffer = Buffer.from(value, 'binary');
         return this.decodeSid(buffer);
@@ -262,7 +256,6 @@ class LDAPClient {
     const groupBase = config.ldap.groupSearchBase || config.ldap.baseDN;
     let searchEntries = [];
 
-    // Try primaryGroupToken first (more reliable and simpler)
     try {
       const tokenOpts = {
         filter: `(primaryGroupToken=${primaryGroupValue})`,
@@ -285,7 +278,6 @@ class LDAPClient {
       this.logDebug('primaryGroupToken search failed', { error: error.message });
     }
 
-    // If primaryGroupToken didn't work, try objectSid approach
     if ((!searchEntries || searchEntries.length === 0)) {
       try {
         const domainSid = await this.getDomainSid(client);
@@ -324,7 +316,6 @@ class LDAPClient {
       }
     }
 
-    // Final fallback: use well-known RID to group name mapping
     if (!searchEntries || searchEntries.length === 0) {
       const wellKnownRids = {
         '512': 'Domain Admins',
@@ -356,7 +347,6 @@ class LDAPClient {
     const entry = searchEntries[0];
     let groupName = null;
 
-    // Prefer cn, fallback to sAMAccountName, then DN
     if (entry.cn) {
       groupName = this.normalizeGroupName(entry.cn);
     } else if (entry.sAMAccountName) {

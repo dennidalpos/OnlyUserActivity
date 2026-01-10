@@ -11,6 +11,45 @@ const shiftTypesService = require('./shiftTypesService');
 class SettingsService {
   constructor() {
     this.envPath = path.join(process.cwd(), '.env');
+    this.quickActionsPath = path.join(config.storage.rootPath, 'admin', 'quick-actions.json');
+    this.defaultQuickActions = [
+      {
+        id: 'quick-malattia',
+        label: 'Malattia',
+        activityType: 'altro',
+        notes: ''
+      },
+      {
+        id: 'quick-ferie',
+        label: 'Ferie',
+        activityType: 'altro',
+        notes: ''
+      },
+      {
+        id: 'quick-congedo',
+        label: 'Congedo',
+        activityType: 'altro',
+        notes: 'Congedo'
+      },
+      {
+        id: 'quick-smart-working',
+        label: 'Smart working',
+        activityType: 'altro',
+        notes: 'Smart working'
+      },
+      {
+        id: 'quick-riposo',
+        label: 'Riposo',
+        activityType: 'altro',
+        notes: ''
+      },
+      {
+        id: 'quick-pausa',
+        label: 'Pausa',
+        activityType: 'pausa',
+        notes: ''
+      }
+    ];
   }
 
   logSettings(message, ...args) {
@@ -801,9 +840,11 @@ class SettingsService {
 
   async exportServerConfiguration() {
     const settings = await this.getCurrentSettings();
+    const quickActions = await this.getQuickActions();
     return {
       generatedAt: new Date().toISOString(),
-      settings
+      settings,
+      quickActions
     };
   }
 
@@ -813,6 +854,9 @@ class SettingsService {
     }
 
     await this.applySettingsSnapshot(payload.settings);
+    if (Array.isArray(payload.quickActions)) {
+      await this.setQuickActions(payload.quickActions);
+    }
 
     return {
       success: true,
@@ -824,6 +868,7 @@ class SettingsService {
     const settings = await this.getCurrentSettings();
     const activityTypes = await activityTypesService.getActivityTypes();
     const shiftTypes = await shiftTypesService.getShiftTypes();
+    const quickActions = await this.getQuickActions();
     const users = await userStorage.listAll();
     const activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
 
@@ -832,6 +877,7 @@ class SettingsService {
       settings,
       activityTypes,
       shiftTypes,
+      quickActions,
       users,
       activities
     };
@@ -918,6 +964,10 @@ class SettingsService {
 
     if (Array.isArray(payload.shiftTypes)) {
       await shiftTypesService.setShiftTypes(payload.shiftTypes);
+    }
+
+    if (Array.isArray(payload.quickActions)) {
+      await this.setQuickActions(payload.quickActions);
     }
 
     if (Array.isArray(payload.users)) {
@@ -1013,6 +1063,101 @@ class SettingsService {
       const filePath = path.join(monthDir, `${entry.month}.json`);
       await fileStorage.writeJSON(filePath, entry.data);
     }
+  }
+
+  async getQuickActions() {
+    try {
+      const configData = await fileStorage.readJSON(this.quickActionsPath);
+      const raw = Array.isArray(configData?.quickActions) ? configData.quickActions : this.defaultQuickActions;
+      return this.normalizeQuickActions(raw);
+    } catch (error) {
+      return this.normalizeQuickActions(this.defaultQuickActions);
+    }
+  }
+
+  async setQuickActions(actions) {
+    if (!Array.isArray(actions)) {
+      throw new Error('Le quick action devono essere un array');
+    }
+    const normalized = this.normalizeQuickActions(actions);
+    await this.validateQuickActions(normalized);
+    await fileStorage.writeJSON(this.quickActionsPath, {
+      quickActions: normalized,
+      updatedAt: new Date().toISOString()
+    });
+    return normalized;
+  }
+
+  async addQuickAction(payload) {
+    const actions = await this.getQuickActions();
+    const normalized = this.normalizeQuickActions([payload])[0];
+    await this.validateQuickActions([normalized]);
+    actions.push(normalized);
+    return await this.setQuickActions(actions);
+  }
+
+  async updateQuickAction(id, payload) {
+    const actions = await this.getQuickActions();
+    const index = actions.findIndex(action => action.id === id);
+    if (index === -1) {
+      throw new Error('Quick action non trovata');
+    }
+    const updated = {
+      ...actions[index],
+      ...payload
+    };
+    const normalized = this.normalizeQuickActions([updated])[0];
+    await this.validateQuickActions([normalized]);
+    actions[index] = normalized;
+    return await this.setQuickActions(actions);
+  }
+
+  async removeQuickAction(id) {
+    const actions = await this.getQuickActions();
+    const filtered = actions.filter(action => action.id !== id);
+    if (filtered.length === actions.length) {
+      throw new Error('Quick action non trovata');
+    }
+    return await this.setQuickActions(filtered);
+  }
+
+  normalizeQuickActions(actions) {
+    return actions
+      .filter(action => action && action.label)
+      .map((action) => {
+        const label = String(action.label).trim();
+        const isPause = action.isPause === true || action.activityType === 'pausa';
+        const activityType = isPause ? 'pausa' : 'altro';
+        return {
+          id: action.id || this.generateQuickActionId(label, activityType),
+          label,
+          activityType,
+          notes: action.notes ? String(action.notes) : ''
+        };
+      });
+  }
+
+  async validateQuickActions(actions) {
+    const allowedTypes = new Set(['altro', 'pausa']);
+    const pauseCount = actions.filter(action => action.activityType === 'pausa').length;
+    if (pauseCount > 1) {
+      throw new Error('È consentita una sola quick action di tipo "pausa"');
+    }
+
+    actions.forEach((action) => {
+      if (!action.label) {
+        throw new Error('Ogni quick action deve avere un\'etichetta');
+      }
+      if (!allowedTypes.has(action.activityType)) {
+        throw new Error(`Tipo attività non valido per quick action: ${action.activityType}`);
+      }
+    });
+  }
+
+  generateQuickActionId(label, activityType) {
+    const base = `${activityType}-${label}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+    const suffix = Math.random().toString(36).slice(2, 8);
+    return `${base}-${Date.now()}-${suffix}`;
   }
 }
 

@@ -1,7 +1,3 @@
-/**
- * HelpSystem - Global help modal system
- * Styles are defined in admin.css (.help-btn, .help-modal, .help-section, etc.)
- */
 class HelpSystem {
   constructor() {
     this.modalHTML = `
@@ -54,13 +50,13 @@ const userDashboardHelp = `
     <h4>Inserimento Attivita</h4>
     <ol>
       <li>Clicca su "+ Nuova Attivita"</li>
-      <li>Inserisci l'orario di inizio e fine (step di 15 minuti)</li>
+      <li>Seleziona la durata (ore e minuti a step di 15 minuti)</li>
       <li>Seleziona il tipo di attivita dal menu a tendina</li>
       <li>Aggiungi eventuali note descrittive</li>
       <li>Clicca "Salva"</li>
     </ol>
     <div class="help-note">
-      <strong>Nota:</strong> Gli orari devono essere multipli di 15 minuti (es: 09:00, 09:15, 09:30, 09:45).
+      <strong>Nota:</strong> Le durate sono arrotonate a multipli di 15 minuti. Puoi usare il pulsante rapido per l'orario feriale.
     </div>
   </div>
 

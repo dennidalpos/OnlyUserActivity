@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { AppError } = require('./errorHandler');
 const activityTypesService = require('../services/admin/activityTypesService');
+const { validateTimeStep } = require('../services/utils/timeUtils');
 
 let ACTIVITY_TYPES = [
   'lavoro',
@@ -13,7 +14,6 @@ let ACTIVITY_TYPES = [
   'permesso',
   'riposo',
   'trasferta',
-  'pausa',
   'altro'
 ];
 
@@ -46,6 +46,18 @@ const loginSchema = Joi.object({
     })
 });
 
+const timeStepSchema = Joi.string()
+  .custom((value, helpers) => {
+    const result = validateTimeStep(value);
+    if (!result.valid) {
+      return helpers.error('any.custom', { message: result.error });
+    }
+    return value;
+  })
+  .messages({
+    'any.custom': '{{#message}}'
+  });
+
 const buildActivitySchema = () => Joi.object({
   date: Joi.string()
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
@@ -58,20 +70,16 @@ const buildActivitySchema = () => Joi.object({
     .integer()
     .min(0)
     .max(24)
-    .required()
     .messages({
       'number.base': 'Le ore devono essere un numero',
       'number.min': 'Le ore non possono essere negative',
-      'number.max': 'Le ore non possono superare 24',
-      'any.required': 'Le ore sono obbligatorie'
+      'number.max': 'Le ore non possono superare 24'
     }),
   durationMinutes: Joi.number()
     .integer()
     .valid(0, 15, 30, 45)
-    .required()
     .messages({
       'any.only': 'I minuti devono essere 0, 15, 30 o 45',
-      'any.required': 'I minuti sono obbligatori'
     })
     .custom((value, helpers) => {
       const { durationHours } = helpers.state.ancestors[0];
@@ -83,8 +91,10 @@ const buildActivitySchema = () => Joi.object({
     .messages({
       'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
+  startTime: timeStepSchema,
+  endTime: timeStepSchema,
   activityType: Joi.string()
-    .valid(...ACTIVITY_TYPES)
+    .valid(...ACTIVITY_TYPES, 'pausa')
     .required()
     .messages({
       'any.only': `Tipo attività non valido. Valori ammessi: ${ACTIVITY_TYPES.join(', ')}`,
@@ -102,6 +112,29 @@ const buildActivitySchema = () => Joi.object({
     .messages({
       'string.max': 'Note troppo lunghe (max 500 caratteri)'
     })
+}).custom((value, helpers) => {
+  const hasDuration = value.durationHours !== undefined || value.durationMinutes !== undefined;
+  const hasTimes = value.startTime || value.endTime;
+
+  if (hasDuration && hasTimes) {
+    return helpers.error('any.custom', { message: 'Inserire durata oppure orari, non entrambi' });
+  }
+
+  if (!hasDuration && !hasTimes) {
+    return helpers.error('any.custom', { message: 'Inserire durata oppure orari di inizio/fine' });
+  }
+
+  if (hasDuration && (value.durationHours === undefined || value.durationMinutes === undefined)) {
+    return helpers.error('any.custom', { message: 'Ore e minuti devono essere specificati insieme' });
+  }
+
+  if (hasTimes && (!value.startTime || !value.endTime)) {
+    return helpers.error('any.custom', { message: 'Orario di inizio e fine devono essere specificati insieme' });
+  }
+
+  return value;
+}).messages({
+  'any.custom': '{{#message}}'
 });
 
 const buildActivityUpdateSchema = () => Joi.object({
@@ -130,8 +163,10 @@ const buildActivityUpdateSchema = () => Joi.object({
     .messages({
       'any.custom': 'La durata totale deve essere maggiore di 0'
     }),
+  startTime: timeStepSchema,
+  endTime: timeStepSchema,
   activityType: Joi.string()
-    .valid(...ACTIVITY_TYPES)
+    .valid(...ACTIVITY_TYPES, 'pausa')
     .messages({
       'any.only': `Tipo attività non valido`
     }),
@@ -141,7 +176,26 @@ const buildActivityUpdateSchema = () => Joi.object({
   notes: Joi.string()
     .max(500)
     .allow('')
-}).and('durationHours', 'durationMinutes').min(1);
+}).custom((value, helpers) => {
+  const hasDuration = value.durationHours !== undefined || value.durationMinutes !== undefined;
+  const hasTimes = value.startTime || value.endTime;
+
+  if (hasDuration && (value.durationHours === undefined || value.durationMinutes === undefined)) {
+    return helpers.error('any.custom', { message: 'Ore e minuti devono essere specificati insieme' });
+  }
+
+  if (hasTimes && (!value.startTime || !value.endTime)) {
+    return helpers.error('any.custom', { message: 'Orario di inizio e fine devono essere specificati insieme' });
+  }
+
+  if (hasDuration && hasTimes) {
+    return helpers.error('any.custom', { message: 'Aggiorna durata oppure orari, non entrambi' });
+  }
+
+  return value;
+}).messages({
+  'any.custom': '{{#message}}'
+}).min(1);
 
 function validate(schemaOrFactory) {
   return (req, res, next) => {
