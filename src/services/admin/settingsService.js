@@ -16,37 +16,26 @@ class SettingsService {
       {
         id: 'quick-malattia',
         label: 'Malattia',
-        activityType: 'altro',
         notes: ''
       },
       {
         id: 'quick-ferie',
         label: 'Ferie',
-        activityType: 'altro',
         notes: ''
       },
       {
         id: 'quick-congedo',
         label: 'Congedo',
-        activityType: 'altro',
         notes: 'Congedo'
       },
       {
         id: 'quick-smart-working',
         label: 'Smart working',
-        activityType: 'altro',
         notes: 'Smart working'
       },
       {
         id: 'quick-riposo',
         label: 'Riposo',
-        activityType: 'altro',
-        notes: ''
-      },
-      {
-        id: 'quick-pausa',
-        label: 'Pausa',
-        activityType: 'pausa',
         notes: ''
       }
     ];
@@ -1126,23 +1115,18 @@ class SettingsService {
       .filter(action => action && action.label)
       .map((action) => {
         const label = String(action.label).trim();
-        const isPause = action.isPause === true || action.activityType === 'pausa';
-        const activityType = isPause ? 'pausa' : 'altro';
+        const activityType = 'altro';
         return {
           id: action.id || this.generateQuickActionId(label, activityType),
           label,
-          activityType,
+          activityType: 'altro',
           notes: action.notes ? String(action.notes) : ''
         };
       });
   }
 
   async validateQuickActions(actions) {
-    const allowedTypes = new Set(['altro', 'pausa']);
-    const pauseCount = actions.filter(action => action.activityType === 'pausa').length;
-    if (pauseCount > 1) {
-      throw new Error('È consentita una sola quick action di tipo "pausa"');
-    }
+    const allowedTypes = new Set(['altro']);
 
     actions.forEach((action) => {
       if (!action.label) {

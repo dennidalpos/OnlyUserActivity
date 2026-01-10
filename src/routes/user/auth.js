@@ -42,6 +42,7 @@ router.post('/login', async (req, res) => {
       userKey: user.userKey,
       username: user.username,
       displayName: user.displayName,
+      userType: user.userType || (authMethod === 'ldap' ? 'ad' : 'local'),
       token: token
     };
 

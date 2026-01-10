@@ -105,16 +105,6 @@
             <label>Note</label>
             <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
           </div>
-          <div class="form-group">
-            <label>Pulsanti rapidi</label>
-            <div class="quick-actions quick-actions--inline">
-              <button type="button" class="btn btn-sm btn-secondary" onclick="applyWorkdaySchedule(this)">
-                Orario feriale 08:30-17:00
-              </button>
-            </div>
-            <div id="activityQuickActions" class="quick-actions quick-actions--inline"></div>
-            <div class="form-hint">Inserisce tre attività consecutive: 08:30-12:30, pausa 12:30-13:00 e 13:00-17:00.</div>
-          </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Salva</button>
             <button type="button" onclick="cancelAdd(this)" class="btn">Annulla</button>
@@ -213,57 +203,20 @@
 
     function renderQuickActions() {
       const calendarContainer = document.getElementById('calendarQuickActions');
-      const activityContainer = document.getElementById('activityQuickActions');
-
       if (!calendarContainer) {
         return;
       }
 
-      const dayActions = quickActions.filter(action => action.activityType !== 'pausa');
-      const pauseAction = quickActions.find(action => action.activityType === 'pausa');
-
-      if (!dayActions.length) {
+      if (!quickActions.length) {
         calendarContainer.innerHTML = '<span class="text-muted text-small">Nessuna quick action disponibile.</span>';
-      } else {
-        calendarContainer.innerHTML = dayActions.map(action => `
-          <button type="button" class="btn btn-primary" onclick="applyQuickDay('${action.id}', this)">
-            ${action.label}
-          </button>
-        `).join('');
-      }
-
-      if (!activityContainer) {
         return;
       }
 
-      if (!pauseAction) {
-        activityContainer.innerHTML = '';
-        return;
-      }
-
-      activityContainer.innerHTML = `
-        <div class="quick-action-pause">
-          <span class="quick-action-label">${pauseAction.label}</span>
-          <label class="quick-action-select">
-            H
-            <select id="pauseHours">
-              <option value="0">0</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </label>
-          <label class="quick-action-select">
-            M
-            <select id="pauseMinutes">
-              <option value="0">0</option>
-              <option value="30">30</option>
-            </select>
-          </label>
-          <button type="button" class="btn btn-primary btn-sm" onclick="applyPauseAction('${pauseAction.id}', this)">
-            Applica pausa
-          </button>
-        </div>
-      `;
+      calendarContainer.innerHTML = quickActions.map(action => `
+        <button type="button" class="btn btn-primary" onclick="applyQuickDay('${action.id}', this)">
+          ${action.label}
+        </button>
+      `).join('');
     }
 
     function populateActivityTypeSelect() {
@@ -904,120 +857,6 @@
       } catch (error) {
         console.error('Quick day error:', error);
         showError('Errore nel salvataggio della giornata');
-      }
-    }
-
-    async function applyPauseAction(actionId, anchor) {
-      lastActionAnchor = anchor || document.querySelector('.quick-actions');
-      if (!currentDate) {
-        showError('Seleziona prima una data');
-        return;
-      }
-
-      const action = resolveQuickAction(actionId);
-      if (!action) {
-        showError('Quick action non trovata');
-        return;
-      }
-
-      const hours = Number(document.getElementById('pauseHours')?.value || 0);
-      const minutes = Number(document.getElementById('pauseMinutes')?.value || 0);
-      if (hours === 0 && minutes === 0) {
-        showError('La durata della pausa deve essere maggiore di 0');
-        return;
-      }
-
-      const payload = {
-        date: currentDate,
-        activityType: 'pausa',
-        customType: action.label,
-        durationHours: hours,
-        durationMinutes: minutes,
-        notes: action.notes || ''
-      };
-
-      try {
-        const response = await fetch('/api/activities', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          loadActivities();
-          loadMonthCalendar();
-          showSuccess(`Pausa inserita: ${hours}h ${minutes}m`);
-        } else {
-          showError(result.error?.message || 'Errore nel salvataggio');
-        }
-      } catch (error) {
-        showError('Errore nel salvataggio della pausa');
-      }
-    }
-
-    async function createActivityWithTimes(payload) {
-      const response = await fetch('/api/activities', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Errore nel salvataggio');
-      }
-      return result.data;
-    }
-
-    async function applyWorkdaySchedule(anchor) {
-      lastActionAnchor = anchor || document.querySelector('.quick-actions--inline');
-      if (!currentDate) {
-        showError('Seleziona prima una data');
-        return;
-      }
-      if (window.currentActivities && window.currentActivities.length > 0) {
-        showError('Esistono già attività per questa data. Rimuovile prima di applicare l\'orario feriale.');
-        return;
-      }
-
-      const workType = activityTypes.includes('lavoro') ? 'lavoro' : (activityTypes[0] || 'lavoro');
-      try {
-        await createActivityWithTimes({
-          date: currentDate,
-          startTime: '08:30',
-          endTime: '12:30',
-          activityType: workType,
-          notes: 'Orario feriale'
-        });
-
-        await createActivityWithTimes({
-          date: currentDate,
-          startTime: '12:30',
-          endTime: '13:00',
-          activityType: 'pausa',
-          notes: 'Pausa pranzo'
-        });
-
-        await createActivityWithTimes({
-          date: currentDate,
-          startTime: '13:00',
-          endTime: '17:00',
-          activityType: workType,
-          notes: 'Orario feriale'
-        });
-
-        loadActivities();
-        loadMonthCalendar();
-        showSuccess('Orario feriale inserito con successo');
-      } catch (error) {
-        showError(error.message);
       }
     }
 
