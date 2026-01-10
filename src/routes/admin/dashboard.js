@@ -696,7 +696,10 @@ router.post('/api/settings/server/import', async (req, res) => {
 
 router.get('/api/settings/configuration/export', async (req, res) => {
   try {
-    const payload = await settingsService.exportFullConfiguration();
+    const sections = typeof req.query.sections === 'string'
+      ? req.query.sections.split(',').map(section => section.trim()).filter(Boolean)
+      : null;
+    const payload = await settingsService.exportFullConfiguration({ sections });
     const filename = `config_export_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 
     res.setHeader('Content-Type', 'application/json');
@@ -712,7 +715,11 @@ router.get('/api/settings/configuration/export', async (req, res) => {
 
 router.post('/api/settings/configuration/import', async (req, res) => {
   try {
-    const result = await settingsService.importFullConfiguration(req.body);
+    const sections = Array.isArray(req.body?.sections)
+      ? req.body.sections
+      : null;
+    const payload = req.body?.payload || req.body;
+    const result = await settingsService.importFullConfiguration(payload, { sections });
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({

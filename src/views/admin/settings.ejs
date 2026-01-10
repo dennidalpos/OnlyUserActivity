@@ -127,6 +127,36 @@
         <p class="text-muted mb-12">
           Esporta o reimporta utenti, attività, tipi attività, turni, preset contratti, quick action e impostazioni server in un unico file JSON.
         </p>
+        <div class="form-grid mb-12" id="fullConfigSections">
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="settings" checked>
+            Impostazioni server
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activityTypes" checked>
+            Tipi attività
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="shiftTypes" checked>
+            Turni
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="contractPresets" checked>
+            Preset contratti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="quickActions" checked>
+            Quick action
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="users" checked>
+            Utenti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activities" checked>
+            Attività
+          </label>
+        </div>
         <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)">
             ⬇️ Esporta configurazione
@@ -650,6 +680,11 @@
       return Array.from(checkboxes).map(item => item.value);
     }
 
+    function getFullConfigSections() {
+      const checkboxes = document.querySelectorAll('input[name="fullConfigSection"]:checked');
+      return Array.from(checkboxes).map(item => item.value);
+    }
+
     async function exportServerConfiguration(anchor) {
       setLastActionAnchor(anchor);
       try {
@@ -722,7 +757,13 @@
     async function exportConfiguration(anchor) {
       setLastActionAnchor(anchor);
       try {
-        const response = await fetch('/admin/api/settings/configuration/export');
+        const selectedSections = getFullConfigSections();
+        if (selectedSections.length === 0) {
+          showAlert('Seleziona almeno una sezione da esportare', 'danger');
+          return;
+        }
+        const query = new URLSearchParams({ sections: selectedSections.join(',') });
+        const response = await fetch(`/admin/api/settings/configuration/export?${query.toString()}`);
         if (!response.ok) {
           throw new Error('Errore durante l\'export');
         }
@@ -749,6 +790,12 @@
         return;
       }
 
+      const selectedSections = getFullConfigSections();
+      if (selectedSections.length === 0) {
+        showAlert('Seleziona almeno una sezione da importare', 'danger');
+        return;
+      }
+
       if (!confirm('L\'importazione sovrascriverà utenti, attività e impostazioni. Continuare?')) {
         return;
       }
@@ -760,7 +807,7 @@
         const response = await fetch('/admin/api/settings/configuration/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ payload, sections: selectedSections })
         });
         const result = await response.json();
         if (result.success) {

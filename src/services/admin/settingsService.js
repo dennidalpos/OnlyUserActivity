@@ -916,25 +916,37 @@ class SettingsService {
     };
   }
 
-  async exportFullConfiguration() {
-    const settings = await this.getCurrentSettings();
-    const activityTypes = await activityTypesService.getActivityTypes();
-    const shiftTypes = await shiftTypesService.getShiftTypes();
-    const contractPresets = await contractPresetsService.getPresets();
-    const quickActions = await this.getQuickActions();
-    const users = await userStorage.listAll();
-    const activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
-
-    return {
-      generatedAt: new Date().toISOString(),
-      settings,
-      activityTypes,
-      shiftTypes,
-      contractPresets,
-      quickActions,
-      users,
-      activities
+  async exportFullConfiguration(options = {}) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+    const payload = {
+      generatedAt: new Date().toISOString()
     };
+    const settings = await this.getCurrentSettings();
+
+    if (includeSection('settings')) {
+      payload.settings = settings;
+    }
+    if (includeSection('activityTypes')) {
+      payload.activityTypes = await activityTypesService.getActivityTypes();
+    }
+    if (includeSection('shiftTypes')) {
+      payload.shiftTypes = await shiftTypesService.getShiftTypes();
+    }
+    if (includeSection('contractPresets')) {
+      payload.contractPresets = await contractPresetsService.getPresets();
+    }
+    if (includeSection('quickActions')) {
+      payload.quickActions = await this.getQuickActions();
+    }
+    if (includeSection('users')) {
+      payload.users = await userStorage.listAll();
+    }
+    if (includeSection('activities')) {
+      payload.activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
+    }
+
+    return payload;
   }
 
   async exportActivitiesSnapshot(rootPath) {
@@ -1003,36 +1015,42 @@ class SettingsService {
     return snapshot;
   }
 
-  async importFullConfiguration(payload) {
+  async importFullConfiguration(payload, options = {}) {
     if (!payload || typeof payload !== 'object') {
       throw new Error('Payload configurazione non valido');
     }
 
-    if (payload.settings) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+
+    if (includeSection('settings')) {
+      if (!payload.settings) {
+        throw new Error('Configurazione completa priva delle impostazioni server');
+      }
       await this.applySettingsSnapshot(payload.settings);
     }
 
-    if (Array.isArray(payload.activityTypes)) {
+    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
       await activityTypesService.setActivityTypes(payload.activityTypes);
     }
 
-    if (Array.isArray(payload.shiftTypes)) {
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
       await shiftTypesService.setShiftTypes(payload.shiftTypes);
     }
 
-    if (Array.isArray(payload.contractPresets)) {
+    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
       await contractPresetsService.setPresets(payload.contractPresets);
     }
 
-    if (Array.isArray(payload.quickActions)) {
+    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
       await this.setQuickActions(payload.quickActions);
     }
 
-    if (Array.isArray(payload.users)) {
+    if (includeSection('users') && Array.isArray(payload.users)) {
       await this.importUsersSnapshot(payload.users);
     }
 
-    if (Array.isArray(payload.activities)) {
+    if (includeSection('activities') && Array.isArray(payload.activities)) {
       await this.importActivitiesSnapshot(payload.activities, payload.settings?.storage?.rootPath || config.storage.rootPath);
     }
 
