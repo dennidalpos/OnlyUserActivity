@@ -87,46 +87,9 @@
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
       <div class="settings-subsection mt-20">
-        <h4>Import / Export Configurazione Impostazioni</h4>
+        <h4>Import / Export Configurazione</h4>
         <p class="text-muted mb-12">
-          Esporta o reimporta impostazioni server, tipi attività, turni, preset contratti e quick action (escluse utenze e attività).
-        </p>
-        <div class="form-grid mb-12" id="serverConfigSections">
-          <label class="checkbox-inline">
-            <input type="checkbox" name="serverConfigSection" value="settings" checked>
-            Impostazioni server
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" name="serverConfigSection" value="activityTypes" checked>
-            Tipi attività
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" name="serverConfigSection" value="shiftTypes" checked>
-            Turni
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" name="serverConfigSection" value="contractPresets" checked>
-            Preset contratti
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" name="serverConfigSection" value="quickActions" checked>
-            Quick action
-          </label>
-        </div>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-primary" onclick="exportServerConfiguration(this)">
-            ⬇️ Esporta configurazione impostazioni
-          </button>
-          <input type="file" id="serverConfigImportFile" accept=".json" class="file-input">
-          <button type="button" class="btn btn-primary" onclick="importServerConfiguration(this)">
-            ⬆️ Importa configurazione impostazioni
-          </button>
-        </div>
-      </div>
-      <div class="settings-subsection mt-20">
-        <h4>Import / Export Configurazione Completa</h4>
-        <p class="text-muted mb-12">
-          Esporta o reimporta utenti, attività, tipi attività, turni, preset contratti, quick action e impostazioni server in un unico file JSON.
+          Esporta o reimporta una o più sezioni di configurazione, inclusi utenti e attività, in un unico file JSON.
         </p>
         <div class="form-grid mb-12" id="fullConfigSections">
           <label class="checkbox-inline">
@@ -560,83 +523,9 @@
       }, 5000);
     }
 
-    function getServerConfigSections() {
-      const checkboxes = document.querySelectorAll('input[name="serverConfigSection"]:checked');
-      return Array.from(checkboxes).map(item => item.value);
-    }
-
     function getFullConfigSections() {
       const checkboxes = document.querySelectorAll('input[name="fullConfigSection"]:checked');
       return Array.from(checkboxes).map(item => item.value);
-    }
-
-    async function exportServerConfiguration(anchor) {
-      setLastActionAnchor(anchor);
-      try {
-        const selectedSections = getServerConfigSections();
-        if (selectedSections.length === 0) {
-          showAlert('Seleziona almeno una sezione da esportare', 'danger');
-          return;
-        }
-        const query = new URLSearchParams({ sections: selectedSections.join(',') });
-        const response = await fetch(`/admin/api/settings/server/export?${query.toString()}`);
-        if (!response.ok) {
-          throw new Error('Errore durante l\'export');
-        }
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'configurazione-impostazioni.json';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        showAlert('Export configurazione impostazioni completato', 'success');
-      } catch (error) {
-        showAlert('Errore durante l\'export della configurazione impostazioni', 'danger');
-      }
-    }
-
-    async function importServerConfiguration(anchor) {
-      setLastActionAnchor(anchor);
-      const fileInput = document.getElementById('serverConfigImportFile');
-      if (!fileInput?.files?.length) {
-        showAlert('Seleziona un file JSON da importare', 'danger');
-        return;
-      }
-
-      const selectedSections = getServerConfigSections();
-      if (selectedSections.length === 0) {
-        showAlert('Seleziona almeno una sezione da importare', 'danger');
-        return;
-      }
-
-      if (!confirm('L\'importazione sovrascriverà la configurazione impostazioni. Continuare?')) {
-        return;
-      }
-
-      const file = fileInput.files[0];
-      try {
-        const text = await file.text();
-        const payload = JSON.parse(text);
-        const response = await fetch('/admin/api/settings/server/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payload, sections: selectedSections })
-        });
-        const result = await response.json();
-        if (result.success) {
-          showAlert(result.data.message || 'Import configurazione impostazioni completato', 'success');
-          if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
-            restartServer(lastActionAnchor);
-          }
-        } else {
-          showAlert(result.error || 'Errore durante l\'import', 'danger');
-        }
-      } catch (error) {
-        showAlert('File JSON non valido o errore durante l\'import', 'danger');
-      }
     }
 
     async function exportConfiguration(anchor) {

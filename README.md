@@ -10,6 +10,7 @@ Sistema Node.js/Express con dashboard EJS per tracciare le attività giornaliere
 - Esportazione dati attività con report dettagliati e riepilogativi.
 - Gestione dei tipi di attività e preset contratti da UI admin.
 - Quick action per impostare rapidamente la giornata dal calendario utente.
+- Import/Export configurazione selettivo con supporto a utenti e attività.
 
 ## Requisiti
 
@@ -49,6 +50,16 @@ JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ADMIN_SESSION_SECRET=your-admin-session-secret-min-32-chars
 ```
 
+### Default nuovi utenti
+
+```env
+DEFAULT_USER_SHIFT=Feriali
+DEFAULT_USER_CONTRACT_PRESET=full-time-40
+```
+
+- `DEFAULT_USER_SHIFT` applica un turno predefinito al primo accesso (LDAP) o alla creazione utenti locali.
+- `DEFAULT_USER_CONTRACT_PRESET` assegna un preset contratto predefinito ai nuovi utenti.
+
 ### LDAP/Active Directory (opzionale)
 
 ```env
@@ -84,6 +95,25 @@ LOG_AUDIT=false
 - Dashboard utenti: `http://localhost:3001/user/auth/login`
 - Dashboard admin: `http://localhost:3001/admin/auth/login` (default: admin/admin)
 
+## Gestione utenti (admin)
+
+La sezione **Gestione Utenti** (menu topbar) consente di:
+- Visualizzare utenti AD e locali con filtri per tipo e ricerca.
+- Creare utenti locali con turno e preset contratto.
+- Aggiornare profilo, turno e preset contratto.
+- Eliminare utenti locali o resettare la password locale.
+
+Percorso: `http://localhost:3001/admin/users`
+
+## Configurazione turni e predefiniti
+
+In **Configurazione Turni** puoi:
+- Definire tipi di turno e preset contratti.
+- Impostare un turno e un preset contratto predefiniti da applicare al primo accesso degli utenti.
+- Le modifiche ai predefiniti richiedono un riavvio del server.
+
+Percorso: `http://localhost:3001/admin/shifts`
+
 ## Inserimento attività (utente)
 
 - Le attività possono essere inserite con durata (ore/minuti) o con orari espliciti (HH:MM, step 15 minuti).
@@ -94,6 +124,19 @@ LOG_AUDIT=false
 - CSV, JSON o XLSX.
 - Report dettagliato o riepilogativo.
 - Include parametri utente (email, reparto, turno, metadata, timestamp principali) insieme alle attività.
+
+## Import / Export configurazione
+
+Dalla sezione **Configurazione** è possibile esportare o importare un file JSON selezionando le sezioni desiderate:
+- Impostazioni server
+- Tipi attività
+- Turni
+- Preset contratti
+- Quick action
+- Utenti
+- Attività
+
+Le sezioni selezionate vengono sovrascritte durante l'import. Effettua un export di backup prima di procedere.
 
 ## Script utili
 
