@@ -7,6 +7,7 @@ const { hashPassword } = require('../utils/hashUtils');
 const ldapClient = require('../ldap/ldapClient');
 const activityTypesService = require('./activityTypesService');
 const shiftTypesService = require('./shiftTypesService');
+const contractPresetsService = require('./contractPresetsService');
 
 class SettingsService {
   constructor() {
@@ -29,18 +30,18 @@ class SettingsService {
         notes: 'Lavoro feriale'
       },
       {
-        id: 'quick-turno-mattino',
-        label: 'Turno mattino',
+        id: 'quick-lavoro-3turni-mattino',
+        label: 'Lavoro su 3 turni - mattino',
         notes: 'Lavoro su 3 turni - mattino'
       },
       {
-        id: 'quick-turno-pomeriggio',
-        label: 'Turno pomeriggio',
+        id: 'quick-lavoro-3turni-pomeriggio',
+        label: 'Lavoro su 3 turni - pomeriggio',
         notes: 'Lavoro su 3 turni - pomeriggio'
       },
       {
-        id: 'quick-turno-notte',
-        label: 'Turno notte',
+        id: 'quick-lavoro-3turni-notte',
+        label: 'Lavoro su 3 turni - notte',
         notes: 'Lavoro su 3 turni - notte'
       },
       {
@@ -852,23 +853,60 @@ class SettingsService {
     };
   }
 
-  async exportServerConfiguration() {
-    const settings = await this.getCurrentSettings();
-    const quickActions = await this.getQuickActions();
-    return {
-      generatedAt: new Date().toISOString(),
-      settings,
-      quickActions
+  async exportServerConfiguration(options = {}) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+    const payload = {
+      generatedAt: new Date().toISOString()
     };
+
+    if (includeSection('settings')) {
+      payload.settings = await this.getCurrentSettings();
+    }
+    if (includeSection('activityTypes')) {
+      payload.activityTypes = await activityTypesService.getActivityTypes();
+    }
+    if (includeSection('shiftTypes')) {
+      payload.shiftTypes = await shiftTypesService.getShiftTypes();
+    }
+    if (includeSection('contractPresets')) {
+      payload.contractPresets = await contractPresetsService.getPresets();
+    }
+    if (includeSection('quickActions')) {
+      payload.quickActions = await this.getQuickActions();
+    }
+
+    return payload;
   }
 
-  async importServerConfiguration(payload) {
-    if (!payload || typeof payload !== 'object' || !payload.settings) {
+  async importServerConfiguration(payload, options = {}) {
+    if (!payload || typeof payload !== 'object') {
       throw new Error('File configurazione impostazioni non valido');
     }
 
-    await this.applySettingsSnapshot(payload.settings);
-    if (Array.isArray(payload.quickActions)) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+
+    if (includeSection('settings')) {
+      if (!payload.settings) {
+        throw new Error('Configurazione impostazioni priva delle impostazioni server');
+      }
+      await this.applySettingsSnapshot(payload.settings);
+    }
+
+    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
+      await activityTypesService.setActivityTypes(payload.activityTypes);
+    }
+
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
+      await shiftTypesService.setShiftTypes(payload.shiftTypes);
+    }
+
+    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
+      await contractPresetsService.setPresets(payload.contractPresets);
+    }
+
+    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
       await this.setQuickActions(payload.quickActions);
     }
 
@@ -882,6 +920,7 @@ class SettingsService {
     const settings = await this.getCurrentSettings();
     const activityTypes = await activityTypesService.getActivityTypes();
     const shiftTypes = await shiftTypesService.getShiftTypes();
+    const contractPresets = await contractPresetsService.getPresets();
     const quickActions = await this.getQuickActions();
     const users = await userStorage.listAll();
     const activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
@@ -891,6 +930,7 @@ class SettingsService {
       settings,
       activityTypes,
       shiftTypes,
+      contractPresets,
       quickActions,
       users,
       activities
@@ -978,6 +1018,10 @@ class SettingsService {
 
     if (Array.isArray(payload.shiftTypes)) {
       await shiftTypesService.setShiftTypes(payload.shiftTypes);
+    }
+
+    if (Array.isArray(payload.contractPresets)) {
+      await contractPresetsService.setPresets(payload.contractPresets);
     }
 
     if (Array.isArray(payload.quickActions)) {
@@ -1136,9 +1180,11 @@ class SettingsService {
   }
 
   normalizeQuickActions(actions) {
+    const pauseLabels = new Set(['pausa', 'pause']);
     return actions
       .filter(action => action && action.label)
       .filter(action => action.activityType !== 'pausa' && action.isPause !== true)
+      .filter(action => !pauseLabels.has(String(action.label).trim().toLowerCase()))
       .map((action) => {
         const label = String(action.label).trim();
         const activityType = 'altro';

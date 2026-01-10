@@ -648,7 +648,10 @@ router.post('/api/settings/server', async (req, res) => {
 
 router.get('/api/settings/server/export', async (req, res) => {
   try {
-    const payload = await settingsService.exportServerConfiguration();
+    const sections = typeof req.query.sections === 'string'
+      ? req.query.sections.split(',').map(section => section.trim()).filter(Boolean)
+      : null;
+    const payload = await settingsService.exportServerConfiguration({ sections });
     const filename = `config_server_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 
     res.setHeader('Content-Type', 'application/json');
@@ -664,12 +667,16 @@ router.get('/api/settings/server/export', async (req, res) => {
 
 router.post('/api/settings/server/import', async (req, res) => {
   try {
-    const result = await settingsService.importServerConfiguration(req.body);
+    const sections = Array.isArray(req.body?.sections)
+      ? req.body.sections
+      : null;
+    const payload = req.body?.payload || req.body;
+    const result = await settingsService.importServerConfiguration(payload, { sections });
 
     await auditLogger.log(
       'SETTINGS_UPDATE',
       'admin',
-      { type: 'server-import', changes: req.body },
+      { type: 'server-import', changes: payload, sections },
       req.id,
       req.ip,
       req.adminUser.username
