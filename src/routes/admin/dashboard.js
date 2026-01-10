@@ -248,9 +248,31 @@ router.get('/shifts', async (req, res) => {
   try {
     const shiftTypes = await shiftTypesService.getShiftTypes();
     const contractPresets = await contractPresetsService.getPresets();
+    const settings = await settingsService.getCurrentSettings();
 
     res.render('admin/shifts', {
       title: 'Configurazione Turni',
+      shiftTypes,
+      contractPresets,
+      settings
+    });
+  } catch (error) {
+    res.render('errors/error', {
+      title: 'Errore',
+      error: error.message
+    });
+  }
+});
+
+router.get('/users', async (req, res) => {
+  try {
+    const users = await settingsService.listLocalUsers();
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const contractPresets = await contractPresetsService.getPresets();
+
+    res.render('admin/users', {
+      title: 'Gestione Utenti',
+      users,
       shiftTypes,
       contractPresets
     });
@@ -532,7 +554,6 @@ router.get('/settings', async (req, res) => {
   try {
     const settings = await settingsService.getCurrentSettings();
     const activityTypes = await activityTypesService.getActivityTypes();
-    const users = await settingsService.listLocalUsers();
     const shiftTypes = await shiftTypesService.getShiftTypes();
     const projectRoot = process.cwd();
     const defaultHttpsCertPath = path.join(projectRoot, 'certs', 'cert.pem');
@@ -542,7 +563,6 @@ router.get('/settings', async (req, res) => {
       title: 'Configurazione Server',
       settings,
       activityTypes,
-      users,
       shiftTypes,
       projectRoot,
       defaultHttpsCertPath,
@@ -648,7 +668,10 @@ router.post('/api/settings/server', async (req, res) => {
 
 router.get('/api/settings/server/export', async (req, res) => {
   try {
-    const payload = await settingsService.exportServerConfiguration();
+    const sections = typeof req.query.sections === 'string'
+      ? req.query.sections.split(',').map(section => section.trim()).filter(Boolean)
+      : null;
+    const payload = await settingsService.exportServerConfiguration({ sections });
     const filename = `config_server_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 
     res.setHeader('Content-Type', 'application/json');
@@ -664,12 +687,16 @@ router.get('/api/settings/server/export', async (req, res) => {
 
 router.post('/api/settings/server/import', async (req, res) => {
   try {
-    const result = await settingsService.importServerConfiguration(req.body);
+    const sections = Array.isArray(req.body?.sections)
+      ? req.body.sections
+      : null;
+    const payload = req.body?.payload || req.body;
+    const result = await settingsService.importServerConfiguration(payload, { sections });
 
     await auditLogger.log(
       'SETTINGS_UPDATE',
       'admin',
-      { type: 'server-import', changes: req.body },
+      { type: 'server-import', changes: payload, sections },
       req.id,
       req.ip,
       req.adminUser.username
@@ -689,7 +716,10 @@ router.post('/api/settings/server/import', async (req, res) => {
 
 router.get('/api/settings/configuration/export', async (req, res) => {
   try {
-    const payload = await settingsService.exportFullConfiguration();
+    const sections = typeof req.query.sections === 'string'
+      ? req.query.sections.split(',').map(section => section.trim()).filter(Boolean)
+      : null;
+    const payload = await settingsService.exportFullConfiguration({ sections });
     const filename = `config_export_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 
     res.setHeader('Content-Type', 'application/json');
@@ -705,7 +735,11 @@ router.get('/api/settings/configuration/export', async (req, res) => {
 
 router.post('/api/settings/configuration/import', async (req, res) => {
   try {
-    const result = await settingsService.importFullConfiguration(req.body);
+    const sections = Array.isArray(req.body?.sections)
+      ? req.body.sections
+      : null;
+    const payload = req.body?.payload || req.body;
+    const result = await settingsService.importFullConfiguration(payload, { sections });
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({

@@ -7,6 +7,7 @@ const { hashPassword } = require('../utils/hashUtils');
 const ldapClient = require('../ldap/ldapClient');
 const activityTypesService = require('./activityTypesService');
 const shiftTypesService = require('./shiftTypesService');
+const contractPresetsService = require('./contractPresetsService');
 
 class SettingsService {
   constructor() {
@@ -29,18 +30,18 @@ class SettingsService {
         notes: 'Lavoro feriale'
       },
       {
-        id: 'quick-turno-mattino',
-        label: 'Turno mattino',
+        id: 'quick-lavoro-3turni-mattino',
+        label: 'Lavoro su 3 turni - mattino',
         notes: 'Lavoro su 3 turni - mattino'
       },
       {
-        id: 'quick-turno-pomeriggio',
-        label: 'Turno pomeriggio',
+        id: 'quick-lavoro-3turni-pomeriggio',
+        label: 'Lavoro su 3 turni - pomeriggio',
         notes: 'Lavoro su 3 turni - pomeriggio'
       },
       {
-        id: 'quick-turno-notte',
-        label: 'Turno notte',
+        id: 'quick-lavoro-3turni-notte',
+        label: 'Lavoro su 3 turni - notte',
         notes: 'Lavoro su 3 turni - notte'
       },
       {
@@ -136,7 +137,12 @@ class SettingsService {
         host: this.resolveEnvValue(envSettings, 'SERVER_HOST', config.server.host),
         port: this.resolveEnvInt(envSettings, 'SERVER_PORT', config.server.port),
         trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy),
-        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift)
+        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift),
+        defaultUserContractPreset: this.resolveEnvValue(
+          envSettings,
+          'DEFAULT_USER_CONTRACT_PRESET',
+          config.server.defaultUserContractPreset
+        )
       },
       logging: {
         level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
@@ -337,6 +343,21 @@ class SettingsService {
     return matched.name;
   }
 
+  async normalizeDefaultUserContractPreset(defaultUserContractPreset) {
+    const trimmed = typeof defaultUserContractPreset === 'string' ? defaultUserContractPreset.trim() : '';
+    if (!trimmed) {
+      return '';
+    }
+
+    const presets = await contractPresetsService.getPresets();
+    const matched = presets.find(preset => preset.id === trimmed);
+    if (!matched) {
+      throw new Error('Preset contratto predefinito non valido. Seleziona un preset esistente.');
+    }
+
+    return matched.id;
+  }
+
   async updateServerSettings(serverSettings) {
     this.logSettings(' Aggiornamento configurazione server...');
 
@@ -363,6 +384,12 @@ class SettingsService {
     if (serverSettings.hasOwnProperty('defaultUserShift')) {
       const normalizedShift = await this.normalizeDefaultUserShift(serverSettings.defaultUserShift);
       updates.DEFAULT_USER_SHIFT = normalizedShift;
+    }
+    if (serverSettings.hasOwnProperty('defaultUserContractPreset')) {
+      const normalizedContractPreset = await this.normalizeDefaultUserContractPreset(
+        serverSettings.defaultUserContractPreset
+      );
+      updates.DEFAULT_USER_CONTRACT_PRESET = normalizedContractPreset;
     }
 
     await this.updateEnvFile(updates);
@@ -414,6 +441,12 @@ class SettingsService {
     if (server.hasOwnProperty('defaultUserShift')) {
       const normalizedShift = await this.normalizeDefaultUserShift(server.defaultUserShift);
       updates.DEFAULT_USER_SHIFT = normalizedShift;
+    }
+    if (server.hasOwnProperty('defaultUserContractPreset')) {
+      const normalizedContractPreset = await this.normalizeDefaultUserContractPreset(
+        server.defaultUserContractPreset
+      );
+      updates.DEFAULT_USER_CONTRACT_PRESET = normalizedContractPreset;
     }
 
     if (https.hasOwnProperty('enabled')) {
@@ -623,6 +656,7 @@ class SettingsService {
       email: user.email,
       department: user.department,
       shift: user.shift,
+      contractPreset: user.contractPreset,
       userType: user.userType || 'local',
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt
@@ -630,7 +664,15 @@ class SettingsService {
   }
 
   async createLocalUser(userData) {
-    const { username, password, displayName, email, department } = userData;
+    const {
+      username,
+      password,
+      displayName,
+      email,
+      department,
+      shift,
+      contractPreset
+    } = userData;
 
     if (!username || !password) {
       throw new Error('Username e password sono obbligatori');
@@ -642,6 +684,8 @@ class SettingsService {
     }
 
     const passwordHash = await hashPassword(password);
+    const defaultShift = config.server.defaultUserShift || null;
+    const defaultContractPreset = config.server.defaultUserContractPreset || null;
 
     const user = await userStorage.create({
       username,
@@ -649,6 +693,8 @@ class SettingsService {
       displayName: displayName || username,
       email: email || null,
       department: department || null,
+      shift: shift || defaultShift || null,
+      contractPreset: contractPreset || defaultContractPreset || null,
       userType: 'local'
     });
 
@@ -658,6 +704,7 @@ class SettingsService {
       displayName: user.displayName,
       email: user.email,
       department: user.department,
+      contractPreset: user.contractPreset,
       userType: user.userType
     };
   }
@@ -698,6 +745,10 @@ class SettingsService {
       shift: updates.shift
     };
 
+    if (updates.hasOwnProperty('contractPreset')) {
+      allowedUpdates.contractPreset = updates.contractPreset;
+    }
+
     if (user.userType !== 'ad') {
       if (updates.hasOwnProperty('department')) {
         allowedUpdates.department = updates.department;
@@ -719,6 +770,7 @@ class SettingsService {
         username: updatedUser.username,
         displayName: updatedUser.displayName,
         shift: updatedUser.shift,
+        contractPreset: updatedUser.contractPreset,
         department: updatedUser.department,
         email: updatedUser.email
       },
@@ -852,23 +904,60 @@ class SettingsService {
     };
   }
 
-  async exportServerConfiguration() {
-    const settings = await this.getCurrentSettings();
-    const quickActions = await this.getQuickActions();
-    return {
-      generatedAt: new Date().toISOString(),
-      settings,
-      quickActions
+  async exportServerConfiguration(options = {}) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+    const payload = {
+      generatedAt: new Date().toISOString()
     };
+
+    if (includeSection('settings')) {
+      payload.settings = await this.getCurrentSettings();
+    }
+    if (includeSection('activityTypes')) {
+      payload.activityTypes = await activityTypesService.getActivityTypes();
+    }
+    if (includeSection('shiftTypes')) {
+      payload.shiftTypes = await shiftTypesService.getShiftTypes();
+    }
+    if (includeSection('contractPresets')) {
+      payload.contractPresets = await contractPresetsService.getPresets();
+    }
+    if (includeSection('quickActions')) {
+      payload.quickActions = await this.getQuickActions();
+    }
+
+    return payload;
   }
 
-  async importServerConfiguration(payload) {
-    if (!payload || typeof payload !== 'object' || !payload.settings) {
+  async importServerConfiguration(payload, options = {}) {
+    if (!payload || typeof payload !== 'object') {
       throw new Error('File configurazione impostazioni non valido');
     }
 
-    await this.applySettingsSnapshot(payload.settings);
-    if (Array.isArray(payload.quickActions)) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+
+    if (includeSection('settings')) {
+      if (!payload.settings) {
+        throw new Error('Configurazione impostazioni priva delle impostazioni server');
+      }
+      await this.applySettingsSnapshot(payload.settings);
+    }
+
+    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
+      await activityTypesService.setActivityTypes(payload.activityTypes);
+    }
+
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
+      await shiftTypesService.setShiftTypes(payload.shiftTypes);
+    }
+
+    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
+      await contractPresetsService.setPresets(payload.contractPresets);
+    }
+
+    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
       await this.setQuickActions(payload.quickActions);
     }
 
@@ -878,23 +967,37 @@ class SettingsService {
     };
   }
 
-  async exportFullConfiguration() {
-    const settings = await this.getCurrentSettings();
-    const activityTypes = await activityTypesService.getActivityTypes();
-    const shiftTypes = await shiftTypesService.getShiftTypes();
-    const quickActions = await this.getQuickActions();
-    const users = await userStorage.listAll();
-    const activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
-
-    return {
-      generatedAt: new Date().toISOString(),
-      settings,
-      activityTypes,
-      shiftTypes,
-      quickActions,
-      users,
-      activities
+  async exportFullConfiguration(options = {}) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+    const payload = {
+      generatedAt: new Date().toISOString()
     };
+    const settings = await this.getCurrentSettings();
+
+    if (includeSection('settings')) {
+      payload.settings = settings;
+    }
+    if (includeSection('activityTypes')) {
+      payload.activityTypes = await activityTypesService.getActivityTypes();
+    }
+    if (includeSection('shiftTypes')) {
+      payload.shiftTypes = await shiftTypesService.getShiftTypes();
+    }
+    if (includeSection('contractPresets')) {
+      payload.contractPresets = await contractPresetsService.getPresets();
+    }
+    if (includeSection('quickActions')) {
+      payload.quickActions = await this.getQuickActions();
+    }
+    if (includeSection('users')) {
+      payload.users = await userStorage.listAll();
+    }
+    if (includeSection('activities')) {
+      payload.activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
+    }
+
+    return payload;
   }
 
   async exportActivitiesSnapshot(rootPath) {
@@ -963,32 +1066,48 @@ class SettingsService {
     return snapshot;
   }
 
-  async importFullConfiguration(payload) {
+  async importFullConfiguration(payload, options = {}) {
     if (!payload || typeof payload !== 'object') {
       throw new Error('Payload configurazione non valido');
     }
 
-    if (payload.settings) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+
+    if (includeSection('settings')) {
+      if (!payload.settings) {
+        throw new Error('Configurazione completa priva delle impostazioni server');
+      }
       await this.applySettingsSnapshot(payload.settings);
     }
 
-    if (Array.isArray(payload.activityTypes)) {
+    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
       await activityTypesService.setActivityTypes(payload.activityTypes);
     }
 
-    if (Array.isArray(payload.shiftTypes)) {
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
       await shiftTypesService.setShiftTypes(payload.shiftTypes);
     }
 
-    if (Array.isArray(payload.quickActions)) {
+    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
+      await contractPresetsService.setPresets(payload.contractPresets);
+    }
+
+    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
       await this.setQuickActions(payload.quickActions);
     }
 
-    if (Array.isArray(payload.users)) {
+    if (includeSection('users')) {
+      if (!Array.isArray(payload.users)) {
+        throw new Error('Configurazione completa priva della sezione utenti');
+      }
       await this.importUsersSnapshot(payload.users);
     }
 
-    if (Array.isArray(payload.activities)) {
+    if (includeSection('activities')) {
+      if (!Array.isArray(payload.activities)) {
+        throw new Error('Configurazione completa priva della sezione attività');
+      }
       await this.importActivitiesSnapshot(payload.activities, payload.settings?.storage?.rootPath || config.storage.rootPath);
     }
 
@@ -1001,6 +1120,7 @@ class SettingsService {
       SERVER_PORT: settings.server?.port,
       TRUST_PROXY: settings.server?.trustProxy,
       DEFAULT_USER_SHIFT: settings.server?.defaultUserShift,
+      DEFAULT_USER_CONTRACT_PRESET: settings.server?.defaultUserContractPreset,
       LDAP_ENABLED: settings.ldap?.enabled ? 'true' : 'false',
       LDAP_URL: settings.ldap?.url,
       LDAP_BASE_DN: settings.ldap?.baseDN,
@@ -1136,9 +1256,11 @@ class SettingsService {
   }
 
   normalizeQuickActions(actions) {
+    const pauseLabels = new Set(['pausa', 'pause']);
     return actions
       .filter(action => action && action.label)
       .filter(action => action.activityType !== 'pausa' && action.isPause !== true)
+      .filter(action => !pauseLabels.has(String(action.label).trim().toLowerCase()))
       .map((action) => {
         const label = String(action.label).trim();
         const activityType = 'altro';

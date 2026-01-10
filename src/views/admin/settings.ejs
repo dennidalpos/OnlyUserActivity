@@ -17,6 +17,7 @@
         <li><a href="/admin/dashboard">Dashboard</a></li>
         <li><a href="/admin/export">Export</a></li>
         <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
         <li><a href="/admin/quick-actions">Quick Action</a></li>
         <li><a href="/admin/settings" class="active">Configurazione</a></li>
         <li><a href="/admin/auth/logout">Logout</a></li>
@@ -86,25 +87,40 @@
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
       <div class="settings-subsection mt-20">
-        <h4>Import / Export Configurazione Impostazioni</h4>
+        <h4>Import / Export Configurazione</h4>
         <p class="text-muted mb-12">
-          Esporta o reimporta tutte le impostazioni configurate in questa pagina, incluse le quick action (escluse utenze e attività).
+          Esporta o reimporta una o più sezioni di configurazione, inclusi utenti e attività, in un unico file JSON.
         </p>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-primary" onclick="exportServerConfiguration(this)">
-            ⬇️ Esporta configurazione impostazioni
-          </button>
-          <input type="file" id="serverConfigImportFile" accept=".json" class="file-input">
-          <button type="button" class="btn btn-primary" onclick="importServerConfiguration(this)">
-            ⬆️ Importa configurazione impostazioni
-          </button>
+        <div class="form-grid mb-12" id="fullConfigSections">
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="settings" checked>
+            Impostazioni server
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activityTypes" checked>
+            Tipi attività
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="shiftTypes" checked>
+            Turni
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="contractPresets" checked>
+            Preset contratti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="quickActions" checked>
+            Quick action
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="users" checked>
+            Utenti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activities" checked>
+            Attività
+          </label>
         </div>
-      </div>
-      <div class="settings-subsection mt-20">
-        <h4>Import / Export Configurazione Completa</h4>
-        <p class="text-muted mb-12">
-          Esporta o reimporta utenti, attività, quick action e impostazioni server in un unico file JSON.
-        </p>
         <div class="settings-actions">
           <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)">
             ⬇️ Esporta configurazione
@@ -466,122 +482,6 @@
     </div>
 
     <div class="settings-section">
-      <h3>Gestione Utenti Locali</h3>
-      <p>Crea o elimina utenti con autenticazione locale. Gli utenti AD vengono gestiti automaticamente.</p>
-
-      <button onclick="showCreateUserForm(this)" class="btn btn-success mb-16">+ Nuovo Utente Locale</button>
-
-      <div id="createUserForm" class="panel mb-16" style="display: none;">
-        <h4>Crea Nuovo Utente</h4>
-        <form id="userCreateForm">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="newUsername">Username:</label>
-              <input type="text" id="newUsername" required>
-            </div>
-            <div class="form-group">
-              <label for="newPassword">Password:</label>
-              <input type="password" id="newPassword" required>
-            </div>
-            <div class="form-group">
-              <label for="newDisplayName">Nome Completo:</label>
-              <input type="text" id="newDisplayName">
-            </div>
-            <div class="form-group">
-              <label for="newEmail">Email:</label>
-              <input type="text" id="newEmail">
-            </div>
-            <div class="form-group">
-              <label for="newDepartment">Reparto:</label>
-              <input type="text" id="newDepartment">
-            </div>
-          </div>
-          <div class="flex gap-8">
-            <button type="submit" class="btn btn-primary">Crea Utente</button>
-            <button type="button" onclick="hideCreateUserForm(this)" class="btn">Annulla</button>
-          </div>
-        </form>
-      </div>
-
-      <table class="users-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Nome Completo</th>
-            <th>Tipo</th>
-            <th>Reparto</th>
-            <th>Turno</th>
-            <th>Email</th>
-            <th>Ultimo Login</th>
-            <th>Azioni</th>
-          </tr>
-        </thead>
-        <tbody id="usersTableBody">
-          <% users.forEach(user => { %>
-          <tr data-user-key="<%= user.userKey %>">
-            <td><%= user.username %></td>
-            <td>
-              <% if (user.userType === 'ad') { %>
-                <%= user.displayName %>
-              <% } else { %>
-                <input type="text"
-                  id="displayName-<%= user.userKey %>"
-                  value="<%= user.displayName %>"
-                  class="table-input">
-              <% } %>
-            </td>
-            <td>
-              <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %>">
-                <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
-              </span>
-            </td>
-            <td>
-              <% if (user.userType === 'ad') { %>
-                <%= user.department || '-' %>
-              <% } else { %>
-                <input type="text"
-                  id="dept-<%= user.userKey %>"
-                  value="<%= user.department || '' %>"
-                  class="table-input">
-              <% } %>
-            </td>
-            <td>
-              <select
-                id="shift-<%= user.userKey %>"
-                class="table-input">
-                <option value="" <%= !user.shift ? 'selected' : '' %>>- Nessuno -</option>
-                <% shiftTypes.forEach(shiftType => { %>
-                <option value="<%= shiftType.name %>" <%= user.shift === shiftType.name ? 'selected' : '' %>><%= shiftType.name %></option>
-                <% }); %>
-              </select>
-            </td>
-            <td>
-              <% if (user.userType === 'ad') { %>
-                <%= user.email || '-' %>
-              <% } else { %>
-                <input type="email"
-                  id="email-<%= user.userKey %>"
-                  value="<%= user.email || '' %>"
-                  class="table-input">
-              <% } %>
-            </td>
-            <td><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('it-IT') : '-' %></td>
-            <td>
-              <div class="action-buttons">
-                <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm">Imposta</button>
-                <% if (user.userType !== 'ad') { %>
-                <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm">Reset Password</button>
-                <% } %>
-                <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
-              </div>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="settings-section">
       <h3>Reset Password Admin</h3>
       <p>Imposta una nuova password per l'account admin attualmente autenticato.</p>
       <button onclick="resetAdminPassword(this)" class="btn btn-warning">Reset Password Admin</button>
@@ -623,67 +523,21 @@
       }, 5000);
     }
 
-    async function exportServerConfiguration(anchor) {
-      setLastActionAnchor(anchor);
-      try {
-        const response = await fetch('/admin/api/settings/server/export');
-        if (!response.ok) {
-          throw new Error('Errore durante l\'export');
-        }
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'configurazione-impostazioni.json';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        showAlert('Export configurazione impostazioni completato', 'success');
-      } catch (error) {
-        showAlert('Errore durante l\'export della configurazione impostazioni', 'danger');
-      }
-    }
-
-    async function importServerConfiguration(anchor) {
-      setLastActionAnchor(anchor);
-      const fileInput = document.getElementById('serverConfigImportFile');
-      if (!fileInput?.files?.length) {
-        showAlert('Seleziona un file JSON da importare', 'danger');
-        return;
-      }
-
-      if (!confirm('L\'importazione sovrascriverà la configurazione impostazioni. Continuare?')) {
-        return;
-      }
-
-      const file = fileInput.files[0];
-      try {
-        const text = await file.text();
-        const payload = JSON.parse(text);
-        const response = await fetch('/admin/api/settings/server/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        if (result.success) {
-          showAlert(result.data.message || 'Import configurazione impostazioni completato', 'success');
-          if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
-            restartServer(lastActionAnchor);
-          }
-        } else {
-          showAlert(result.error || 'Errore durante l\'import', 'danger');
-        }
-      } catch (error) {
-        showAlert('File JSON non valido o errore durante l\'import', 'danger');
-      }
+    function getFullConfigSections() {
+      const checkboxes = document.querySelectorAll('input[name="fullConfigSection"]:checked');
+      return Array.from(checkboxes).map(item => item.value);
     }
 
     async function exportConfiguration(anchor) {
       setLastActionAnchor(anchor);
       try {
-        const response = await fetch('/admin/api/settings/configuration/export');
+        const selectedSections = getFullConfigSections();
+        if (selectedSections.length === 0) {
+          showAlert('Seleziona almeno una sezione da esportare', 'danger');
+          return;
+        }
+        const query = new URLSearchParams({ sections: selectedSections.join(',') });
+        const response = await fetch(`/admin/api/settings/configuration/export?${query.toString()}`);
         if (!response.ok) {
           throw new Error('Errore durante l\'export');
         }
@@ -710,6 +564,12 @@
         return;
       }
 
+      const selectedSections = getFullConfigSections();
+      if (selectedSections.length === 0) {
+        showAlert('Seleziona almeno una sezione da importare', 'danger');
+        return;
+      }
+
       if (!confirm('L\'importazione sovrascriverà utenti, attività e impostazioni. Continuare?')) {
         return;
       }
@@ -721,7 +581,7 @@
         const response = await fetch('/admin/api/settings/configuration/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ payload, sections: selectedSections })
         });
         const result = await response.json();
         if (result.success) {
@@ -1083,131 +943,6 @@
         }
       } catch (error) {
         showAlert('Errore durante il test HTTPS', 'danger');
-      }
-    }
-
-    function showCreateUserForm(anchor) {
-      setLastActionAnchor(anchor);
-      document.getElementById('createUserForm').style.display = 'block';
-    }
-
-    function hideCreateUserForm(anchor) {
-      setLastActionAnchor(anchor);
-      document.getElementById('createUserForm').style.display = 'none';
-      document.getElementById('userCreateForm').reset();
-    }
-
-    document.getElementById('userCreateForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setLastActionAnchor(e.submitter || document.querySelector('#userCreateForm button[type="submit"]'));
-
-      const data = {
-        username: document.getElementById('newUsername').value,
-        password: document.getElementById('newPassword').value,
-        displayName: document.getElementById('newDisplayName').value,
-        email: document.getElementById('newEmail').value,
-        department: document.getElementById('newDepartment').value
-      };
-
-      try {
-        const response = await fetch('/admin/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('Utente creato con successo', 'success');
-          hideCreateUserForm();
-          location.reload();
-        } else {
-          showAlert(result.error, 'danger');
-        }
-      } catch (error) {
-        showAlert('Errore nella creazione dell\'utente', 'danger');
-      }
-    });
-
-    async function deleteUser(userKey, username, anchor) {
-      setLastActionAnchor(anchor);
-      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`/admin/api/users/${userKey}`, {
-          method: 'DELETE'
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('Utente eliminato con successo', 'success');
-          location.reload();
-        } else {
-          showAlert(result.error, 'danger');
-        }
-      } catch (error) {
-        showAlert('Errore nell\'eliminazione dell\'utente', 'danger');
-      }
-    }
-
-    async function updateUserInfo(userKey, userType, anchor) {
-      setLastActionAnchor(anchor);
-      const shiftValue = document.getElementById(`shift-${userKey}`).value;
-      const updates = {
-        shift: shiftValue || null
-      };
-
-      if (userType !== 'ad') {
-        const displayNameValue = document.getElementById(`displayName-${userKey}`).value;
-        const deptValue = document.getElementById(`dept-${userKey}`).value;
-        const emailValue = document.getElementById(`email-${userKey}`).value;
-        updates.displayName = displayNameValue || null;
-        updates.department = deptValue || null;
-        updates.email = emailValue || null;
-      }
-
-      try {
-        const response = await fetch(`/admin/api/users/${userKey}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates)
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('Informazioni utente aggiornate con successo', 'success');
-        } else {
-          showAlert(result.error, 'danger');
-        }
-      } catch (error) {
-        showAlert('Errore nell\'aggiornamento delle informazioni utente', 'danger');
-      }
-    }
-
-    async function resetUserPassword(userKey, username, anchor) {
-      setLastActionAnchor(anchor);
-      const newPassword = prompt(`Inserisci la nuova password per "${username}":`);
-      if (!newPassword) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`/admin/api/users/${userKey}/reset-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ newPassword })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('Password reimpostata con successo', 'success');
-        } else {
-          showAlert(result.error, 'danger');
-        }
-      } catch (error) {
-        showAlert('Errore nel reset della password', 'danger');
       }
     }
 

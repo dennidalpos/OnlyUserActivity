@@ -87,12 +87,14 @@ class LDAPAuth {
 
       if (!user) {
         const defaultShift = config.server.defaultUserShift || null;
+        const defaultContractPreset = config.server.defaultUserContractPreset || null;
         user = await userStorage.create({
           username: ldapUser.username,
           displayName: ldapUser.displayName,
           email: ldapUser.email,
           department: ldapUser.department,
           shift: defaultShift || null,
+          contractPreset: defaultContractPreset || null,
           userType: 'ad',
           metadata: {
             ldapDN: ldapUser.dn

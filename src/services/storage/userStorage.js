@@ -79,6 +79,7 @@ class UserStorage {
       email: userData.email || null,
       department: userData.department || null,
       shift: userData.shift || null,
+      contractPreset: userData.contractPreset || null,
       userType: userData.userType || 'local',
       createdAt: now,
       lastLoginAt: now,
