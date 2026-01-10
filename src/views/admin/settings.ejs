@@ -68,9 +68,37 @@
             </label>
             <input type="number" id="serverTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
           </div>
+          <div class="form-group">
+            <label for="defaultUserShift">Turno predefinito nuovi utenti
+              <span class="ui-help-icon" data-ui-help="Turno da assegnare automaticamente al primo login degli utenti LDAP.">ⓘ</span>
+            </label>
+            <select id="defaultUserShift">
+              <option value="" <%= !settings.server.defaultUserShift ? 'selected' : '' %>>- Nessuno -</option>
+              <% shiftTypes.forEach(shiftType => { %>
+                <option value="<%= shiftType.name %>" <%= settings.server.defaultUserShift === shiftType.name ? 'selected' : '' %>>
+                  <%= shiftType.name %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
+      <div class="settings-subsection mt-20">
+        <h4>Import / Export Configurazione Impostazioni</h4>
+        <p class="text-muted mb-12">
+          Esporta o reimporta tutte le impostazioni configurate in questa pagina (escluse utenze e attività).
+        </p>
+        <div class="settings-actions">
+          <button type="button" class="btn btn-primary" onclick="exportServerConfiguration(this)">
+            ⬇️ Esporta configurazione impostazioni
+          </button>
+          <input type="file" id="serverConfigImportFile" accept=".json" class="file-input">
+          <button type="button" class="btn btn-primary" onclick="importServerConfiguration(this)">
+            ⬆️ Importa configurazione impostazioni
+          </button>
+        </div>
+      </div>
       <div class="settings-subsection mt-20">
         <h4>Import / Export Configurazione Completa</h4>
         <p class="text-muted mb-12">
@@ -505,8 +533,8 @@
                 <button onclick="updateUserInfo('<%= user.userKey %>', '<%= user.userType %>', this)" class="btn btn-primary btn-sm">Imposta</button>
                 <% if (user.userType !== 'ad') { %>
                 <button onclick="resetUserPassword('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-warning btn-sm">Reset Password</button>
-                <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
                 <% } %>
+                <button onclick="deleteUser('<%= user.userKey %>', '<%= user.username %>', this)" class="btn btn-danger btn-sm">Elimina</button>
               </div>
             </td>
           </tr>
@@ -555,6 +583,63 @@
       setTimeout(() => {
         alert.remove();
       }, 5000);
+    }
+
+    async function exportServerConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const response = await fetch('/admin/api/settings/server/export');
+        if (!response.ok) {
+          throw new Error('Errore durante l\'export');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'configurazione-impostazioni.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        showAlert('Export configurazione impostazioni completato', 'success');
+      } catch (error) {
+        showAlert('Errore durante l\'export della configurazione impostazioni', 'danger');
+      }
+    }
+
+    async function importServerConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      const fileInput = document.getElementById('serverConfigImportFile');
+      if (!fileInput?.files?.length) {
+        showAlert('Seleziona un file JSON da importare', 'danger');
+        return;
+      }
+
+      if (!confirm('L\'importazione sovrascriverà la configurazione impostazioni. Continuare?')) {
+        return;
+      }
+
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        const response = await fetch('/admin/api/settings/server/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message || 'Import configurazione impostazioni completato', 'success');
+          if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error || 'Errore durante l\'import', 'danger');
+        }
+      } catch (error) {
+        showAlert('File JSON non valido o errore durante l\'import', 'danger');
+      }
     }
 
     async function exportConfiguration(anchor) {
@@ -621,7 +706,8 @@
       const data = {
         port: document.getElementById('serverPort').value,
         host: document.getElementById('serverHost').value,
-        trustProxy: document.getElementById('serverTrustProxy').value
+        trustProxy: document.getElementById('serverTrustProxy').value,
+        defaultUserShift: document.getElementById('defaultUserShift').value
       };
 
       try {
@@ -1098,7 +1184,12 @@
 
         const result = await response.json();
         if (result.success) {
-          showAlert('Password admin aggiornata con successo', 'success');
+          showAlert(result.message || 'Password admin aggiornata con successo', 'success');
+          if (result.requiresLogin) {
+            setTimeout(() => {
+              window.location.href = '/admin/auth/login';
+            }, 1000);
+          }
         } else {
           showAlert(result.error, 'danger');
         }

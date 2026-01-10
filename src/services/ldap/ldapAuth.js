@@ -33,7 +33,16 @@ class LDAPAuth {
           config.ldap.requiredGroup
         );
 
+        let hasPrimaryGroup = false;
         if (!isMember) {
+          const primaryGroupName = await ldapClient.resolvePrimaryGroupName(
+            serviceClient,
+            ldapUser.primaryGroupID
+          );
+          hasPrimaryGroup = ldapClient.isGroupNameMatch(primaryGroupName, config.ldap.requiredGroup);
+        }
+
+        if (!isMember && !hasPrimaryGroup) {
           throw new Error(`Utente non appartiene al gruppo ${config.ldap.requiredGroup}`);
         }
       }
@@ -51,17 +60,32 @@ class LDAPAuth {
       let user = await userStorage.findByUsername(username);
 
       if (!user) {
+        const defaultShift = config.server.defaultUserShift || null;
         user = await userStorage.create({
           username: ldapUser.username,
           displayName: ldapUser.displayName,
           email: ldapUser.email,
           department: ldapUser.department,
+          shift: defaultShift || null,
           userType: 'ad',
           metadata: {
             ldapDN: ldapUser.dn
           }
         });
       } else {
+        const updates = {};
+        if (ldapUser.displayName && ldapUser.displayName !== user.displayName) {
+          updates.displayName = ldapUser.displayName;
+        }
+        if ((ldapUser.email || null) !== (user.email || null)) {
+          updates.email = ldapUser.email || null;
+        }
+        if ((ldapUser.department || null) !== (user.department || null)) {
+          updates.department = ldapUser.department || null;
+        }
+        if (Object.keys(updates).length > 0) {
+          user = await userStorage.update(user.userKey, updates);
+        }
         await userStorage.updateLastLogin(user.userKey);
       }
 

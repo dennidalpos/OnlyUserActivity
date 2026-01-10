@@ -6,9 +6,8 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <script src="/js/ui-helper.js"></script>
 </head>
-<body class="login-page" data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+<body class="login-page">
   <div class="login-container">
     <div class="login-box">
       <h1>Activity Tracker</h1>
@@ -21,15 +20,15 @@
       <form method="POST" action="/admin/auth/login">
         <div class="form-group">
           <label for="username">Username</label>
-          <input type="text" id="username" name="username" required autofocus data-ui-help="Inserisci lo username amministrativo per accedere alle impostazioni." data-ui-severity="info">
+          <input type="text" id="username" name="username" required autofocus>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required data-ui-help="Inserisci la password admin per autenticarti." data-ui-severity="info">
+          <input type="password" id="password" name="password" required>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block" data-ui-help="Accedi al pannello amministrativo e alle funzioni di controllo." data-ui-severity="info">Login</button>
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
       </form>
     </div>
   </div>

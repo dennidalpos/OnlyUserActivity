@@ -6,9 +6,8 @@
   <title>Login - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/user.css">
-  <script src="/js/ui-helper.js"></script>
 </head>
-<body class="login-page" data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+<body class="login-page">
   <div class="login-container">
     <div class="login-box">
       <h1>Activity Tracker</h1>
@@ -48,8 +47,8 @@
         <div class="form-group">
           <label for="authMethod">Metodo di accesso</label>
           <select id="authMethod" name="authMethod">
-            <option value="local" selected>Locale</option>
-            <option value="ldap">LDAP</option>
+            <option value="local">Locale</option>
+            <option value="ldap" selected>LDAP</option>
           </select>
         </div>
         <% } %>

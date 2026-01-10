@@ -24,6 +24,17 @@ class AdminAuthService {
           createdAt: new Date().toISOString()
         }]
       });
+      return;
+    }
+
+    const defaultUser = credentials.users.find(user => user.username === config.admin.defaultUsername);
+    if (defaultUser && defaultUser.requirePasswordChange) {
+      const matchesDefault = await this.verifyPassword(config.admin.defaultPassword, defaultUser.passwordHash);
+      if (!matchesDefault) {
+        defaultUser.passwordHash = await this.hashPassword(config.admin.defaultPassword);
+        defaultUser.passwordChangedAt = new Date().toISOString();
+        await this.saveCredentials(credentials);
+      }
     }
   }
 
@@ -60,8 +71,14 @@ class AdminAuthService {
 
     return {
       username: adminUser.username,
-      requirePasswordChange: adminUser.requirePasswordChange
+      requirePasswordChange: adminUser.requirePasswordChange,
+      passwordChangedAt: adminUser.passwordChangedAt
     };
+  }
+
+  async getUser(username) {
+    const credentials = await this.loadCredentials();
+    return credentials.users.find(user => user.username === username) || null;
   }
 
   async changePassword(username, newPassword) {

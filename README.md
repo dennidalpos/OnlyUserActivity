@@ -143,6 +143,41 @@ LDAP_USER_SEARCH_FILTER=(sAMAccountName={{username}})
 LDAP_REQUIRED_GROUP=CN=Domain Users,CN=Users,DC=company,DC=local
 ```
 
+### Troubleshooting Login LDAP
+
+Se i login LDAP falliscono anche quando l'utente risulta membro del gruppo richiesto, controlla:
+
+- che `LDAP_USER_SEARCH_FILTER` restituisca `memberOf` e `primaryGroupID`;
+- che `LDAP_REQUIRED_GROUP` sia un CN o DN coerente con i valori ritornati da `memberOf`;
+- che `LDAP_GROUP_SEARCH_BASE` punti all'OU corretta (o lascialo vuoto per usare `LDAP_BASE_DN`).
+
+#### Prompt per Codex (debug login LDAP)
+
+```text
+Obiettivo: correggere il login LDAP per utenti AD che non risultano membri del gruppo richiesto.
+
+Contesto:
+- La login usa src/services/ldap/ldapAuth.js con controllo memberOf e fallback su primaryGroupID.
+- La risoluzione del gruppo primario è in src/services/ldap/ldapClient.js (resolvePrimaryGroupName, normalizeGroupName, isMemberOfGroup).
+
+Cosa fare:
+1) Strumenta temporaneamente il flusso in ldapAuth/ldapClient con log che mostrino:
+   - ldapUser.memberOf, ldapUser.primaryGroupID
+   - requiredGroup configurato
+   - risultato di resolvePrimaryGroupName e isGroupNameMatch
+2) Verifica se primaryGroupID arriva come array o stringa e se il fallback ricerca:
+   - objectSid del dominio (baseDN)
+   - objectSid del gruppo (domainSid-primaryGroupID)
+   - primaryGroupToken (fallback)
+3) Se requiredGroup è DN, normalizza sempre il confronto sul CN (sia memberOf che primaryGroup).
+4) Gestisci i casi con memberOf vuoto ma primaryGroupID presente; se il gruppo è “Domain Users”, il fallback deve dare true.
+5) Dopo la correzione, rimuovi/attenua i log di debug.
+
+Output atteso:
+- Login LDAP funzionante per utenti con primaryGroupID valido anche se memberOf è vuoto.
+- Nessuna regressione per il controllo memberOf quando presente.
+```
+
 ### Configurazione Avanzata da UI (NUOVO)
 
 L'admin può modificare **tutti i parametri server** direttamente dall'interfaccia web, senza intervenire manualmente sul file `.env`.

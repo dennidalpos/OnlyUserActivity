@@ -6,9 +6,8 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <script src="/js/ui-helper.js"></script>
 </head>
-<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+<body>
   <nav class="navbar">
     <div class="container">
       <h1>Activity Tracker</h1>
@@ -32,14 +31,14 @@
     <div class="export-section">
       <h3>Range Rapido</h3>
       <div class="quick-range-buttons">
-        <button type="button" class="quick-btn" onclick="setRange('today', this)" data-ui-help="Imposta l'intervallo di export alla giornata corrente." data-ui-severity="info">Oggi</button>
-        <button type="button" class="quick-btn" onclick="setRange('yesterday', this)" data-ui-help="Imposta l'intervallo di export alla giornata precedente." data-ui-severity="info">Ieri</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisWeek', this)" data-ui-help="Imposta l'intervallo ai giorni della settimana corrente." data-ui-severity="info">Questa Settimana</button>
-        <button type="button" class="quick-btn" onclick="setRange('lastWeek', this)" data-ui-help="Imposta l'intervallo alla settimana precedente." data-ui-severity="info">Settimana Scorsa</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisMonth', this)" data-ui-help="Imposta l'intervallo al mese corrente." data-ui-severity="info">Questo Mese</button>
-        <button type="button" class="quick-btn" onclick="setRange('lastMonth', this)" data-ui-help="Imposta l'intervallo al mese precedente." data-ui-severity="info">Mese Scorso</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisYear', this)" data-ui-help="Imposta l'intervallo all'anno corrente." data-ui-severity="info">Quest'Anno</button>
-        <button type="button" class="quick-btn" onclick="setRange('all', this)" data-ui-help="Seleziona tutto il periodo disponibile per l'export." data-ui-severity="info">Tutti i Dati</button>
+        <button type="button" class="quick-btn" onclick="setRange('today', this)">Oggi</button>
+        <button type="button" class="quick-btn" onclick="setRange('yesterday', this)">Ieri</button>
+        <button type="button" class="quick-btn" onclick="setRange('thisWeek', this)">Questa Settimana</button>
+        <button type="button" class="quick-btn" onclick="setRange('lastWeek', this)">Settimana Scorsa</button>
+        <button type="button" class="quick-btn" onclick="setRange('thisMonth', this)">Questo Mese</button>
+        <button type="button" class="quick-btn" onclick="setRange('lastMonth', this)">Mese Scorso</button>
+        <button type="button" class="quick-btn" onclick="setRange('thisYear', this)">Quest'Anno</button>
+        <button type="button" class="quick-btn" onclick="setRange('all', this)">Tutti i Dati</button>
       </div>
     </div>
 
@@ -48,25 +47,25 @@
 
       <div class="form-group">
         <label for="fromDate">Data Inizio:</label>
-        <input type="date" id="fromDate" name="fromDate" required data-ui-help="Seleziona la data iniziale dell'export." data-ui-severity="info">
+        <input type="date" id="fromDate" name="fromDate" required>
       </div>
 
       <div class="form-group">
         <label for="toDate">Data Fine:</label>
-        <input type="date" id="toDate" name="toDate" required data-ui-help="Seleziona la data finale dell'export." data-ui-severity="info">
+        <input type="date" id="toDate" name="toDate" required>
       </div>
 
       <div class="form-group">
         <label>Selezione Utenti:</label>
         <div class="user-selection-box">
           <div class="user-selection-header">
-            <input type="checkbox" id="selectAllUsers" checked onchange="toggleAllUsers(this)" data-ui-help="Seleziona o deseleziona tutti gli utenti per l'export." data-ui-severity="info">
+            <input type="checkbox" id="selectAllUsers" checked onchange="toggleAllUsers(this)">
             <label for="selectAllUsers" class="label-inline">Tutti gli utenti (<%= users.length %>)</label>
           </div>
           <div class="user-list" id="userList">
             <% users.forEach(user => { %>
             <label class="user-checkbox">
-              <input type="checkbox" name="userKeys" value="<%= user.userKey %>" onchange="updateSelectAll(this)" data-ui-help="Includi o escludi questo utente dall'export." data-ui-severity="info">
+              <input type="checkbox" name="userKeys" value="<%= user.userKey %>" onchange="updateSelectAll(this)">
               <strong><%= user.username %></strong> - <%= user.displayName %>
               <span class="text-muted text-xs">(<%= user.userType === 'ad' ? 'AD' : 'Locale' %>)</span>
             </label>
@@ -77,7 +76,7 @@
 
       <div class="form-group">
         <label for="exportType">Tipo Export:</label>
-        <select id="exportType" name="exportType" data-ui-help="Scegli se esportare tutte le attività o il riepilogo per utente." data-ui-severity="info">
+        <select id="exportType" name="exportType">
           <option value="detailed">Dettagliato (tutte le attività)</option>
           <option value="summary">Riepilogo (totali per utente)</option>
         </select>
@@ -85,14 +84,14 @@
 
       <div class="form-group">
         <label for="format">Formato:</label>
-        <select id="format" name="format" data-ui-help="Seleziona il formato del file export." data-ui-severity="info">
+        <select id="format" name="format">
           <option value="xlsx">Excel (XLSX)</option>
           <option value="csv">CSV</option>
           <option value="json">JSON</option>
         </select>
       </div>
 
-      <button type="submit" class="btn btn-primary" data-ui-help="Genera e scarica il file con i dati selezionati." data-ui-severity="info">Esporta Dati</button>
+      <button type="submit" class="btn btn-primary">Esporta Dati</button>
     </form>
   </main>
 

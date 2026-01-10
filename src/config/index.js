@@ -6,7 +6,8 @@ const config = {
   server: {
     host: process.env.SERVER_HOST || '0.0.0.0',
     port: parseInt(process.env.SERVER_PORT, 10) || 3001,
-    trustProxy: parseInt(process.env.TRUST_PROXY, 10) || 0
+    trustProxy: parseInt(process.env.TRUST_PROXY, 10) || 0,
+    defaultUserShift: process.env.DEFAULT_USER_SHIFT || ''
   },
 
   https: {

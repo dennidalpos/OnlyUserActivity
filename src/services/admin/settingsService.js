@@ -76,7 +76,8 @@ class SettingsService {
       server: {
         host: this.resolveEnvValue(envSettings, 'SERVER_HOST', config.server.host),
         port: this.resolveEnvInt(envSettings, 'SERVER_PORT', config.server.port),
-        trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy)
+        trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy),
+        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift)
       },
       logging: {
         level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
@@ -254,6 +255,21 @@ class SettingsService {
     };
   }
 
+  async normalizeDefaultUserShift(defaultUserShift) {
+    const trimmed = typeof defaultUserShift === 'string' ? defaultUserShift.trim() : '';
+    if (!trimmed) {
+      return '';
+    }
+
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const matched = shiftTypes.find(shiftType => shiftType.name === trimmed || shiftType.id === trimmed);
+    if (!matched) {
+      throw new Error('Turno predefinito non valido. Seleziona un turno esistente.');
+    }
+
+    return matched.name;
+  }
+
   async updateServerSettings(serverSettings) {
     console.log('[SETTINGS] Aggiornamento configurazione server...');
 
@@ -276,6 +292,10 @@ class SettingsService {
         throw new Error('Trust proxy non valido. Deve essere un numero >= 0.');
       }
       updates.TRUST_PROXY = trustProxy.toString();
+    }
+    if (serverSettings.hasOwnProperty('defaultUserShift')) {
+      const normalizedShift = await this.normalizeDefaultUserShift(serverSettings.defaultUserShift);
+      updates.DEFAULT_USER_SHIFT = normalizedShift;
     }
 
     await this.updateEnvFile(updates);
@@ -323,6 +343,10 @@ class SettingsService {
     const trustProxy = this.parseIntSetting(server.trustProxy, 'Trust proxy', { min: 0, max: 10 });
     if (trustProxy !== null) {
       updates.TRUST_PROXY = trustProxy.toString();
+    }
+    if (server.hasOwnProperty('defaultUserShift')) {
+      const normalizedShift = await this.normalizeDefaultUserShift(server.defaultUserShift);
+      updates.DEFAULT_USER_SHIFT = normalizedShift;
     }
 
     if (https.hasOwnProperty('enabled')) {
@@ -642,15 +666,85 @@ class SettingsService {
     };
   }
 
+  async removeUserActivityData(userKey) {
+    const activitiesPath = path.join(config.storage.rootPath, 'activities', userKey);
+    await fs.rm(activitiesPath, { recursive: true, force: true });
+  }
+
+  async collectAuditLogFiles(dirPath) {
+    let entries = [];
+    try {
+      entries = await fs.readdir(dirPath, { withFileTypes: true });
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return [];
+      }
+      throw error;
+    }
+
+    const files = [];
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...await this.collectAuditLogFiles(fullPath));
+      } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
+        files.push(fullPath);
+      }
+    }
+
+    return files;
+  }
+
+  async removeUserAuditLogs(userKey, username) {
+    const auditRoot = path.join(config.storage.rootPath, 'audit');
+    const auditFiles = await this.collectAuditLogFiles(auditRoot);
+
+    for (const filePath of auditFiles) {
+      let content = '';
+      try {
+        content = await fs.readFile(filePath, 'utf8');
+      } catch (error) {
+        continue;
+      }
+
+      const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length === 0) {
+        continue;
+      }
+
+      const remaining = [];
+      let changed = false;
+
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          if (entry.userKey === userKey || (username && entry.username === username)) {
+            changed = true;
+            continue;
+          }
+          remaining.push(line);
+        } catch (error) {
+          remaining.push(line);
+        }
+      }
+
+      if (!changed) {
+        continue;
+      }
+
+      if (remaining.length === 0) {
+        await fs.unlink(filePath);
+      } else {
+        await fs.writeFile(filePath, remaining.join('\n') + '\n', 'utf8');
+      }
+    }
+  }
+
   async deleteLocalUser(userKey) {
     const user = await userStorage.findByUserKey(userKey);
 
     if (!user) {
       throw new Error('Utente non trovato');
-    }
-
-    if (user.userType === 'ad') {
-      throw new Error('Non è possibile eliminare utenti AD. Gli utenti AD vengono gestiti automaticamente.');
     }
 
     const userPath = path.join(config.storage.rootPath, 'users', `${userKey}.json`);
@@ -659,10 +753,35 @@ class SettingsService {
     const index = await userStorage.loadIndex();
     delete index[user.username.toLowerCase()];
     await userStorage.saveIndex(index);
+    userStorage.invalidateCache(userKey);
+
+    await this.removeUserActivityData(userKey);
+    await this.removeUserAuditLogs(userKey, user.username);
 
     return {
       success: true,
       message: 'Utente eliminato con successo'
+    };
+  }
+
+  async exportServerConfiguration() {
+    const settings = await this.getCurrentSettings();
+    return {
+      generatedAt: new Date().toISOString(),
+      settings
+    };
+  }
+
+  async importServerConfiguration(payload) {
+    if (!payload || typeof payload !== 'object' || !payload.settings) {
+      throw new Error('File configurazione impostazioni non valido');
+    }
+
+    await this.applySettingsSnapshot(payload.settings);
+
+    return {
+      success: true,
+      message: 'Configurazione impostazioni importata con successo'
     };
   }
 
@@ -782,6 +901,7 @@ class SettingsService {
       SERVER_HOST: settings.server?.host,
       SERVER_PORT: settings.server?.port,
       TRUST_PROXY: settings.server?.trustProxy,
+      DEFAULT_USER_SHIFT: settings.server?.defaultUserShift,
       LDAP_ENABLED: settings.ldap?.enabled ? 'true' : 'false',
       LDAP_URL: settings.ldap?.url,
       LDAP_BASE_DN: settings.ldap?.baseDN,

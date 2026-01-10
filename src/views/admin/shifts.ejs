@@ -6,9 +6,8 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <script src="/js/ui-helper.js"></script>
 </head>
-<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+<body>
   <nav class="navbar">
     <div class="container">
       <h1>Activity Tracker</h1>
@@ -58,7 +57,7 @@
       </div>
 
       <div class="mb-20">
-        <button type="button" onclick="showAddShiftModal(this)" class="btn btn-success" data-ui-help="Apre il modulo per creare un nuovo tipo di turno." data-ui-severity="info">
+        <button type="button" onclick="showAddShiftModal(this)" class="btn btn-success">
           ➕ Aggiungi Nuovo Turno
         </button>
       </div>
@@ -96,8 +95,8 @@
             </div>
           </div>
           <div class="shift-type-actions">
-            <button onclick="editShiftType('<%= shiftType.id %>', this)" class="btn btn-primary btn-sm" data-ui-help="Modifica i dettagli del turno selezionato." data-ui-severity="info">Modifica</button>
-            <button onclick="deleteShiftType('<%= shiftType.id %>', this)" class="btn btn-danger btn-sm" data-ui-help="Elimina il turno in modo permanente." data-ui-severity="warn">Elimina</button>
+            <button onclick="editShiftType('<%= shiftType.id %>', this)" class="btn btn-primary btn-sm">Modifica</button>
+            <button onclick="deleteShiftType('<%= shiftType.id %>', this)" class="btn btn-danger btn-sm">Elimina</button>
           </div>
         </div>
         <% }); %>
@@ -155,18 +154,18 @@
         <div class="form-group">
           <label for="shiftId">ID Turno (univoco, no spazi):</label>
           <input type="text" id="shiftId" required pattern="[a-z0-9-_]+"
-                 placeholder="es: turno-mattina" data-ui-help="Inserisci un ID univoco per identificare il turno." data-ui-severity="info">
+                 placeholder="es: turno-mattina">
           <small class="text-muted text-xs">Solo lettere minuscole, numeri, trattini e underscore</small>
         </div>
 
         <div class="form-group">
           <label for="shiftName">Nome Turno:</label>
-          <input type="text" id="shiftName" required placeholder="es: Turno Mattina" data-ui-help="Nome leggibile del turno per gli utenti." data-ui-severity="info">
+          <input type="text" id="shiftName" required placeholder="es: Turno Mattina">
         </div>
 
         <div class="form-group">
           <label for="shiftDescription">Descrizione (opzionale):</label>
-          <textarea id="shiftDescription" placeholder="Descrizione del turno..." data-ui-help="Descrizione facoltativa del turno." data-ui-severity="info"></textarea>
+          <textarea id="shiftDescription" placeholder="Descrizione del turno..."></textarea>
         </div>
 
         <div class="form-group">
@@ -183,12 +182,12 @@
         </div>
 
         <div class="checkbox-group">
-          <input type="checkbox" id="includeWeekends" data-ui-help="Includi sabato e domenica nelle giornate del turno." data-ui-severity="info">
+          <input type="checkbox" id="includeWeekends">
           <label for="includeWeekends">Includi Weekend (Sabato e Domenica)</label>
         </div>
 
         <div class="checkbox-group">
-          <input type="checkbox" id="includeHolidays" data-ui-help="Includi le festività nazionali nel turno." data-ui-severity="info">
+          <input type="checkbox" id="includeHolidays">
           <label for="includeHolidays">Includi Festività</label>
         </div>
 
@@ -218,8 +217,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" onclick="closeShiftModal(this)" class="btn" data-ui-help="Chiude il modulo senza salvare." data-ui-severity="warn">Annulla</button>
-          <button type="submit" class="btn btn-primary" data-ui-help="Salva il turno e aggiorna la lista." data-ui-severity="info">Salva</button>
+          <button type="button" onclick="closeShiftModal(this)" class="btn">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
         </div>
       </form>
     </div>
