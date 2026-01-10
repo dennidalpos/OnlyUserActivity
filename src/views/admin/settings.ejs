@@ -120,6 +120,19 @@
     </div>
 
     <div class="settings-section">
+      <h3>Informazioni Server</h3>
+      <div class="alert alert-info">
+        Visualizza lo stato del server applicativo e dell'ambiente in esecuzione.
+      </div>
+      <div class="settings-actions">
+        <button type="button" class="btn btn-primary" onclick="loadServerInfo(this)">
+          📋 Carica informazioni server
+        </button>
+      </div>
+      <div id="serverInfoContainer" class="server-info-grid"></div>
+    </div>
+
+    <div class="settings-section">
       <h3>Configurazione LDAP/Active Directory</h3>
       <div class="alert alert-info">
         Le modifiche alla configurazione LDAP richiedono il riavvio del server per essere applicate.
@@ -1253,6 +1266,44 @@
         }
       } catch (error) {
         showAlert('Errore nel reset della password admin', 'danger');
+      }
+    }
+
+    async function loadServerInfo(anchor) {
+      setLastActionAnchor(anchor);
+      const container = document.getElementById('serverInfoContainer');
+      container.innerHTML = '<div class="text-muted">Caricamento informazioni...</div>';
+
+      try {
+        const response = await fetch('/admin/api/server/info');
+        const result = await response.json();
+        if (!result.success) {
+          container.innerHTML = '';
+          showAlert(result.error || 'Errore nel caricamento delle informazioni server', 'danger');
+          return;
+        }
+
+        const info = result.data || {};
+        const items = [
+          { label: 'Hostname', value: info.hostname },
+          { label: 'Ambiente', value: info.env },
+          { label: 'Versione Node', value: info.nodeVersion },
+          { label: 'Piattaforma', value: info.platform },
+          { label: 'PID', value: info.pid },
+          { label: 'Uptime', value: info.uptime },
+          { label: 'Memoria', value: info.memoryUsage },
+          { label: 'Avvio server', value: info.startTime }
+        ];
+
+        container.innerHTML = items.map(item => `
+          <div class="server-info-card">
+            <div class="server-info-label">${item.label}</div>
+            <div class="server-info-value">${item.value || '-'}</div>
+          </div>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = '';
+        showAlert('Errore nel caricamento delle informazioni server', 'danger');
       }
     }
 

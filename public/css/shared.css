@@ -1,29 +1,17 @@
-/* ==========================================================================
-   OnlyUserActivity - Shared Design System
-   Modern Dark Theme with consistent typography, spacing, and components
-   ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   CSS Reset & Base
-   -------------------------------------------------------------------------- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* --------------------------------------------------------------------------
-   CSS Variables - Dark Theme
-   -------------------------------------------------------------------------- */
 :root {
-  /* Primary Palette */
-  --primary: #6366f1;
+    --primary: #6366f1;
   --primary-hover: #818cf8;
   --primary-active: #4f46e5;
   --primary-muted: rgba(99, 102, 241, 0.15);
 
-  /* Semantic Colors */
-  --success: #22c55e;
+    --success: #22c55e;
   --success-muted: rgba(34, 197, 94, 0.15);
   --warning: #f59e0b;
   --warning-muted: rgba(245, 158, 11, 0.15);
@@ -32,41 +20,35 @@
   --info: #3b82f6;
   --info-muted: rgba(59, 130, 246, 0.15);
 
-  /* Background Surfaces - Dark */
-  --bg-body: #0f0f11;
+    --bg-body: #0f0f11;
   --bg-surface: #18181b;
   --bg-surface-raised: #1f1f23;
   --bg-surface-overlay: #27272a;
   --bg-input: #18181b;
 
-  /* Text Colors */
-  --text-primary: #fafafa;
+    --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
   --text-placeholder: #52525b;
   --text-inverse: #09090b;
 
-  /* Borders */
-  --border-default: #27272a;
+    --border-default: #27272a;
   --border-subtle: #1f1f23;
   --border-strong: #3f3f46;
   --border-focus: var(--primary);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
   --shadow-focus: 0 0 0 3px var(--primary-muted);
 
-  /* Radius */
-  --radius-sm: 4px;
+    --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-xl: 12px;
   --radius-full: 9999px;
 
-  /* Spacing Scale */
-  --space-1: 4px;
+    --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
@@ -75,38 +57,24 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* Typography Scale */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
 
-  --text-xs: 0.75rem;    /* 12px */
-  --text-sm: 0.8125rem;  /* 13px */
-  --text-base: 0.875rem; /* 14px */
-  --text-md: 0.9375rem;  /* 15px */
-  --text-lg: 1rem;       /* 16px */
-  --text-xl: 1.125rem;   /* 18px */
-  --text-2xl: 1.375rem;  /* 22px */
-  --text-3xl: 1.625rem;  /* 26px */
-
+  --text-xs: 0.75rem;      --text-sm: 0.8125rem;    --text-base: 0.875rem;   --text-md: 0.9375rem;    --text-lg: 1rem;         --text-xl: 1.125rem;     --text-2xl: 1.375rem;    --text-3xl: 1.625rem;  
   --leading-tight: 1.25;
   --leading-normal: 1.5;
   --leading-relaxed: 1.625;
 
-  /* Transitions */
-  --transition-fast: 0.1s ease;
+    --transition-fast: 0.1s ease;
   --transition-base: 0.15s ease;
   --transition-slow: 0.25s ease;
 
-  /* Z-Index Scale */
-  --z-dropdown: 100;
+    --z-dropdown: 100;
   --z-modal-backdrop: 900;
   --z-modal: 1000;
   --z-tooltip: 2000;
 }
 
-/* --------------------------------------------------------------------------
-   Base Typography & Body
-   -------------------------------------------------------------------------- */
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
@@ -122,18 +90,12 @@ body {
   min-height: 100vh;
 }
 
-/* --------------------------------------------------------------------------
-   Container
-   -------------------------------------------------------------------------- */
 .container {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 var(--space-4);
 }
 
-/* --------------------------------------------------------------------------
-   Navbar
-   -------------------------------------------------------------------------- */
 .navbar {
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-default);
@@ -174,9 +136,6 @@ body {
   color: var(--text-primary);
 }
 
-/* --------------------------------------------------------------------------
-   Buttons
-   -------------------------------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -217,7 +176,6 @@ body {
   pointer-events: none;
 }
 
-/* Button Variants */
 .btn-primary {
   background-color: var(--primary);
   border-color: var(--primary);
@@ -277,7 +235,6 @@ body {
   border-color: #dc2626;
 }
 
-/* Button Sizes */
 .btn-sm {
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
@@ -287,9 +244,6 @@ body {
   width: 100%;
 }
 
-/* --------------------------------------------------------------------------
-   Forms
-   -------------------------------------------------------------------------- */
 .form-group {
   margin-bottom: var(--space-4);
 }
@@ -359,9 +313,6 @@ body {
   accent-color: var(--primary);
 }
 
-/* --------------------------------------------------------------------------
-   Alerts
-   -------------------------------------------------------------------------- */
 .alert {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
@@ -395,9 +346,6 @@ body {
   color: #fca5a5;
 }
 
-/* --------------------------------------------------------------------------
-   Cards
-   -------------------------------------------------------------------------- */
 .card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
@@ -405,9 +353,6 @@ body {
   padding: var(--space-4);
 }
 
-/* --------------------------------------------------------------------------
-   Panels
-   -------------------------------------------------------------------------- */
 .panel {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -416,9 +361,6 @@ body {
   margin-bottom: var(--space-4);
 }
 
-/* --------------------------------------------------------------------------
-   Badges
-   -------------------------------------------------------------------------- */
 .badge,
 .mini-badge {
   display: inline-flex;
@@ -468,9 +410,6 @@ body {
   color: #fca5a5;
 }
 
-/* --------------------------------------------------------------------------
-   Text Utilities
-   -------------------------------------------------------------------------- */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -495,9 +434,6 @@ body {
 .font-bold { font-weight: 700; }
 .font-mono { font-family: var(--font-mono); }
 
-/* --------------------------------------------------------------------------
-   Flex Utilities
-   -------------------------------------------------------------------------- */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
 .flex-wrap { flex-wrap: wrap; }
@@ -511,9 +447,6 @@ body {
 .flex-1 { flex: 1; }
 .flex-none { flex: none; }
 
-/* --------------------------------------------------------------------------
-   Gap Utilities
-   -------------------------------------------------------------------------- */
 .gap-1 { gap: var(--space-1); }
 .gap-2 { gap: var(--space-2); }
 .gap-3 { gap: var(--space-3); }
@@ -521,16 +454,12 @@ body {
 .gap-6 { gap: var(--space-6); }
 .gap-8 { gap: var(--space-8); }
 
-/* Legacy gap support */
 .gap-6 { gap: 6px; }
 .gap-8 { gap: 8px; }
 .gap-10 { gap: 10px; }
 .gap-12 { gap: 12px; }
 .gap-16 { gap: 16px; }
 
-/* --------------------------------------------------------------------------
-   Margin Utilities
-   -------------------------------------------------------------------------- */
 .m-0 { margin: 0; }
 .mt-0 { margin-top: 0; }
 .mb-0 { margin-bottom: 0; }
@@ -558,7 +487,6 @@ body {
 .mr-3 { margin-right: var(--space-3); }
 .mr-4 { margin-right: var(--space-4); }
 
-/* Legacy margin support */
 .mt-10 { margin-top: 10px; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
@@ -572,9 +500,6 @@ body {
 .ml-8 { margin-left: 8px; }
 .ml-10 { margin-left: 10px; }
 
-/* --------------------------------------------------------------------------
-   Padding Utilities
-   -------------------------------------------------------------------------- */
 .p-0 { padding: 0; }
 .p-2 { padding: var(--space-2); }
 .p-3 { padding: var(--space-3); }
@@ -589,37 +514,22 @@ body {
 .py-3 { padding-top: var(--space-3); padding-bottom: var(--space-3); }
 .py-4 { padding-top: var(--space-4); padding-bottom: var(--space-4); }
 
-/* --------------------------------------------------------------------------
-   Width/Height Utilities
-   -------------------------------------------------------------------------- */
 .w-full, .w-100 { width: 100%; }
 .h-full { height: 100%; }
 .min-h-screen { min-height: 100vh; }
 
-/* --------------------------------------------------------------------------
-   Cursor Utilities
-   -------------------------------------------------------------------------- */
 .cursor-pointer { cursor: pointer; }
 .cursor-not-allowed { cursor: not-allowed; }
 
-/* --------------------------------------------------------------------------
-   Visibility Utilities
-   -------------------------------------------------------------------------- */
 .hidden { display: none; }
 .invisible { visibility: hidden; }
 
-/* --------------------------------------------------------------------------
-   Label Utilities
-   -------------------------------------------------------------------------- */
 .label-inline {
   margin: 0;
   cursor: pointer;
   font-weight: normal;
 }
 
-/* --------------------------------------------------------------------------
-   Code Elements
-   -------------------------------------------------------------------------- */
 code {
   font-family: var(--font-mono);
   font-size: 0.9em;
@@ -629,9 +539,6 @@ code {
   color: var(--primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   Links
-   -------------------------------------------------------------------------- */
 a {
   color: var(--primary);
   text-decoration: none;
@@ -642,9 +549,6 @@ a:hover {
   color: var(--primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .navbar .container {
     flex-direction: column;

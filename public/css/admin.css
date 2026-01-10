@@ -1,11 +1,4 @@
-/* ==========================================================================
-   OnlyUserActivity - Admin Dashboard Styles
-   Dark theme with compact, modern layout
-   ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Navigation Menu
-   -------------------------------------------------------------------------- */
 .nav-menu {
   display: flex;
   list-style: none;
@@ -33,9 +26,6 @@
   color: var(--primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   Login Page
-   -------------------------------------------------------------------------- */
 .login-page {
   display: flex;
   align-items: center;
@@ -88,9 +78,6 @@
   color: var(--primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   Page Header
-   -------------------------------------------------------------------------- */
 main.container > h2 {
   font-size: var(--text-xl);
   font-weight: 600;
@@ -98,9 +85,6 @@ main.container > h2 {
   margin: var(--space-4) 0 var(--space-5);
 }
 
-/* --------------------------------------------------------------------------
-   Form Row & Grid
-   -------------------------------------------------------------------------- */
 .form-row {
   display: flex;
   gap: var(--space-3);
@@ -114,9 +98,6 @@ main.container > h2 {
   gap: var(--space-4);
 }
 
-/* --------------------------------------------------------------------------
-   Filter Form
-   -------------------------------------------------------------------------- */
 .filter-form {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
@@ -145,9 +126,6 @@ main.container > h2 {
   align-items: flex-end;
 }
 
-/* --------------------------------------------------------------------------
-   Navigation Controls
-   -------------------------------------------------------------------------- */
 .nav-controls {
   display: flex;
   gap: var(--space-3);
@@ -190,7 +168,6 @@ main.container > h2 {
   font-size: var(--text-xs);
 }
 
-/* View Mode Selector */
 .view-mode-selector {
   display: flex;
   gap: var(--space-1);
@@ -221,9 +198,6 @@ main.container > h2 {
   border-color: var(--primary);
 }
 
-/* --------------------------------------------------------------------------
-   Period Indicators
-   -------------------------------------------------------------------------- */
 .period-pill {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -244,9 +218,6 @@ main.container > h2 {
   color: var(--text-muted);
 }
 
-/* --------------------------------------------------------------------------
-   Stats Grid & Cards
-   -------------------------------------------------------------------------- */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -301,7 +272,6 @@ main.container > h2 {
   color: var(--danger);
 }
 
-/* Summary Cards */
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -341,9 +311,6 @@ main.container > h2 {
   border-left: 3px solid var(--danger);
 }
 
-/* --------------------------------------------------------------------------
-   Data Tables
-   -------------------------------------------------------------------------- */
 .data-table {
   width: 100%;
   background-color: var(--bg-surface);
@@ -384,15 +351,11 @@ main.container > h2 {
   background-color: var(--bg-surface-raised);
 }
 
-/* Compact Table */
 .compact-table td,
 .compact-table th {
   padding: var(--space-2) var(--space-3);
 }
 
-/* --------------------------------------------------------------------------
-   Progress Bar
-   -------------------------------------------------------------------------- */
 .progress-bar {
   position: relative;
   width: 100%;
@@ -418,9 +381,6 @@ main.container > h2 {
   color: var(--text-primary);
 }
 
-/* --------------------------------------------------------------------------
-   Status Badges
-   -------------------------------------------------------------------------- */
 .badge-ok {
   background-color: var(--success-muted);
   color: #86efac;
@@ -448,9 +408,6 @@ main.container > h2 {
   border-left: 3px solid var(--danger);
 }
 
-/* --------------------------------------------------------------------------
-   Helper Text & Field Help
-   -------------------------------------------------------------------------- */
 .help-text,
 .field-help {
   font-size: var(--text-xs);
@@ -458,9 +415,6 @@ main.container > h2 {
   margin-top: var(--space-1);
 }
 
-/* --------------------------------------------------------------------------
-   Inline Forms
-   -------------------------------------------------------------------------- */
 .inline-form {
   display: flex;
   gap: var(--space-2);
@@ -473,9 +427,6 @@ main.container > h2 {
   min-width: 150px;
 }
 
-/* --------------------------------------------------------------------------
-   Settings Section
-   -------------------------------------------------------------------------- */
 .settings-container {
   max-width: 1100px;
   margin: 0 auto;
@@ -536,7 +487,6 @@ main.container > h2 {
   color: var(--text-muted);
 }
 
-/* Settings Cards Grid */
 .settings-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -558,15 +508,40 @@ main.container > h2 {
   color: var(--text-primary);
 }
 
+.server-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.server-info-card {
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.server-info-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.server-info-value {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
 .settings-card p {
   margin: var(--space-2) 0 var(--space-3);
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
-/* --------------------------------------------------------------------------
-   Activity Types List
-   -------------------------------------------------------------------------- */
 .activity-types-list {
   display: flex;
   flex-wrap: wrap;
@@ -600,9 +575,6 @@ main.container > h2 {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* --------------------------------------------------------------------------
-   Users Table
-   -------------------------------------------------------------------------- */
 .users-table {
   width: 100%;
   border-collapse: separate;
@@ -659,9 +631,6 @@ main.container > h2 {
   box-shadow: var(--shadow-focus);
 }
 
-/* --------------------------------------------------------------------------
-   Action Buttons
-   -------------------------------------------------------------------------- */
 .action-buttons {
   display: flex;
   gap: var(--space-2);
@@ -674,9 +643,6 @@ main.container > h2 {
   gap: var(--space-2);
 }
 
-/* --------------------------------------------------------------------------
-   Export Section
-   -------------------------------------------------------------------------- */
 .export-section {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -692,7 +658,6 @@ main.container > h2 {
   margin: 0 0 var(--space-3);
 }
 
-/* Quick Range Buttons */
 .quick-range-buttons {
   display: flex;
   gap: var(--space-2);
@@ -724,7 +689,6 @@ main.container > h2 {
   border-color: var(--primary-active);
 }
 
-/* Date Info */
 .date-info {
   background-color: var(--info-muted);
   border-left: 3px solid var(--info);
@@ -735,7 +699,6 @@ main.container > h2 {
   color: #93c5fd;
 }
 
-/* User Selection Box */
 .user-selection-box {
   background-color: var(--bg-surface-raised);
   border: 1px solid var(--border-default);
@@ -790,9 +753,6 @@ main.container > h2 {
   accent-color: var(--primary);
 }
 
-/* --------------------------------------------------------------------------
-   File Input
-   -------------------------------------------------------------------------- */
 .file-input {
   flex: 1;
   min-width: 200px;
@@ -814,9 +774,6 @@ main.container > h2 {
   margin-right: var(--space-2);
 }
 
-/* --------------------------------------------------------------------------
-   Collapsible Summary
-   -------------------------------------------------------------------------- */
 .collapsible-summary {
   cursor: pointer;
   font-weight: 600;
@@ -842,9 +799,6 @@ details[open] .collapsible-summary::before {
   content: '-';
 }
 
-/* --------------------------------------------------------------------------
-   Checkbox Group
-   -------------------------------------------------------------------------- */
 .checkbox-group {
   display: flex;
   align-items: center;
@@ -867,9 +821,6 @@ details[open] .collapsible-summary::before {
   font-size: var(--text-sm);
 }
 
-/* --------------------------------------------------------------------------
-   Shifts Section
-   -------------------------------------------------------------------------- */
 .shifts-container {
   max-width: 1100px;
   margin: 0 auto;
@@ -892,7 +843,6 @@ details[open] .collapsible-summary::before {
   border-bottom: 2px solid var(--primary);
 }
 
-/* Shift Types List */
 .shift-types-list {
   display: grid;
   gap: var(--space-3);
@@ -959,7 +909,6 @@ details[open] .collapsible-summary::before {
   flex-direction: column;
 }
 
-/* Shift Day Tags */
 .shift-day-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1008,7 +957,6 @@ details[open] .collapsible-summary::before {
   color: var(--text-secondary);
 }
 
-/* Contract Presets */
 .contract-presets {
   margin-top: var(--space-5);
 }
@@ -1046,9 +994,6 @@ details[open] .collapsible-summary::before {
   color: var(--text-muted);
 }
 
-/* --------------------------------------------------------------------------
-   Modal
-   -------------------------------------------------------------------------- */
 .modal {
   display: none;
   position: fixed;
@@ -1094,9 +1039,6 @@ details[open] .collapsible-summary::before {
   justify-content: flex-end;
 }
 
-/* --------------------------------------------------------------------------
-   UI Helper Icon (integrated helper system)
-   -------------------------------------------------------------------------- */
 .ui-help-icon {
   display: inline-flex;
   align-items: center;
@@ -1119,9 +1061,6 @@ details[open] .collapsible-summary::before {
   border-color: var(--primary);
 }
 
-/* --------------------------------------------------------------------------
-   Tooltip Styles (moved from JS inline styles)
-   -------------------------------------------------------------------------- */
 .ui-helper-tooltip {
   position: absolute;
   min-width: 200px;
@@ -1188,9 +1127,6 @@ details[open] .collapsible-summary::before {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* --------------------------------------------------------------------------
-   Help Modal Styles (moved from JS inline styles)
-   -------------------------------------------------------------------------- */
 .help-btn {
   position: fixed;
   bottom: var(--space-5);
@@ -1364,9 +1300,6 @@ details[open] .collapsible-summary::before {
   color: #fcd34d;
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;

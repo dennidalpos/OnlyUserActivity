@@ -1,7 +1,3 @@
-/**
- * UIHelper - Tooltip system for contextual help
- * Styles are defined in admin.css (.ui-helper-tooltip, .ui-help-icon)
- */
 class UIHelper {
   constructor({ enabled = true } = {}) {
     this.enabled = enabled;

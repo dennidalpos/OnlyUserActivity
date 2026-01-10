@@ -1,7 +1,12 @@
 const { exec, spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
 
 class ServerService {
+  constructor() {
+    this.startTime = new Date().toISOString();
+  }
+
   async restartServer() {
     return new Promise((resolve, reject) => {
       const isWindows = process.platform === 'win32';
@@ -66,12 +71,31 @@ class ServerService {
 
   getServerInfo() {
     return {
+      hostname: os.hostname(),
+      env: process.env.NODE_ENV || 'development',
       nodeVersion: process.version,
       platform: process.platform,
-      uptime: Math.floor(process.uptime()),
-      memoryUsage: process.memoryUsage(),
-      pid: process.pid
+      uptime: this.formatUptime(process.uptime()),
+      memoryUsage: this.formatMemoryUsage(process.memoryUsage()),
+      pid: process.pid,
+      startTime: this.startTime
     };
+  }
+
+  formatMemoryUsage(usage) {
+    if (!usage) {
+      return '-';
+    }
+    const toMb = (value) => `${(value / 1024 / 1024).toFixed(2)} MB`;
+    return `RSS ${toMb(usage.rss)} | Heap ${toMb(usage.heapUsed)} / ${toMb(usage.heapTotal)} | External ${toMb(usage.external)}`;
+  }
+
+  formatUptime(seconds) {
+    const total = Math.floor(seconds || 0);
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return `${hours}h ${minutes}m ${secs}s`;
   }
 }
 

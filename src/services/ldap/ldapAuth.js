@@ -36,13 +36,11 @@ class LDAPAuth {
           });
         }
 
-        // Check memberOf first
         const isMember = ldapClient.isMemberOfGroup(
           ldapUser.memberOf,
           config.ldap.requiredGroup
         );
 
-        // Always check primary group as well (e.g., "Domain Users" is often only primary group)
         let isPrimaryGroup = false;
         let primaryGroupName = null;
         if (ldapUser.primaryGroupID) {

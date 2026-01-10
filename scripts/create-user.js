@@ -1,13 +1,3 @@
-#!/usr/bin/env node
-
-/**
- * Script per creare utenti locali quando LDAP è disabilitato
- *
- * Uso:
- *   node scripts/create-user.js
- *   node scripts/create-user.js username password "Display Name" email@domain.com Department
- */
-
 const localAuth = require('../src/services/auth/localAuth');
 const readline = require('readline');
 
@@ -71,10 +61,8 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    // Interactive mode
     await interactiveMode();
   } else if (args.length >= 2) {
-    // Command line mode
     const [username, password, displayName, email, department] = args;
     await createUser(username, password, displayName, email, department);
     rl.close();
