@@ -256,10 +256,6 @@ class ExportService {
     return String(value);
   }
 
-  /**
-   * Stream-based export for large datasets (CSV only)
-   * Returns a readable stream instead of buffering all data in memory
-   */
   async createExportStream(userKeys, fromDate, toDate, exportType = 'detailed') {
     if (userKeys.includes('all') || userKeys[0] === 'all') {
       const allUsers = await userStorage.listAll();
@@ -274,7 +270,6 @@ class ExportService {
       ? this.getSummaryFields()
       : this.getDetailedFields();
 
-    // Process users one by one to avoid memory buildup
     (async () => {
       try {
         for (const userKey of userKeys) {

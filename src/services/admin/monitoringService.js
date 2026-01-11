@@ -120,7 +120,6 @@ class MonitoringService {
   }
 
   async calculateUserRangeStats(userKey, fromDate, toDate, shiftType) {
-    // Fetch all activities in one call instead of N calls
     const rangeData = await activityService.getActivitiesRange(userKey, fromDate, toDate);
     const dailySummaries = rangeData.dailySummaries || {};
 
@@ -139,7 +138,6 @@ class MonitoringService {
         continue;
       }
 
-      // Use pre-fetched summary instead of calling getDayActivities
       const daySummary = dailySummaries[current] || {
         totalMinutes: 0,
         requiredMinutes: config.activity.requiredMinutes,

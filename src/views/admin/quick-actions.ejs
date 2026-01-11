@@ -171,10 +171,8 @@
 
     renderQuickActions();
 
-    // Event listeners (sostituiscono onclick inline per CSP)
     document.getElementById('btnResetForm')?.addEventListener('click', resetQuickActionForm);
 
-    // Event delegation per pulsanti generati dinamicamente
     document.getElementById('quickActionsList').addEventListener('click', function(e) {
       const editBtn = e.target.closest('[data-edit-action]');
       const deleteBtn = e.target.closest('[data-delete-action]');

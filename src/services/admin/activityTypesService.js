@@ -18,10 +18,9 @@ class ActivityTypesService {
       'trasferta',
       'altro'
     ];
-    // In-memory cache
     this.cache = null;
     this.cacheTime = 0;
-    this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+    this.cacheTTL = 5 * 60 * 1000;
   }
 
   invalidateCache() {

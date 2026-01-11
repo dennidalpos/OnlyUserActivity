@@ -136,7 +136,6 @@ class UserStorage {
     const index = await this.loadIndex();
     const userKeys = Object.values(index);
 
-    // Parallel fetch instead of sequential
     const userPromises = userKeys.map(userKey => this.findByUserKey(userKey));
     const usersOrNull = await Promise.all(userPromises);
 

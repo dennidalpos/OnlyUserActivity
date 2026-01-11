@@ -20,7 +20,6 @@ class SettingsService {
     }
   }
 
-  // ========== ENV SERVICE DELEGATES ==========
   resolveEnvValue(envSettings, key, fallback) {
     return envService.resolveEnvValue(envSettings, key, fallback);
   }
@@ -45,7 +44,6 @@ class SettingsService {
     return envService.applySettingsSnapshot(settings);
   }
 
-  // ========== SETTINGS UPDATE METHODS ==========
   async normalizeDefaultUserShift(defaultUserShift) {
     const trimmed = typeof defaultUserShift === 'string' ? defaultUserShift.trim() : '';
     if (!trimmed) {
@@ -376,7 +374,6 @@ class SettingsService {
     };
   }
 
-  // ========== TROUBLESHOOT SERVICE DELEGATES ==========
   async testLdapBind(params) {
     return troubleshootService.testLdapBind(params);
   }
@@ -389,7 +386,6 @@ class SettingsService {
     return troubleshootService.testHttpsFiles(certPath, keyPath);
   }
 
-  // ========== USER MANAGEMENT SERVICE DELEGATES ==========
   async listLocalUsers() {
     return userManagementService.listLocalUsers();
   }
@@ -426,7 +422,6 @@ class SettingsService {
     return userManagementService.deleteLocalUser(userKey);
   }
 
-  // ========== CONFIG EXPORT SERVICE DELEGATES ==========
   async exportServerConfiguration(options) {
     return configExportService.exportServerConfiguration(options);
   }
@@ -455,7 +450,6 @@ class SettingsService {
     return configExportService.importActivitiesSnapshot(entries, rootPath);
   }
 
-  // ========== QUICK ACTIONS SERVICE DELEGATES ==========
   async getQuickActions() {
     return quickActionsService.getQuickActions();
   }

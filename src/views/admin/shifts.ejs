@@ -529,7 +529,6 @@
       }
     }
 
-    // Event listeners (sostituiscono onclick/onchange inline per CSP)
     document.getElementById('btnAddShift')?.addEventListener('click', function() {
       showAddShiftModal(this);
     });
@@ -538,21 +537,18 @@
       closeShiftModal(this);
     });
 
-    // Event delegation per checkbox turno predefinito
     document.querySelectorAll('[data-default-shift]').forEach(cb => {
       cb.addEventListener('change', function() {
         setDefaultShift(this.dataset.defaultShift, this);
       });
     });
 
-    // Event delegation per checkbox preset contratto predefinito
     document.querySelectorAll('[data-default-preset]').forEach(cb => {
       cb.addEventListener('change', function() {
         setDefaultContractPreset(this.dataset.defaultPreset, this);
       });
     });
 
-    // Event delegation per pulsanti turni
     document.getElementById('shiftTypesList').addEventListener('click', function(e) {
       const editBtn = e.target.closest('[data-edit-shift]');
       const deleteBtn = e.target.closest('[data-delete-shift]');
@@ -564,7 +560,6 @@
       }
     });
 
-    // Event delegation per pulsanti preset contratti
     document.getElementById('contractPresetList').addEventListener('click', function(e) {
       const deleteBtn = e.target.closest('[data-delete-preset]');
       if (deleteBtn) {

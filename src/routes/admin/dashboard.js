@@ -201,7 +201,6 @@ router.post('/api/export', async (req, res) => {
     const ext = format === 'xlsx' ? 'xlsx' : format === 'json' ? 'json' : 'csv';
     const filename = `export_${rangeType || 'custom'}_${fromDate}_${toDate}.${ext}`;
 
-    // Use streaming for CSV exports to handle large datasets efficiently
     if (format === 'csv' || !format) {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -222,7 +221,6 @@ router.post('/api/export', async (req, res) => {
       return;
     }
 
-    // Non-streaming for xlsx and json (smaller datasets or need full data)
     const result = await exportService.exportActivities(
       finalUserKeys,
       fromDate,
