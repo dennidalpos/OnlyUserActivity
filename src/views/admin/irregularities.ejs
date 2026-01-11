@@ -38,10 +38,12 @@
       }
     %>
 
-    <div class="panel">
-      <p><strong>Periodo:</strong> dal <%= fromDate %> al <%= toDate %></p>
-      <p><strong>Turno:</strong> <%= shiftType ? shiftType.name : 'Nessun turno assegnato' %></p>
-    </div>
+    <dl class="panel info-grid">
+      <dt>Periodo:</dt>
+      <dd>dal <%= fromDate %> al <%= toDate %></dd>
+      <dt>Turno:</dt>
+      <dd><%= shiftType ? shiftType.name : 'Nessun turno assegnato' %></dd>
+    </dl>
 
     <% if (irregularities.length === 0) { %>
       <p class="text-muted mt-4">Nessuna irregolarità rilevata nel periodo selezionato.</p>

@@ -251,14 +251,13 @@
 }
 
 .form-row {
-  display: flex;
+  display: grid;
   gap: var(--space-3);
-  flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-bottom: var(--space-3);
 }
 
 .form-row .form-group {
-  flex: 1;
   min-width: 120px;
   margin-bottom: 0;
 }
@@ -795,7 +794,7 @@
   }
 
   .form-row {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .activity-info {
