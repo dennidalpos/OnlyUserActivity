@@ -220,19 +220,16 @@
     window.addEventListener('load', function() {
       setRange('thisMonth');
 
-      // Event listeners per pulsanti range (sostituiscono onclick inline per CSP)
       document.querySelectorAll('[data-range]').forEach(btn => {
         btn.addEventListener('click', function() {
           setRange(this.dataset.range, this);
         });
       });
 
-      // Event listener per checkbox selectAll
       document.getElementById('selectAllUsers')?.addEventListener('change', function() {
         toggleAllUsers(this);
       });
 
-      // Event listeners per checkbox utenti
       document.querySelectorAll('.user-key-checkbox').forEach(cb => {
         cb.addEventListener('change', function() {
           updateSelectAll(this);

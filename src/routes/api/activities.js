@@ -14,7 +14,6 @@ const { findShiftType } = require('../../services/utils/shiftUtils');
 
 router.use(authenticateToken);
 
-// Batch endpoint to load all initial data in one request
 router.get('/init', async (req, res, next) => {
   try {
     const date = req.query.date;
@@ -32,7 +31,6 @@ router.get('/init', async (req, res, next) => {
     const shiftTypes = await shiftTypesService.getShiftTypes();
     const shiftType = findShiftType(shiftTypes, user?.shift);
 
-    // Fetch all data in parallel
     const [types, quickActions, dayData, monthData, irregularities] = await Promise.all([
       getActivityTypes(),
       settingsService.getQuickActions(),

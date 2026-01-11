@@ -554,41 +554,57 @@
         const text = await file.text();
         const config = JSON.parse(text);
 
-        // Map of JSON keys to checkbox values
-        const sectionMap = {
-          settings: 'settings',
-          logging: 'logging',
-          ldap: 'ldap',
-          https: 'https',
-          advanced: 'advanced',
-          activityTypes: 'activityTypes',
-          shiftTypes: 'shiftTypes',
-          contractPresets: 'contractPresets',
-          quickActions: 'quickActions',
-          users: 'users',
-          activities: 'activities'
-        };
-
-        // First, uncheck all checkboxes
         const allCheckboxes = document.querySelectorAll('input[name="fullConfigSection"]');
         allCheckboxes.forEach(cb => {
           cb.checked = false;
         });
 
-        // Then, check only the ones present in the config file
-        let detectedSections = [];
-        Object.keys(sectionMap).forEach(key => {
-          if (config[key] !== undefined) {
-            const checkbox = document.querySelector(`input[name="fullConfigSection"][value="${sectionMap[key]}"]`);
-            if (checkbox) {
-              checkbox.checked = true;
-              detectedSections.push(sectionMap[key]);
-            }
+        const detectedSections = new Set();
+        const settings = config.settings || {};
+        if (settings.server) {
+          detectedSections.add('settings');
+        }
+        if (settings.logging) {
+          detectedSections.add('logging');
+        }
+        if (settings.ldap) {
+          detectedSections.add('ldap');
+        }
+        if (settings.https) {
+          detectedSections.add('https');
+        }
+        if (settings.jwt || settings.storage || settings.admin || settings.security || settings.activity) {
+          detectedSections.add('advanced');
+        }
+        if (config.activityTypes !== undefined) {
+          detectedSections.add('activityTypes');
+        }
+        if (config.shiftTypes !== undefined) {
+          detectedSections.add('shiftTypes');
+        }
+        if (config.contractPresets !== undefined) {
+          detectedSections.add('contractPresets');
+        }
+        if (config.quickActions !== undefined) {
+          detectedSections.add('quickActions');
+        }
+        if (config.users !== undefined) {
+          detectedSections.add('users');
+        }
+        if (config.activities !== undefined) {
+          detectedSections.add('activities');
+        }
+
+        const detectedList = Array.from(detectedSections);
+        detectedList.forEach(section => {
+          const checkbox = document.querySelector(`input[name="fullConfigSection"][value="${section}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
           }
         });
 
-        if (detectedSections.length > 0) {
-          showAlert(`Rilevate ${detectedSections.length} sezioni nel file: ${detectedSections.join(', ')}`, 'info');
+        if (detectedList.length > 0) {
+          showAlert(`Rilevate ${detectedList.length} sezioni nel file: ${detectedList.join(', ')}`, 'info');
         } else {
           showAlert('Nessuna sezione riconosciuta nel file JSON', 'danger');
         }
@@ -1120,7 +1136,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadServerInfo();
 
-      // Event listeners per pulsanti (sostituiscono onclick inline per CSP)
       document.getElementById('btnRestartServer')?.addEventListener('click', function() {
         confirmRestartServer(this);
       });
@@ -1133,7 +1148,6 @@
         importConfiguration(this);
       });
 
-      // Auto-detect sections when a config file is selected
       document.getElementById('configImportFile')?.addEventListener('change', function() {
         detectConfigSections(this);
       });
@@ -1158,14 +1172,12 @@
         resetAdminPassword(this);
       });
 
-      // Pulsanti browse HTTPS
       document.querySelectorAll('[data-browse-target]').forEach(btn => {
         btn.addEventListener('click', function() {
           browseHttpsFile(this.dataset.browseTarget, this);
         });
       });
 
-      // Pulsanti rimozione categorie attività
       document.querySelectorAll('[data-remove-type]').forEach(btn => {
         btn.addEventListener('click', function() {
           removeActivityType(this.dataset.removeType, this);

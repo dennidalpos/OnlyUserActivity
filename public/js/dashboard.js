@@ -1,6 +1,5 @@
 'use strict';
 
-// Dashboard state
 let currentDate = '';
 let editingActivityId = null;
 let activityTypes = [];
@@ -11,7 +10,6 @@ let selectedCalendarDate = '';
 let currentActivitiesDate = '';
 let lastActionAnchor = null;
 
-// Token is set from the page via initDashboard()
 let token = '';
 
 function initDashboard(config) {
@@ -31,7 +29,6 @@ function initDashboard(config) {
 
   document.getElementById('activityType').addEventListener('change', updateCustomTypeVisibility);
 
-  // Event listeners (sostituiscono onclick inline per CSP)
   document.getElementById('btnLoadActivities')?.addEventListener('click', function() {
     loadActivities(this);
   });
@@ -191,7 +188,6 @@ function setToday(anchor) {
   loadActivities();
 }
 
-// Debounce utility
 function debounce(func, wait) {
   let timeout;
   return function() {
@@ -204,7 +200,6 @@ function debounce(func, wait) {
   };
 }
 
-// Debounced version for date picker changes
 const debouncedLoadActivities = debounce(function() {
   loadActivities();
 }, 300);
@@ -855,7 +850,6 @@ async function applyQuickDay(actionId, anchor) {
   }
 }
 
-// Export for global access
 window.initDashboard = initDashboard;
 window.setToday = setToday;
 window.loadActivities = loadActivities;

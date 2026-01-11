@@ -7,7 +7,7 @@ class ShiftTypesService {
     this.shiftTypesPath = path.join(config.storage.rootPath, 'shift-types.json');
     this.cache = null;
     this.cacheTime = 0;
-    this.cacheTTL = 5 * 60 * 1000; // 5 minuti
+    this.cacheTTL = 5 * 60 * 1000;
   }
 
   invalidateCache() {

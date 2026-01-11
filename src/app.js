@@ -31,7 +31,6 @@ app.set('trust proxy', config.server.trustProxy);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Generate nonce for CSP
 app.use((req, res, next) => {
   res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
   next();

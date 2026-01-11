@@ -155,7 +155,6 @@ class ActivityService {
       }
     }
 
-    // Fetch existing activities once for both overlap check and hour limit validation
     const existingActivities = await activityStorage.findByDate(userKey, date);
 
     if (updatePayload.startTime || updatePayload.endTime) {

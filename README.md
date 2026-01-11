@@ -1,16 +1,30 @@
 # Activity Tracker
 
-Sistema Node.js/Express con dashboard EJS per tracciare le attività giornaliere, gestire turni e configurazioni amministrative, con esportazione dati in CSV/JSON/XLSX.
+Sistema Node.js/Express con dashboard EJS per tracciare attività giornaliere, gestire turni e configurazioni amministrative, con esportazione dati in CSV/JSON/XLSX.
 
-## Funzionalità principali
+## Panoramica
 
-- Autenticazione utenti con LDAP/Active Directory o credenziali locali.
-- Dashboard utente per inserimento attività, riepiloghi e calendario mensile.
-- Dashboard admin per monitoraggio, gestione utenti, turni, impostazioni e logging.
-- Esportazione dati attività con report dettagliati e riepilogativi.
-- Gestione dei tipi di attività e preset contratti da UI admin.
-- Quick action per impostare rapidamente la giornata dal calendario utente.
-- Import/Export configurazione selettivo con supporto a utenti e attività.
+L'applicazione è pensata per team che registrano attività quotidiane e per amministratori che monitorano avanzamento, compliance e reportistica. Sono previste due aree principali:
+
+- **Dashboard utente**: inserimento attività, gestione del calendario mensile, quick action e riepiloghi.
+- **Dashboard admin**: monitoraggio giornaliero, gestione utenti, turni, impostazioni avanzate e logging.
+
+## Architettura e stack
+
+- **Backend**: Express con middleware per sicurezza (helmet), rate limiting e logging.
+- **View layer**: EJS con script client-side in `public/js`.
+- **Storage**: file JSON in `data/` (attività, utenti, configurazioni).
+- **Auth**: LDAP/Active Directory opzionale, più credenziali locali.
+
+## Struttura del progetto
+
+- `src/app.js`: bootstrap Express, middleware, route principali.
+- `src/routes/`: endpoint API e pagine admin/user.
+- `src/services/`: logica di business (attività, utenti, export, logging, settings).
+- `src/views/`: template EJS per dashboard admin e user.
+- `public/`: asset statici CSS/JS.
+- `data/`: archivio JSON persistente (deve essere scrivibile).
+- `scripts/`: utility per operazioni manuali.
 
 ## Requisiti
 
@@ -26,8 +40,15 @@ npm install
 
 ## Avvio
 
+### Modalità sviluppo
+
 ```bash
 npm run dev
+```
+
+### Modalità produzione
+
+```bash
 npm start
 ```
 
@@ -76,6 +97,18 @@ Note LDAP:
 - `LDAP_REQUIRED_GROUP` può essere nome semplice o DN completo.
 - È supportato il primary group (es. "Domain Users").
 
+### HTTPS
+
+Per abilitare HTTPS configurare:
+
+```env
+HTTPS_ENABLED=true
+HTTPS_CERT_PATH=/path/to/cert.pem
+HTTPS_KEY_PATH=/path/to/key.pem
+```
+
+La dashboard admin fornisce pulsanti di verifica file e test HTTPS nelle impostazioni avanzate.
+
 ### Logging
 
 ```env
@@ -90,44 +123,38 @@ LOG_ERRORS=false
 LOG_AUDIT=false
 ```
 
+Abilitare categorie specifiche permette di osservare eventi mirati senza incrementare troppo i log.
+
 ## Accesso
 
 - Dashboard utenti: `http://localhost:3001/user/auth/login`
 - Dashboard admin: `http://localhost:3001/admin/auth/login` (default: admin/admin)
 
-## Gestione utenti (admin)
+## Funzionalità principali
 
-La sezione **Gestione Utenti** (menu topbar) consente di:
-- Visualizzare utenti AD e locali con filtri per tipo e ricerca.
-- Creare utenti locali con turno e preset contratto.
-- Aggiornare profilo, turno e preset contratto.
-- Eliminare utenti locali o resettare la password locale.
+### Gestione attività (utente)
 
-Percorso: `http://localhost:3001/admin/users`
+- Inserimento attività con durata (ore/minuti) o intervalli (HH:MM, step 15 minuti).
+- Tipo attività `altro` con specifica custom.
+- Calendario mensile con indicatori di completamento.
 
-## Configurazione turni e predefiniti
+### Monitoraggio e export (admin)
 
-In **Configurazione Turni** puoi:
-- Definire tipi di turno e preset contratti.
-- Impostare un turno e un preset contratto predefiniti da applicare al primo accesso degli utenti.
-- Le modifiche ai predefiniti richiedono un riavvio del server.
+- Stato giornaliero utenti e aggregati di periodo.
+- Export CSV/JSON/XLSX con report dettagliati o riepilogativi.
+- Parametri esportati: email, reparto, turno, metadata, timestamp principali, attività.
 
-Percorso: `http://localhost:3001/admin/shifts`
+### Gestione utenti e turni (admin)
 
-## Inserimento attività (utente)
+- Visualizzazione utenti AD e locali con filtri e ricerca.
+- Creazione utenti locali con turno e preset contratto.
+- Reset password e aggiornamenti profilo.
+- Gestione turni, preset contratti e predefiniti di onboarding.
 
-- Le attività possono essere inserite con durata (ore/minuti) o con orari espliciti (HH:MM, step 15 minuti).
-- Il tipo attività `altro` richiede la specifica del tipo personalizzato.
-
-## Export dati
-
-- CSV, JSON o XLSX.
-- Report dettagliato o riepilogativo.
-- Include parametri utente (email, reparto, turno, metadata, timestamp principali) insieme alle attività.
-
-## Import / Export configurazione
+### Import/Export configurazione (admin)
 
 Dalla sezione **Configurazione** è possibile esportare o importare un file JSON selezionando le sezioni desiderate:
+
 - Impostazioni server
 - Tipi attività
 - Turni
@@ -136,7 +163,7 @@ Dalla sezione **Configurazione** è possibile esportare o importare un file JSON
 - Utenti
 - Attività
 
-Le sezioni selezionate vengono sovrascritte durante l'import. Effettua un export di backup prima di procedere.
+Le sezioni selezionate vengono sovrascritte durante l'import. Effettuare un export di backup prima di procedere.
 
 ## Script utili
 
@@ -145,3 +172,21 @@ node scripts/create-user.js
 node scripts/seed-test-users.js
 node scripts/restart-server.js
 ```
+
+## Dati e storage
+
+I dati sono persistiti in `data/` come file JSON. Assicurarsi che la directory sia scrivibile dal processo Node.js. Le operazioni di import/export e i backup di configurazione si appoggiano alla stessa area.
+
+## Troubleshooting rapido
+
+- **Login admin**: verificare `ADMIN_SESSION_SECRET` e credenziali locali.
+- **LDAP**: controllare URL, Base DN e Bind DN, e usare `ldaps://` per connessioni sicure.
+- **HTTPS**: verificare che i path di certificato e chiave siano accessibili dal server.
+- **Export**: per dataset grandi preferire CSV con streaming.
+
+## Sicurezza e raccomandazioni
+
+- Impostare segreti lunghi e non riutilizzati (`JWT_SECRET`, `ADMIN_SESSION_SECRET`).
+- Usare HTTPS in ambienti produttivi.
+- Limitare l'accesso alla dashboard admin a reti fidate o tramite reverse proxy.
+
