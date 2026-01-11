@@ -155,8 +155,10 @@ class ActivityService {
       }
     }
 
+    // Fetch existing activities once for both overlap check and hour limit validation
+    const existingActivities = await activityStorage.findByDate(userKey, date);
+
     if (updatePayload.startTime || updatePayload.endTime) {
-      const existingActivities = await activityStorage.findByDate(userKey, date);
       const overlapCheck = checkTimeOverlap(merged, existingActivities, activityId);
 
       if (overlapCheck.hasOverlap) {
@@ -169,7 +171,6 @@ class ActivityService {
       }
     }
 
-    const existingActivities = await activityStorage.findByDate(userKey, date);
     if (merged.activityType !== 'pausa') {
       const existingMinutes = existingActivities.reduce((sum, activity) => {
         if (activity.id === activityId || activity.activityType === 'pausa') {

@@ -14,9 +14,59 @@ const { findShiftType } = require('../../services/utils/shiftUtils');
 
 router.use(authenticateToken);
 
+// Batch endpoint to load all initial data in one request
+router.get('/init', async (req, res, next) => {
+  try {
+    const date = req.query.date;
+    if (!date) {
+      throw new AppError('Query parameter "date" richiesto', 400, 'MISSING_DATE');
+    }
+
+    const dateValidation = validateDateFormat(date);
+    if (!dateValidation.valid) {
+      throw new AppError(dateValidation.error, 400, 'INVALID_DATE');
+    }
+
+    const { year, month } = extractYearMonth(date);
+    const user = await userStorage.findByUserKey(req.user.userKey);
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const shiftType = findShiftType(shiftTypes, user?.shift);
+
+    // Fetch all data in parallel
+    const [types, quickActions, dayData, monthData, irregularities] = await Promise.all([
+      getActivityTypes(),
+      settingsService.getQuickActions(),
+      activityService.getDayActivities(req.user.userKey, date),
+      activityService.getMonthCalendar(req.user.userKey, year, month, shiftType),
+      activityService.getIrregularDaysOutsideMonth(req.user.userKey, year, month, shiftType)
+    ]);
+
+    res.set('Cache-Control', 'private, max-age=30');
+    res.json({
+      success: true,
+      data: {
+        types,
+        quickActions,
+        day: dayData,
+        month: {
+          year: monthData.year,
+          month: monthData.month,
+          requiredMinutes: monthData.requiredMinutes,
+          days: monthData.days
+        },
+        shift: shiftType,
+        irregularities
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/quick-actions', async (req, res, next) => {
   try {
     const actions = await settingsService.getQuickActions();
+    res.set('Cache-Control', 'private, max-age=300');
     res.json({
       success: true,
       data: actions
@@ -29,6 +79,7 @@ router.get('/quick-actions', async (req, res, next) => {
 router.get('/types', async (req, res, next) => {
   try {
     const types = await getActivityTypes();
+    res.set('Cache-Control', 'private, max-age=300');
     res.json({
       success: true,
       data: types

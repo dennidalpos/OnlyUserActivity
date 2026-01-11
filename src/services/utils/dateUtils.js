@@ -26,13 +26,6 @@ function getMonthRange(year, month) {
   return { firstDay, lastDay };
 }
 
-function daysBetween(date1, date2) {
-  const d1 = parseDate(date1);
-  const d2 = parseDate(date2);
-  const diffTime = Math.abs(d2 - d1);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
-
 function isFutureDate(dateString) {
   const date = parseDate(dateString);
   const today = new Date();
@@ -48,11 +41,9 @@ function addDays(dateString, days) {
 
 module.exports = {
   getCurrentDate,
-  parseDate,
   formatDate,
   extractYearMonth,
   getMonthRange,
-  daysBetween,
   isFutureDate,
   addDays
 };

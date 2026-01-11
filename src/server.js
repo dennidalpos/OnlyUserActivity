@@ -1,24 +1,12 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
-const path = require('path');
 const app = require('./app');
 const config = require('./config');
-const pino = require('pino');
-
-function createLogDestination() {
-  if (!config.logging.toFile) {
-    return undefined;
-  }
-  const logDir = path.dirname(config.logging.filePath);
-  fs.mkdirSync(logDir, { recursive: true });
-  return pino.destination({ dest: config.logging.filePath, sync: false });
-}
+const { createLogDestination, createLogger } = require('./services/utils/logUtils');
 
 const logDestination = createLogDestination();
-const logger = pino({
-  level: config.logging.level
-}, logDestination);
+const logger = createLogger(logDestination);
 
 let server;
 

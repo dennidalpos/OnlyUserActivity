@@ -39,7 +39,7 @@
         <input type="text" id="quickActionLabel" placeholder="Etichetta (es: Smart working)" required>
         <input type="text" id="quickActionNotes" placeholder="Note (opzionale)">
         <button type="submit" class="btn btn-primary">Salva</button>
-        <button type="button" class="btn" onclick="resetQuickActionForm()">Annulla</button>
+        <button type="button" class="btn" id="btnResetForm">Annulla</button>
       </form>
 
       <div id="quickActionsList" class="quick-actions-list"></div>
@@ -47,7 +47,7 @@
 
   </main>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     let quickActions = <%- JSON.stringify(quickActions) %>;
     let lastActionAnchor = null;
 
@@ -91,8 +91,8 @@
             ${action.notes ? `<span class="text-muted">${action.notes}</span>` : ''}
           </div>
           <div class="quick-action-actions">
-            <button type="button" class="btn btn-sm btn-primary" onclick="editQuickAction('${action.id}', this)">Modifica</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="deleteQuickAction('${action.id}', this)">Elimina</button>
+            <button type="button" class="btn btn-sm btn-primary" data-edit-action="${action.id}">Modifica</button>
+            <button type="button" class="btn btn-sm btn-danger" data-delete-action="${action.id}">Elimina</button>
           </div>
         </div>
       `).join('');
@@ -170,6 +170,21 @@
     });
 
     renderQuickActions();
+
+    // Event listeners (sostituiscono onclick inline per CSP)
+    document.getElementById('btnResetForm')?.addEventListener('click', resetQuickActionForm);
+
+    // Event delegation per pulsanti generati dinamicamente
+    document.getElementById('quickActionsList').addEventListener('click', function(e) {
+      const editBtn = e.target.closest('[data-edit-action]');
+      const deleteBtn = e.target.closest('[data-delete-action]');
+
+      if (editBtn) {
+        editQuickAction(editBtn.dataset.editAction, editBtn);
+      } else if (deleteBtn) {
+        deleteQuickAction(deleteBtn.dataset.deleteAction, deleteBtn);
+      }
+    });
   </script>
 </body>
 </html>

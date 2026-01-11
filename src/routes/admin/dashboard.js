@@ -189,14 +189,6 @@ router.post('/api/export', async (req, res) => {
       finalUserKeys = [userKeys];
     }
 
-    const result = await exportService.exportActivities(
-      finalUserKeys,
-      fromDate,
-      toDate,
-      format || 'csv',
-      exportType || 'detailed'
-    );
-
     await auditLogger.log(
       'EXPORT',
       'admin',
@@ -208,6 +200,36 @@ router.post('/api/export', async (req, res) => {
 
     const ext = format === 'xlsx' ? 'xlsx' : format === 'json' ? 'json' : 'csv';
     const filename = `export_${rangeType || 'custom'}_${fromDate}_${toDate}.${ext}`;
+
+    // Use streaming for CSV exports to handle large datasets efficiently
+    if (format === 'csv' || !format) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      const stream = await exportService.createExportStream(
+        finalUserKeys,
+        fromDate,
+        toDate,
+        exportType || 'detailed'
+      );
+
+      stream.pipe(res);
+      stream.on('error', (error) => {
+        if (!res.headersSent) {
+          res.status(500).json({ success: false, error: error.message });
+        }
+      });
+      return;
+    }
+
+    // Non-streaming for xlsx and json (smaller datasets or need full data)
+    const result = await exportService.exportActivities(
+      finalUserKeys,
+      fromDate,
+      toDate,
+      format,
+      exportType || 'detailed'
+    );
 
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

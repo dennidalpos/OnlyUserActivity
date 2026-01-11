@@ -1,5 +1,6 @@
-const { writeToString } = require('@fast-csv/format');
+const { writeToString, format: csvFormat } = require('@fast-csv/format');
 const ExcelJS = require('exceljs');
+const { PassThrough } = require('stream');
 const userStorage = require('../storage/userStorage');
 const activityStorage = require('../storage/activityStorage');
 const { calculateDuration } = require('../utils/timeUtils');
@@ -253,6 +254,141 @@ class ExportService {
       }
     }
     return String(value);
+  }
+
+  /**
+   * Stream-based export for large datasets (CSV only)
+   * Returns a readable stream instead of buffering all data in memory
+   */
+  async createExportStream(userKeys, fromDate, toDate, exportType = 'detailed') {
+    if (userKeys.includes('all') || userKeys[0] === 'all') {
+      const allUsers = await userStorage.listAll();
+      userKeys = allUsers.map(u => u.userKey);
+    }
+
+    const passThrough = new PassThrough();
+    const csvStream = csvFormat({ headers: true });
+    csvStream.pipe(passThrough);
+
+    const fields = exportType === 'summary'
+      ? this.getSummaryFields()
+      : this.getDetailedFields();
+
+    // Process users one by one to avoid memory buildup
+    (async () => {
+      try {
+        for (const userKey of userKeys) {
+          const user = await userStorage.findByUserKey(userKey);
+          if (!user) continue;
+
+          const activities = await activityStorage.findByRange(userKey, fromDate, toDate);
+          const metadataValue = user.metadata || {};
+
+          if (exportType === 'summary') {
+            let totalMinutes = 0;
+            activities.forEach(act => {
+              totalMinutes += calculateDuration(act.startTime, act.endTime);
+            });
+
+            const row = this.formatRow({
+              username: user.username,
+              displayName: user.displayName,
+              userType: user.userType || 'local',
+              email: user.email || '',
+              department: user.department || '',
+              shift: user.shift || '',
+              createdAt: user.createdAt || '',
+              lastLoginAt: user.lastLoginAt || '',
+              updatedAt: user.updatedAt || '',
+              metadata: metadataValue,
+              totalActivities: activities.length,
+              totalMinutes,
+              totalHours: (totalMinutes / 60).toFixed(2),
+              avgHoursPerDay: activities.length > 0 ? ((totalMinutes / 60) / this.countUniqueDays(activities)).toFixed(2) : 0
+            }, fields);
+            csvStream.write(row);
+          } else {
+            for (const act of activities) {
+              const duration = calculateDuration(act.startTime, act.endTime);
+              const row = this.formatRow({
+                username: user.username,
+                displayName: user.displayName,
+                userType: user.userType || 'local',
+                email: user.email || '',
+                department: user.department || '',
+                shift: user.shift || '',
+                createdAt: user.createdAt || '',
+                lastLoginAt: user.lastLoginAt || '',
+                updatedAt: user.updatedAt || '',
+                metadata: metadataValue,
+                date: act.date,
+                startTime: act.startTime,
+                endTime: act.endTime,
+                durationMinutes: duration,
+                durationHours: (duration / 60).toFixed(2),
+                activityType: act.activityType,
+                customType: act.customType || '',
+                notes: act.notes || ''
+              }, fields);
+              csvStream.write(row);
+            }
+          }
+        }
+        csvStream.end();
+      } catch (error) {
+        passThrough.destroy(error);
+      }
+    })();
+
+    return passThrough;
+  }
+
+  getSummaryFields() {
+    return [
+      { label: 'Username', value: 'username' },
+      { label: 'Nome Completo', value: 'displayName' },
+      { label: 'Tipo Utente', value: 'userType' },
+      { label: 'Email', value: 'email' },
+      { label: 'Reparto', value: 'department' },
+      { label: 'Turno', value: 'shift' },
+      { label: 'Creato il', value: 'createdAt' },
+      { label: 'Ultimo accesso', value: 'lastLoginAt' },
+      { label: 'Aggiornato il', value: 'updatedAt' },
+      { label: 'Metadata', value: 'metadata' },
+      { label: 'Totale Attività', value: 'totalActivities' },
+      { label: 'Ore Totali', value: 'totalHours' },
+      { label: 'Media Ore/Giorno', value: 'avgHoursPerDay' }
+    ];
+  }
+
+  getDetailedFields() {
+    return [
+      { label: 'Username', value: 'username' },
+      { label: 'Nome Completo', value: 'displayName' },
+      { label: 'Tipo Utente', value: 'userType' },
+      { label: 'Email', value: 'email' },
+      { label: 'Reparto', value: 'department' },
+      { label: 'Turno', value: 'shift' },
+      { label: 'Creato il', value: 'createdAt' },
+      { label: 'Ultimo accesso', value: 'lastLoginAt' },
+      { label: 'Aggiornato il', value: 'updatedAt' },
+      { label: 'Metadata', value: 'metadata' },
+      { label: 'Data', value: 'date' },
+      { label: 'Ora Inizio', value: 'startTime' },
+      { label: 'Ora Fine', value: 'endTime' },
+      { label: 'Durata (ore)', value: 'durationHours' },
+      { label: 'Tipo Attività', value: 'activityType' },
+      { label: 'Tipo Custom', value: 'customType' },
+      { label: 'Note', value: 'notes' }
+    ];
+  }
+
+  formatRow(item, fields) {
+    return fields.reduce((acc, field) => {
+      const value = field.value === 'metadata' ? this.formatMetadataValue(item[field.value]) : item[field.value];
+      acc[field.label] = value;
+      return acc;
+    }, {});
   }
 }
 

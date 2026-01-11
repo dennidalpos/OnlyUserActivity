@@ -72,7 +72,7 @@
                   name="defaultShiftType"
                   value=""
                   <%= !settings.server.defaultUserShift ? 'checked' : '' %>
-                  onchange="setDefaultShift('', this)">
+                  data-default-shift="">
                 Nessuno
               </label>
               <% shiftTypes.forEach(shiftType => { %>
@@ -81,7 +81,7 @@
                     name="defaultShiftType"
                     value="<%= shiftType.name %>"
                     <%= settings.server.defaultUserShift === shiftType.name ? 'checked' : '' %>
-                    onchange="setDefaultShift('<%= shiftType.name %>', this)">
+                    data-default-shift="<%= shiftType.name %>">
                   <%= shiftType.name %>
                 </label>
               <% }); %>
@@ -95,7 +95,7 @@
                   name="defaultContractPreset"
                   value=""
                   <%= !settings.server.defaultUserContractPreset ? 'checked' : '' %>
-                  onchange="setDefaultContractPreset('', this)">
+                  data-default-preset="">
                 Nessuno
               </label>
               <% contractPresets.forEach(preset => { %>
@@ -104,7 +104,7 @@
                     name="defaultContractPreset"
                     value="<%= preset.id %>"
                     <%= settings.server.defaultUserContractPreset === preset.id ? 'checked' : '' %>
-                    onchange="setDefaultContractPreset('<%= preset.id %>', this)">
+                    data-default-preset="<%= preset.id %>">
                   <%= preset.name %>
                 </label>
               <% }); %>
@@ -115,7 +115,7 @@
       </div>
 
       <div class="mb-20">
-        <button type="button" onclick="showAddShiftModal(this)" class="btn btn-success">
+        <button type="button" id="btnAddShift" class="btn btn-success">
           ➕ Aggiungi Nuovo Turno
         </button>
       </div>
@@ -153,8 +153,8 @@
             </div>
           </div>
           <div class="shift-type-actions">
-            <button onclick="editShiftType('<%= shiftType.id %>', this)" class="btn btn-primary btn-sm">Modifica</button>
-            <button onclick="deleteShiftType('<%= shiftType.id %>', this)" class="btn btn-danger btn-sm">Elimina</button>
+            <button data-edit-shift="<%= shiftType.id %>" class="btn btn-primary btn-sm">Modifica</button>
+            <button data-delete-shift="<%= shiftType.id %>" class="btn btn-danger btn-sm">Elimina</button>
           </div>
         </div>
         <% }); %>
@@ -193,7 +193,7 @@
                 </span>
                 <span class="contract-preset-meta">ID: <%= preset.id %></span>
               </div>
-              <button type="button" class="btn btn-danger btn-sm" onclick="deleteContractPreset('<%= preset.id %>', this)">Elimina</button>
+              <button type="button" class="btn btn-danger btn-sm" data-delete-preset="<%= preset.id %>">Elimina</button>
             </div>
           <% }); %>
         <% } %>
@@ -260,14 +260,14 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" onclick="closeShiftModal(this)" class="btn">Annulla</button>
+          <button type="button" id="btnCloseModal" class="btn">Annulla</button>
           <button type="submit" class="btn btn-primary">Salva</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     let shiftTypesData = <%- JSON.stringify(shiftTypes) %>;
     let contractPresetsData = <%- JSON.stringify(contractPresets) %>;
     let lastActionAnchor = null;
@@ -528,6 +528,49 @@
         showAlert("Errore nell'eliminazione del preset", 'danger');
       }
     }
+
+    // Event listeners (sostituiscono onclick/onchange inline per CSP)
+    document.getElementById('btnAddShift')?.addEventListener('click', function() {
+      showAddShiftModal(this);
+    });
+
+    document.getElementById('btnCloseModal')?.addEventListener('click', function() {
+      closeShiftModal(this);
+    });
+
+    // Event delegation per checkbox turno predefinito
+    document.querySelectorAll('[data-default-shift]').forEach(cb => {
+      cb.addEventListener('change', function() {
+        setDefaultShift(this.dataset.defaultShift, this);
+      });
+    });
+
+    // Event delegation per checkbox preset contratto predefinito
+    document.querySelectorAll('[data-default-preset]').forEach(cb => {
+      cb.addEventListener('change', function() {
+        setDefaultContractPreset(this.dataset.defaultPreset, this);
+      });
+    });
+
+    // Event delegation per pulsanti turni
+    document.getElementById('shiftTypesList').addEventListener('click', function(e) {
+      const editBtn = e.target.closest('[data-edit-shift]');
+      const deleteBtn = e.target.closest('[data-delete-shift]');
+
+      if (editBtn) {
+        editShiftType(editBtn.dataset.editShift, editBtn);
+      } else if (deleteBtn) {
+        deleteShiftType(deleteBtn.dataset.deleteShift, deleteBtn);
+      }
+    });
+
+    // Event delegation per pulsanti preset contratti
+    document.getElementById('contractPresetList').addEventListener('click', function(e) {
+      const deleteBtn = e.target.closest('[data-delete-preset]');
+      if (deleteBtn) {
+        deleteContractPreset(deleteBtn.dataset.deletePreset, deleteBtn);
+      }
+    });
   </script>
 </body>
 </html>

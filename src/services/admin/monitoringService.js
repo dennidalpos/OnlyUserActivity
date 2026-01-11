@@ -2,8 +2,9 @@ const userStorage = require('../storage/userStorage');
 const activityService = require('../activity/activityService');
 const shiftTypesService = require('./shiftTypesService');
 const config = require('../../config');
-const { addDays, getCurrentDate, formatDate, isFutureDate } = require('../utils/dateUtils');
+const { addDays, isFutureDate } = require('../utils/dateUtils');
 const { findShiftType, isWorkingDay } = require('../utils/shiftUtils');
+const { determineMonitoringStatus } = require('../utils/statusUtils');
 
 class MonitoringService {
   async getDailyStatus(date, filters = {}) {
@@ -27,7 +28,7 @@ class MonitoringService {
         dayData.summary.requiredMinutes = 0;
       }
 
-      const status = this.determineStatus(dayData.summary, isRequired, isFuture);
+      const status = determineMonitoringStatus(dayData.summary, isRequired, isFuture);
 
       if (filters.status && status !== filters.status) {
         continue;
@@ -119,8 +120,9 @@ class MonitoringService {
   }
 
   async calculateUserRangeStats(userKey, fromDate, toDate, shiftType) {
-    let current = fromDate;
-    const end = toDate;
+    // Fetch all activities in one call instead of N calls
+    const rangeData = await activityService.getActivitiesRange(userKey, fromDate, toDate);
+    const dailySummaries = rangeData.dailySummaries || {};
 
     let totalMinutes = 0;
     let totalDays = 0;
@@ -128,7 +130,8 @@ class MonitoringService {
     let incompleteDays = 0;
     let absentDays = 0;
 
-    while (current <= end) {
+    let current = fromDate;
+    while (current <= toDate) {
       const isRequired = isWorkingDay(current, shiftType);
 
       if (!isRequired || isFutureDate(current)) {
@@ -136,11 +139,17 @@ class MonitoringService {
         continue;
       }
 
-      const dayData = await activityService.getDayActivities(userKey, current);
-      totalMinutes += dayData.summary.totalMinutes;
+      // Use pre-fetched summary instead of calling getDayActivities
+      const daySummary = dailySummaries[current] || {
+        totalMinutes: 0,
+        requiredMinutes: config.activity.requiredMinutes,
+        isComplete: false
+      };
+
+      totalMinutes += daySummary.totalMinutes;
       totalDays++;
 
-      const status = this.determineStatus(dayData.summary, true);
+      const status = determineMonitoringStatus(daySummary, true);
       if (status === 'OK') completeDays++;
       else if (status === 'INCOMPLETO') incompleteDays++;
       else absentDays++;
@@ -176,19 +185,6 @@ class MonitoringService {
     };
   }
 
-  determineStatus(summary, isRequired = true, isFuture = false) {
-    if (!isRequired || isFuture) {
-      return 'OK';
-    }
-    if (summary.totalMinutes === 0) {
-      return 'ASSENTE';
-    }
-    if (summary.isComplete) {
-      return 'OK';
-    }
-    return 'INCOMPLETO';
-  }
-
   async getUserMonthDetail(userKey, year, month) {
     const fromDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
@@ -216,7 +212,7 @@ class MonitoringService {
           isComplete: false
         };
 
-        const status = this.determineStatus(summary, true, false);
+        const status = determineMonitoringStatus(summary, true, false);
         if (status !== 'OK') {
           irregularities.push({
             date: cursor,

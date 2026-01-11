@@ -5,13 +5,28 @@ const config = require('../../config');
 class ShiftTypesService {
   constructor() {
     this.shiftTypesPath = path.join(config.storage.rootPath, 'shift-types.json');
+    this.cache = null;
+    this.cacheTime = 0;
+    this.cacheTTL = 5 * 60 * 1000; // 5 minuti
+  }
+
+  invalidateCache() {
+    this.cache = null;
+    this.cacheTime = 0;
   }
 
   async getShiftTypes() {
+    const now = Date.now();
+    if (this.cache && (now - this.cacheTime) < this.cacheTTL) {
+      return this.cache;
+    }
+
     try {
       const shiftTypes = await fileStorage.readJSON(this.shiftTypesPath);
       const list = shiftTypes || this.getDefaultShiftTypes();
-      return list.map(shiftType => this.normalizeShiftType(shiftType));
+      this.cache = list.map(shiftType => this.normalizeShiftType(shiftType));
+      this.cacheTime = now;
+      return this.cache;
     } catch (error) {
       return this.getDefaultShiftTypes();
     }
@@ -48,6 +63,7 @@ class ShiftTypesService {
 
   async setShiftTypes(shiftTypes) {
     await fileStorage.writeJSON(this.shiftTypesPath, shiftTypes);
+    this.invalidateCache();
     return shiftTypes;
   }
 

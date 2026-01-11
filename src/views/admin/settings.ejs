@@ -36,7 +36,7 @@
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
       <div class="mb-20">
-        <button type="button" onclick="confirmRestartServer(this)" class="btn btn-danger">
+        <button type="button" id="btnRestartServer" class="btn btn-danger">
           🔄 Riavvia Server
         </button>
         <span class="ml-10 text-muted text-small">
@@ -138,11 +138,11 @@
           </label>
         </div>
         <div class="settings-actions">
-          <button type="button" class="btn btn-primary" onclick="exportConfiguration(this)">
+          <button type="button" id="btnExportConfig" class="btn btn-primary">
             ⬇️ Esporta configurazione
           </button>
           <input type="file" id="configImportFile" accept=".json" class="file-input">
-          <button type="button" class="btn btn-primary" onclick="importConfiguration(this)">
+          <button type="button" id="btnImportConfig" class="btn btn-primary">
             ⬆️ Importa configurazione
           </button>
         </div>
@@ -158,7 +158,7 @@
         Visualizza lo stato del server applicativo e dell'ambiente in esecuzione.
       </div>
       <div class="settings-actions">
-        <button type="button" class="btn btn-primary" onclick="loadServerInfo(this)">
+        <button type="button" id="btnLoadServerInfo" class="btn btn-primary">
           📋 Carica informazioni server
         </button>
       </div>
@@ -222,7 +222,7 @@
           </div>
         </div>
         <div class="flex gap-12 align-center mt-12">
-          <button type="button" onclick="testLdapBind(this)" class="btn btn-success">Test Bind LDAP</button>
+          <button type="button" id="btnTestLdapBind" class="btn btn-success">Test Bind LDAP</button>
           <span class="text-muted text-small">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
         <div class="mt-12">
@@ -249,7 +249,7 @@
             </label>
             <div class="flex gap-8 align-center">
               <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsCertPath', this)">Esplora</button>
+              <button type="button" class="btn btn-sm" data-browse-target="httpsCertPath">Esplora</button>
             </div>
             <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsCertPath %></code></div>
           </div>
@@ -258,7 +258,7 @@
             </label>
             <div class="flex gap-8 align-center">
               <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
-              <button type="button" class="btn btn-sm" onclick="browseHttpsFile('httpsKeyPath', this)">Esplora</button>
+              <button type="button" class="btn btn-sm" data-browse-target="httpsKeyPath">Esplora</button>
             </div>
             <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsKeyPath %></code></div>
           </div>
@@ -337,13 +337,13 @@
           <h4>Test permessi storage</h4>
           <p>Verifica la possibilità di creare un file temporaneo nella directory dati configurata.</p>
           <div class="field-help">Usa il percorso impostato in "Storage".</div>
-          <button type="button" onclick="runStorageTest(this)" class="btn btn-primary">Esegui test</button>
+          <button type="button" id="btnStorageTest" class="btn btn-primary">Esegui test</button>
         </div>
         <div class="settings-card">
           <h4>Verifica file HTTPS</h4>
           <p>Controlla che i file certificato/chiave siano accessibili dal server.</p>
           <div class="field-help">Usa i percorsi indicati in "Configurazione HTTPS".</div>
-          <button type="button" onclick="runHttpsTest(this)" class="btn btn-primary">Esegui test</button>
+          <button type="button" id="btnHttpsTest" class="btn btn-primary">Esegui test</button>
         </div>
       </div>
     </div>
@@ -486,7 +486,7 @@
         <% activityTypes.forEach(type => { %>
         <div class="activity-type-tag">
           <%= type %>
-          <button onclick="removeActivityType('<%= type %>', this)" title="Rimuovi">&times;</button>
+          <button data-remove-type="<%= type %>" title="Rimuovi">&times;</button>
         </div>
         <% }); %>
       </div>
@@ -500,11 +500,11 @@
     <div class="settings-section">
       <h3>Reset Password Admin</h3>
       <p>Imposta una nuova password per l'account admin attualmente autenticato.</p>
-      <button onclick="resetAdminPassword(this)" class="btn btn-warning">Reset Password Admin</button>
+      <button id="btnResetAdminPassword" class="btn btn-warning">Reset Password Admin</button>
     </div>
   </main>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     let ldapBindTestFingerprint = null;
     let lastActionAnchor = null;
 
@@ -1062,10 +1062,57 @@
       }
     }
   </script>
-  <script>
+  <script nonce="<%= cspNonce %>">
     helpSystem.init(adminSettingsHelp);
     document.addEventListener('DOMContentLoaded', () => {
       loadServerInfo();
+
+      // Event listeners per pulsanti (sostituiscono onclick inline per CSP)
+      document.getElementById('btnRestartServer')?.addEventListener('click', function() {
+        confirmRestartServer(this);
+      });
+
+      document.getElementById('btnExportConfig')?.addEventListener('click', function() {
+        exportConfiguration(this);
+      });
+
+      document.getElementById('btnImportConfig')?.addEventListener('click', function() {
+        importConfiguration(this);
+      });
+
+      document.getElementById('btnLoadServerInfo')?.addEventListener('click', function() {
+        loadServerInfo(this);
+      });
+
+      document.getElementById('btnTestLdapBind')?.addEventListener('click', function() {
+        testLdapBind(this);
+      });
+
+      document.getElementById('btnStorageTest')?.addEventListener('click', function() {
+        runStorageTest(this);
+      });
+
+      document.getElementById('btnHttpsTest')?.addEventListener('click', function() {
+        runHttpsTest(this);
+      });
+
+      document.getElementById('btnResetAdminPassword')?.addEventListener('click', function() {
+        resetAdminPassword(this);
+      });
+
+      // Pulsanti browse HTTPS
+      document.querySelectorAll('[data-browse-target]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          browseHttpsFile(this.dataset.browseTarget, this);
+        });
+      });
+
+      // Pulsanti rimozione categorie attività
+      document.querySelectorAll('[data-remove-type]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          removeActivityType(this.dataset.removeType, this);
+        });
+      });
     });
   </script>
 </body>

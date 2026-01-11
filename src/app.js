@@ -1,10 +1,9 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const crypto = require('crypto');
 const session = require('express-session');
 const helmet = require('helmet');
 const cors = require('cors');
-const pino = require('pino');
 const config = require('./config');
 
 const requestLogger = require('./middlewares/requestLogger');
@@ -20,28 +19,10 @@ const userDashboardRoutes = require('./routes/user/dashboard');
 
 const fileStorage = require('./services/storage/fileStorage');
 const adminAuthService = require('./services/auth/adminAuthService');
-
-function createLogDestination() {
-  if (!config.logging.toFile) {
-    return undefined;
-  }
-  const logDir = path.dirname(config.logging.filePath);
-  fs.mkdirSync(logDir, { recursive: true });
-  return pino.destination({ dest: config.logging.filePath, sync: false });
-}
+const { createLogDestination, createLogger } = require('./services/utils/logUtils');
 
 const logDestination = createLogDestination();
-const logger = pino({
-  level: config.logging.level,
-  transport: !config.logging.toFile && config.env === 'development' ? {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname'
-    }
-  } : undefined
-}, logDestination);
+const logger = createLogger(logDestination);
 
 const app = express();
 
@@ -50,13 +31,18 @@ app.set('trust proxy', config.server.trustProxy);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Generate nonce for CSP
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
+      scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
       imgSrc: ["'self'", "data:"],
       upgradeInsecureRequests: null
     }

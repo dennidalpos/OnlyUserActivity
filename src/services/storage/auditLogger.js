@@ -2,7 +2,6 @@ const path = require('path');
 const config = require('../../config');
 const fileStorage = require('./fileStorage');
 const { generatePayloadHash } = require('../utils/hashUtils');
-const { formatDate } = require('../utils/dateUtils');
 
 class AuditLogger {
   constructor() {

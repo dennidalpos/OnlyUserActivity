@@ -186,13 +186,18 @@ class SettingsService {
       }
     };
 
-    this.logSettings(' Settings da restituire:', JSON.stringify(settings, null, 2));
+    this.logSettings(' Settings caricati con successo');
     return settings;
   }
 
   async updateEnvFile(updates) {
     this.logSettings(' Aggiornamento file .env in corso...');
-    this.logSettings(' Modifiche da applicare:', JSON.stringify(updates, null, 2));
+    const safeUpdates = { ...updates };
+    if (safeUpdates.LDAP_BIND_PASSWORD) safeUpdates.LDAP_BIND_PASSWORD = '[REDACTED]';
+    if (safeUpdates.JWT_SECRET) safeUpdates.JWT_SECRET = '[REDACTED]';
+    if (safeUpdates.ADMIN_SESSION_SECRET) safeUpdates.ADMIN_SESSION_SECRET = '[REDACTED]';
+    if (safeUpdates.ADMIN_DEFAULT_PASSWORD) safeUpdates.ADMIN_DEFAULT_PASSWORD = '[REDACTED]';
+    this.logSettings(' Modifiche da applicare:', JSON.stringify(safeUpdates, null, 2));
 
     let envContent = '';
     let fileExists = true;

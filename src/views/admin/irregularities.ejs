@@ -24,6 +24,9 @@
   </nav>
 
   <main class="container">
+    <div class="page-header">
+      <a href="/admin/dashboard" class="btn btn-sm back-link">&larr; Torna alla Dashboard</a>
+    </div>
     <h2>Irregolarità di <%= user.displayName %> (<%= user.username %>)</h2>
     <%
       function formatMinutesAsTime(totalMinutes = 0) {
@@ -72,7 +75,7 @@
     <% } %>
   </main>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     helpSystem.init(adminDashboardHelp);
   </script>
 </body>

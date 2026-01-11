@@ -18,13 +18,29 @@ class ActivityTypesService {
       'trasferta',
       'altro'
     ];
+    // In-memory cache
+    this.cache = null;
+    this.cacheTime = 0;
+    this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+  }
+
+  invalidateCache() {
+    this.cache = null;
+    this.cacheTime = 0;
   }
 
   async getActivityTypes() {
+    const now = Date.now();
+    if (this.cache && (now - this.cacheTime) < this.cacheTTL) {
+      return this.cache;
+    }
+
     try {
-      const config = await fileStorage.readJSON(this.configPath);
-      const types = config?.activityTypes || this.defaultTypes;
-      return types.filter(type => type !== 'pausa');
+      const configData = await fileStorage.readJSON(this.configPath);
+      const types = configData?.activityTypes || this.defaultTypes;
+      this.cache = types.filter(type => type !== 'pausa');
+      this.cacheTime = now;
+      return this.cache;
     } catch (error) {
       return this.defaultTypes;
     }
@@ -53,6 +69,7 @@ class ActivityTypesService {
       updatedAt: new Date().toISOString()
     });
 
+    this.invalidateCache();
     return uniqueTypes;
   }
 

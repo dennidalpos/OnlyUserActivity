@@ -33,14 +33,14 @@
     <div class="export-section">
       <h3>Range Rapido</h3>
       <div class="quick-range-buttons">
-        <button type="button" class="quick-btn" onclick="setRange('today', this)">Oggi</button>
-        <button type="button" class="quick-btn" onclick="setRange('yesterday', this)">Ieri</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisWeek', this)">Questa Settimana</button>
-        <button type="button" class="quick-btn" onclick="setRange('lastWeek', this)">Settimana Scorsa</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisMonth', this)">Questo Mese</button>
-        <button type="button" class="quick-btn" onclick="setRange('lastMonth', this)">Mese Scorso</button>
-        <button type="button" class="quick-btn" onclick="setRange('thisYear', this)">Quest'Anno</button>
-        <button type="button" class="quick-btn" onclick="setRange('all', this)">Tutti i Dati</button>
+        <button type="button" class="quick-btn" data-range="today">Oggi</button>
+        <button type="button" class="quick-btn" data-range="yesterday">Ieri</button>
+        <button type="button" class="quick-btn" data-range="thisWeek">Questa Settimana</button>
+        <button type="button" class="quick-btn" data-range="lastWeek">Settimana Scorsa</button>
+        <button type="button" class="quick-btn" data-range="thisMonth">Questo Mese</button>
+        <button type="button" class="quick-btn" data-range="lastMonth">Mese Scorso</button>
+        <button type="button" class="quick-btn" data-range="thisYear">Quest'Anno</button>
+        <button type="button" class="quick-btn" data-range="all">Tutti i Dati</button>
       </div>
     </div>
 
@@ -61,13 +61,13 @@
         <label>Selezione Utenti:</label>
         <div class="user-selection-box">
           <div class="user-selection-header">
-            <input type="checkbox" id="selectAllUsers" checked onchange="toggleAllUsers(this)">
+            <input type="checkbox" id="selectAllUsers" checked>
             <label for="selectAllUsers" class="label-inline">Tutti gli utenti (<%= users.length %>)</label>
           </div>
           <div class="user-list" id="userList">
             <% users.forEach(user => { %>
             <label class="user-checkbox">
-              <input type="checkbox" name="userKeys" value="<%= user.userKey %>" onchange="updateSelectAll(this)">
+              <input type="checkbox" name="userKeys" value="<%= user.userKey %>" class="user-key-checkbox">
               <strong><%= user.username %></strong> - <%= user.displayName %>
               <span class="text-muted text-xs">(<%= user.userType === 'ad' ? 'AD' : 'Locale' %>)</span>
             </label>
@@ -97,7 +97,7 @@
     </form>
   </main>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     const minDateAvailable = '<%= minDate %>';
 
     let lastActionAnchor = null;
@@ -219,6 +219,25 @@
 
     window.addEventListener('load', function() {
       setRange('thisMonth');
+
+      // Event listeners per pulsanti range (sostituiscono onclick inline per CSP)
+      document.querySelectorAll('[data-range]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          setRange(this.dataset.range, this);
+        });
+      });
+
+      // Event listener per checkbox selectAll
+      document.getElementById('selectAllUsers')?.addEventListener('change', function() {
+        toggleAllUsers(this);
+      });
+
+      // Event listeners per checkbox utenti
+      document.querySelectorAll('.user-key-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+          updateSelectAll(this);
+        });
+      });
     });
   </script>
 </body>

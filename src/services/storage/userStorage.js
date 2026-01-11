@@ -134,16 +134,13 @@ class UserStorage {
 
   async listAll() {
     const index = await this.loadIndex();
-    const users = [];
+    const userKeys = Object.values(index);
 
-    for (const userKey of Object.values(index)) {
-      const user = await this.findByUserKey(userKey);
-      if (user) {
-        users.push(user);
-      }
-    }
+    // Parallel fetch instead of sequential
+    const userPromises = userKeys.map(userKey => this.findByUserKey(userKey));
+    const usersOrNull = await Promise.all(userPromises);
 
-    return users;
+    return usersOrNull.filter(user => user !== null);
   }
 }
 
