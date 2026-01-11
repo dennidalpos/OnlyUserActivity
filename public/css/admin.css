@@ -174,7 +174,8 @@ main.container > h2 {
   align-items: center;
   font-weight: 600;
   color: var(--text-secondary);
-  border-right: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-overlay);
+  border-right: 1px solid var(--border-default);
 }
 
 .info-grid dd {
@@ -187,7 +188,7 @@ main.container > h2 {
 
 .info-grid dt:nth-child(n + 3),
 .info-grid dd:nth-child(n + 3) {
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-default);
 }
 
 .panel.info-grid {
