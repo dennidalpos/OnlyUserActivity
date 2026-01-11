@@ -170,15 +170,19 @@ main.container > h2 {
 .info-grid dt {
   margin: 0;
   padding: var(--space-2) var(--space-3);
+  display: flex;
+  align-items: center;
   font-weight: 600;
   color: var(--text-secondary);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .info-grid dd {
   margin: 0;
   padding: var(--space-2) var(--space-3);
+  display: flex;
+  align-items: center;
   color: var(--text-primary);
-  border-left: 1px solid var(--border-subtle);
 }
 
 .info-grid dt:nth-child(n + 3),
