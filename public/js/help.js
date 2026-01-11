@@ -2,11 +2,11 @@ class HelpSystem {
   constructor() {
     this.modalHTML = `
       <div id="helpModal" class="help-modal" style="display: none;">
-        <div class="help-modal-overlay" onclick="helpSystem.closeHelp()"></div>
+        <div class="help-modal-overlay"></div>
         <div class="help-modal-content">
           <div class="help-modal-header">
             <h2>Guida all'utilizzo</h2>
-            <button class="help-modal-close" onclick="helpSystem.closeHelp()">&times;</button>
+            <button type="button" class="help-modal-close">&times;</button>
           </div>
           <div class="help-modal-body" id="helpModalBody"></div>
         </div>
@@ -23,6 +23,12 @@ class HelpSystem {
     helpBtn.title = 'Aiuto';
     helpBtn.onclick = () => this.showHelp(helpContent);
     document.body.appendChild(helpBtn);
+
+    const modal = document.getElementById('helpModal');
+    const closeBtn = modal.querySelector('.help-modal-close');
+    const overlay = modal.querySelector('.help-modal-overlay');
+    closeBtn.addEventListener('click', () => this.closeHelp());
+    overlay.addEventListener('click', () => this.closeHelp());
   }
 
   showHelp(content) {
