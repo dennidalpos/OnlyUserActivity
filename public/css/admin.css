@@ -161,19 +161,33 @@ main.container > h2 {
 
 .info-grid {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-2) var(--space-4);
-  align-items: baseline;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  margin: 0;
+  gap: 0;
+  align-items: stretch;
 }
 
 .info-grid dt {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .info-grid dd {
   margin: 0;
+  padding: var(--space-2) var(--space-3);
   color: var(--text-primary);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.info-grid dt:nth-child(n + 3),
+.info-grid dd:nth-child(n + 3) {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.panel.info-grid {
+  padding: 0;
 }
 
 /* Navigation button - extends .btn with nav-specific hover */
