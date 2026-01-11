@@ -1,70 +1,17 @@
-const path = require('path');
-const fs = require('fs').promises;
 const config = require('../../config');
-const fileStorage = require('../storage/fileStorage');
-const userStorage = require('../storage/userStorage');
-const { hashPassword } = require('../utils/hashUtils');
-const ldapClient = require('../ldap/ldapClient');
-const activityTypesService = require('./activityTypesService');
 const shiftTypesService = require('./shiftTypesService');
 const contractPresetsService = require('./contractPresetsService');
 
+const envService = require('./envService');
+const userManagementService = require('./userManagementService');
+const configExportService = require('./configExportService');
+const quickActionsService = require('./quickActionsService');
+const troubleshootService = require('./troubleshootService');
+
 class SettingsService {
   constructor() {
-    this.envPath = path.join(process.cwd(), '.env');
-    this.quickActionsPath = path.join(config.storage.rootPath, 'admin', 'quick-actions.json');
-    this.defaultQuickActions = [
-      {
-        id: 'quick-assenza',
-        label: 'Assenza',
-        notes: 'Assenza'
-      },
-      {
-        id: 'quick-lavoro-feriale',
-        label: 'Lavoro feriale',
-        notes: 'Lavoro feriale'
-      },
-      {
-        id: 'quick-part-time-4-ore',
-        label: 'Part-time 4 ore',
-        notes: 'Part-time 4 ore'
-      },
-      {
-        id: 'quick-lavoro-3turni-mattino',
-        label: 'Lavoro su turni - mattino',
-        notes: 'Lavoro su turni - mattino'
-      },
-      {
-        id: 'quick-lavoro-3turni-pomeriggio',
-        label: 'Lavoro su turni - pomeriggio',
-        notes: 'Lavoro su turni - pomeriggio'
-      },
-      {
-        id: 'quick-lavoro-3turni-notte',
-        label: 'Lavoro su turni - notte',
-        notes: 'Lavoro su turni - notte'
-      },
-      {
-        id: 'quick-ferie',
-        label: 'Ferie',
-        notes: 'Ferie'
-      },
-      {
-        id: 'quick-malattia',
-        label: 'Malattia',
-        notes: 'Malattia'
-      },
-      {
-        id: 'quick-congedo',
-        label: 'Congedo',
-        notes: 'Congedo'
-      },
-      {
-        id: 'quick-riposo',
-        label: 'Turno di riposo',
-        notes: 'Turno di riposo'
-      }
-    ];
+    this.quickActionsPath = quickActionsService.quickActionsPath;
+    this.defaultQuickActions = quickActionsService.defaultQuickActions;
   }
 
   logSettings(message, ...args) {
@@ -73,196 +20,71 @@ class SettingsService {
     }
   }
 
+  // ========== ENV SERVICE DELEGATES ==========
   resolveEnvValue(envSettings, key, fallback) {
-    if (Object.prototype.hasOwnProperty.call(envSettings, key)) {
-      return envSettings[key];
-    }
-    return fallback;
+    return envService.resolveEnvValue(envSettings, key, fallback);
   }
 
   resolveEnvBoolean(envSettings, key, fallback) {
-    if (Object.prototype.hasOwnProperty.call(envSettings, key)) {
-      return envSettings[key] === 'true';
-    }
-    return fallback;
+    return envService.resolveEnvBoolean(envSettings, key, fallback);
   }
 
   resolveEnvInt(envSettings, key, fallback) {
-    if (Object.prototype.hasOwnProperty.call(envSettings, key)) {
-      const parsed = parseInt(envSettings[key], 10);
-      return Number.isNaN(parsed) ? fallback : parsed;
-    }
-    return fallback;
+    return envService.resolveEnvInt(envSettings, key, fallback);
   }
 
   async getCurrentSettings() {
-    this.logSettings('Lettura impostazioni correnti dal file .env...');
-    this.logSettings('Path file .env:', this.envPath);
-
-    let envSettings = {};
-    try {
-      const envContent = await fs.readFile(this.envPath, 'utf-8');
-      const lines = envContent.split(/\r?\n/);
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        const match = trimmedLine.match(/^([A-Z_]+)=(.*)$/);
-        if (match) {
-          envSettings[match[1]] = match[2];
-        }
-      }
-      this.logSettings(' File .env letto. Chiavi trovate:', Object.keys(envSettings).length);
-    } catch (error) {
-      this.logSettings(' File .env non trovato, uso valori di default');
-    }
-
-    const settings = {
-      ldap: {
-        enabled: this.resolveEnvBoolean(envSettings, 'LDAP_ENABLED', config.ldap.enabled),
-        url: this.resolveEnvValue(envSettings, 'LDAP_URL', config.ldap.url),
-        baseDN: this.resolveEnvValue(envSettings, 'LDAP_BASE_DN', config.ldap.baseDN),
-        bindDN: this.resolveEnvValue(envSettings, 'LDAP_BIND_DN', config.ldap.bindDN),
-        bindPassword: this.resolveEnvValue(envSettings, 'LDAP_BIND_PASSWORD', config.ldap.bindPassword),
-        userSearchFilter: this.resolveEnvValue(envSettings, 'LDAP_USER_SEARCH_FILTER', config.ldap.userSearchFilter),
-        groupSearchBase: this.resolveEnvValue(envSettings, 'LDAP_GROUP_SEARCH_BASE', config.ldap.groupSearchBase),
-        requiredGroup: this.resolveEnvValue(envSettings, 'LDAP_REQUIRED_GROUP', config.ldap.requiredGroup),
-        timeout: this.resolveEnvInt(envSettings, 'LDAP_TIMEOUT', config.ldap.timeout)
-      },
-      https: {
-        enabled: this.resolveEnvBoolean(envSettings, 'HTTPS_ENABLED', config.https.enabled),
-        certPath: this.resolveEnvValue(envSettings, 'HTTPS_CERT_PATH', config.https.certPath),
-        keyPath: this.resolveEnvValue(envSettings, 'HTTPS_KEY_PATH', config.https.keyPath)
-      },
-      server: {
-        host: this.resolveEnvValue(envSettings, 'SERVER_HOST', config.server.host),
-        port: this.resolveEnvInt(envSettings, 'SERVER_PORT', config.server.port),
-        trustProxy: this.resolveEnvInt(envSettings, 'TRUST_PROXY', config.server.trustProxy),
-        defaultUserShift: this.resolveEnvValue(envSettings, 'DEFAULT_USER_SHIFT', config.server.defaultUserShift),
-        defaultUserContractPreset: this.resolveEnvValue(
-          envSettings,
-          'DEFAULT_USER_CONTRACT_PRESET',
-          config.server.defaultUserContractPreset
-        )
-      },
-      logging: {
-        level: this.resolveEnvValue(envSettings, 'LOG_LEVEL', config.logging.level),
-        toFile: this.resolveEnvBoolean(envSettings, 'LOG_TO_FILE', config.logging.toFile),
-        filePath: this.resolveEnvValue(envSettings, 'LOG_FILE_PATH', config.logging.filePath),
-        categories: {
-          ldap: this.resolveEnvBoolean(envSettings, 'LOG_LDAP', config.logging.categories.ldap),
-          http: this.resolveEnvBoolean(envSettings, 'LOG_HTTP', config.logging.categories.http),
-          server: this.resolveEnvBoolean(envSettings, 'LOG_SERVER', config.logging.categories.server),
-          settings: this.resolveEnvBoolean(envSettings, 'LOG_SETTINGS', config.logging.categories.settings),
-          errors: this.resolveEnvBoolean(envSettings, 'LOG_ERRORS', config.logging.categories.errors),
-          audit: this.resolveEnvBoolean(envSettings, 'LOG_AUDIT', config.logging.categories.audit)
-        }
-      },
-      jwt: {
-        secret: this.resolveEnvValue(envSettings, 'JWT_SECRET', config.jwt.secret),
-        expiresIn: this.resolveEnvValue(envSettings, 'JWT_EXPIRES_IN', config.jwt.expiresIn),
-        refreshEnabled: this.resolveEnvBoolean(envSettings, 'JWT_REFRESH_ENABLED', config.jwt.refreshEnabled)
-      },
-      storage: {
-        rootPath: this.resolveEnvValue(envSettings, 'DATA_ROOT_PATH', config.storage.rootPath),
-        auditRetentionDays: this.resolveEnvInt(envSettings, 'AUDIT_LOG_RETENTION_DAYS', config.storage.auditRetentionDays),
-        auditPayloadMode: this.resolveEnvValue(envSettings, 'AUDIT_PAYLOAD_MODE', config.storage.auditPayloadMode)
-      },
-      admin: {
-        sessionSecret: this.resolveEnvValue(envSettings, 'ADMIN_SESSION_SECRET', config.admin.sessionSecret),
-        sessionMaxAge: this.resolveEnvInt(envSettings, 'ADMIN_SESSION_MAX_AGE', config.admin.sessionMaxAge),
-        defaultUsername: this.resolveEnvValue(envSettings, 'ADMIN_DEFAULT_USERNAME', config.admin.defaultUsername),
-        defaultPassword: this.resolveEnvValue(envSettings, 'ADMIN_DEFAULT_PASSWORD', config.admin.defaultPassword)
-      },
-      security: {
-        rateLimitWindowMs: this.resolveEnvInt(envSettings, 'RATE_LIMIT_WINDOW_MS', config.security.rateLimitWindowMs),
-        rateLimitMaxRequests: this.resolveEnvInt(envSettings, 'RATE_LIMIT_MAX_REQUESTS', config.security.rateLimitMaxRequests),
-        loginRateLimitMax: this.resolveEnvInt(envSettings, 'LOGIN_RATE_LIMIT_MAX', config.security.loginRateLimitMax),
-        loginLockoutDurationMs: this.resolveEnvInt(envSettings, 'LOGIN_LOCKOUT_DURATION_MS', config.security.loginLockoutDurationMs),
-        corsOrigin: this.resolveEnvValue(envSettings, 'CORS_ORIGIN', config.security.corsOrigin)
-      },
-      activity: {
-        strictContinuity: this.resolveEnvBoolean(envSettings, 'ACTIVITY_STRICT_CONTINUITY', config.activity.strictContinuity),
-        requiredMinutes: this.resolveEnvInt(envSettings, 'ACTIVITY_REQUIRED_MINUTES', config.activity.requiredMinutes)
-      }
-    };
-
-    this.logSettings(' Settings caricati con successo');
-    return settings;
+    return envService.getCurrentSettings();
   }
 
   async updateEnvFile(updates) {
-    this.logSettings(' Aggiornamento file .env in corso...');
-    const safeUpdates = { ...updates };
-    if (safeUpdates.LDAP_BIND_PASSWORD) safeUpdates.LDAP_BIND_PASSWORD = '[REDACTED]';
-    if (safeUpdates.JWT_SECRET) safeUpdates.JWT_SECRET = '[REDACTED]';
-    if (safeUpdates.ADMIN_SESSION_SECRET) safeUpdates.ADMIN_SESSION_SECRET = '[REDACTED]';
-    if (safeUpdates.ADMIN_DEFAULT_PASSWORD) safeUpdates.ADMIN_DEFAULT_PASSWORD = '[REDACTED]';
-    this.logSettings(' Modifiche da applicare:', JSON.stringify(safeUpdates, null, 2));
+    return envService.updateEnvFile(updates);
+  }
 
-    let envContent = '';
-    let fileExists = true;
+  async applySettingsSnapshot(settings) {
+    return envService.applySettingsSnapshot(settings);
+  }
 
-    try {
-      envContent = await fs.readFile(this.envPath, 'utf-8');
-      this.logSettings(' File .env letto con successo');
-    } catch (error) {
-      this.logSettings(' File .env non trovato, provo a copiare da .env.example');
-      fileExists = false;
-
-      try {
-        const examplePath = path.join(process.cwd(), '.env.example');
-        envContent = await fs.readFile(examplePath, 'utf-8');
-        this.logSettings(' Template .env.example caricato');
-      } catch (exampleError) {
-        this.logSettings(' .env.example non trovato, creo file vuoto');
-        envContent = '';
-      }
+  // ========== SETTINGS UPDATE METHODS ==========
+  async normalizeDefaultUserShift(defaultUserShift) {
+    const trimmed = typeof defaultUserShift === 'string' ? defaultUserShift.trim() : '';
+    if (!trimmed) {
+      return '';
     }
 
-    const lines = envContent.split(/\r?\n/);
-    const updatedLines = [];
-    const processedKeys = new Set();
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-
-      if (trimmed === '' || trimmed.startsWith('#')) {
-        updatedLines.push(trimmed);
-        continue;
-      }
-
-      const match = trimmed.match(/^([A-Z_]+)=/);
-      if (match) {
-        const key = match[1];
-        if (updates.hasOwnProperty(key)) {
-          const oldValue = trimmed.split('=')[1];
-          const newValue = updates[key];
-          console.log(`[SETTINGS] Aggiornamento ${key}: "${oldValue}" -> "${newValue}"`);
-          updatedLines.push(`${key}=${updates[key]}`);
-          processedKeys.add(key);
-        } else {
-          updatedLines.push(trimmed);
-        }
-      } else {
-        updatedLines.push(trimmed);
-      }
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const matched = shiftTypes.find(shiftType => shiftType.name === trimmed || shiftType.id === trimmed);
+    if (!matched) {
+      throw new Error('Turno predefinito non valido. Seleziona un turno esistente.');
     }
 
-    for (const [key, value] of Object.entries(updates)) {
-      if (!processedKeys.has(key)) {
-        this.logSettings(`Aggiunta nuova chiave ${key}=${value}`);
-        updatedLines.push(`${key}=${value}`);
-      }
+    return matched.name;
+  }
+
+  async normalizeDefaultUserContractPreset(defaultUserContractPreset) {
+    const trimmed = typeof defaultUserContractPreset === 'string' ? defaultUserContractPreset.trim() : '';
+    if (!trimmed) {
+      return '';
     }
 
-    const finalContent = updatedLines.join('\n');
-    await fs.writeFile(this.envPath, finalContent, 'utf-8');
-    this.logSettings(' File .env salvato con successo');
-    this.logSettings(' Path: ' + this.envPath);
-
-    if (!fileExists) {
-      this.logSettings(' IMPORTANTE: File .env creato per la prima volta. Riavviare il server per applicare le modifiche.');
+    const presets = await contractPresetsService.getPresets();
+    const matched = presets.find(preset => preset.id === trimmed);
+    if (!matched) {
+      throw new Error('Preset contratto predefinito non valido. Seleziona un preset esistente.');
     }
+
+    return matched.id;
+  }
+
+  parseIntSetting(value, label, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed) || parsed < min || parsed > max) {
+      throw new Error(`${label} non valido. Deve essere tra ${min} e ${max}.`);
+    }
+    return parsed;
   }
 
   async updateLdapSettings(ldapSettings) {
@@ -298,7 +120,7 @@ class SettingsService {
       updates.LDAP_TIMEOUT = ldapSettings.timeout;
     }
 
-    await this.updateEnvFile(updates);
+    await envService.updateEnvFile(updates);
 
     this.logSettings(' Configurazione LDAP aggiornata con successo');
 
@@ -323,7 +145,7 @@ class SettingsService {
       updates.HTTPS_KEY_PATH = httpsSettings.keyPath;
     }
 
-    await this.updateEnvFile(updates);
+    await envService.updateEnvFile(updates);
 
     this.logSettings(' Configurazione HTTPS aggiornata con successo');
 
@@ -331,36 +153,6 @@ class SettingsService {
       success: true,
       message: 'Configurazione HTTPS aggiornata. Riavviare il server per applicare le modifiche.'
     };
-  }
-
-  async normalizeDefaultUserShift(defaultUserShift) {
-    const trimmed = typeof defaultUserShift === 'string' ? defaultUserShift.trim() : '';
-    if (!trimmed) {
-      return '';
-    }
-
-    const shiftTypes = await shiftTypesService.getShiftTypes();
-    const matched = shiftTypes.find(shiftType => shiftType.name === trimmed || shiftType.id === trimmed);
-    if (!matched) {
-      throw new Error('Turno predefinito non valido. Seleziona un turno esistente.');
-    }
-
-    return matched.name;
-  }
-
-  async normalizeDefaultUserContractPreset(defaultUserContractPreset) {
-    const trimmed = typeof defaultUserContractPreset === 'string' ? defaultUserContractPreset.trim() : '';
-    if (!trimmed) {
-      return '';
-    }
-
-    const presets = await contractPresetsService.getPresets();
-    const matched = presets.find(preset => preset.id === trimmed);
-    if (!matched) {
-      throw new Error('Preset contratto predefinito non valido. Seleziona un preset esistente.');
-    }
-
-    return matched.id;
   }
 
   async updateServerSettings(serverSettings) {
@@ -397,7 +189,7 @@ class SettingsService {
       updates.DEFAULT_USER_CONTRACT_PRESET = normalizedContractPreset;
     }
 
-    await this.updateEnvFile(updates);
+    await envService.updateEnvFile(updates);
 
     this.logSettings(' Configurazione server aggiornata con successo');
 
@@ -405,17 +197,6 @@ class SettingsService {
       success: true,
       message: 'Configurazione server aggiornata. Riavviare il server per applicare le modifiche.'
     };
-  }
-
-  parseIntSetting(value, label, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
-    if (value === undefined || value === null || value === '') {
-      return null;
-    }
-    const parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed) || parsed < min || parsed > max) {
-      throw new Error(`${label} non valido. Deve essere tra ${min} e ${max}.`);
-    }
-    return parsed;
   }
 
   async updateAdvancedSettings(advancedSettings) {
@@ -587,7 +368,7 @@ class SettingsService {
       updates.ACTIVITY_REQUIRED_MINUTES = requiredMinutes.toString();
     }
 
-    await this.updateEnvFile(updates);
+    await envService.updateEnvFile(updates);
 
     return {
       success: true,
@@ -595,779 +376,116 @@ class SettingsService {
     };
   }
 
-  async testLdapBind({ url, bindDN, bindPassword, timeout }) {
-    if (!url) {
-      throw new Error('URL LDAP obbligatorio');
-    }
-    if (!bindDN) {
-      throw new Error('Bind DN obbligatorio');
-    }
-    if (!bindPassword) {
-      throw new Error('Password bind obbligatoria');
-    }
-
-    const ldapConfig = {
-      url,
-      timeout: this.parseIntSetting(timeout, 'Timeout LDAP', { min: 1000, max: 60000 }) || config.ldap.timeout
-    };
-
-    const client = await ldapClient.createClientWithConfig(ldapConfig);
-    try {
-      await ldapClient.bind(client, bindDN, bindPassword);
-      return { success: true, message: 'Bind LDAP riuscito' };
-    } finally {
-      await ldapClient.unbind(client);
-    }
+  // ========== TROUBLESHOOT SERVICE DELEGATES ==========
+  async testLdapBind(params) {
+    return troubleshootService.testLdapBind(params);
   }
 
   async testStorageAccess(rootPath) {
-    const trimmedPath = typeof rootPath === 'string' ? rootPath.trim() : '';
-    const targetPath = trimmedPath || config.storage.rootPath;
-    await fs.mkdir(targetPath, { recursive: true });
-    const testFile = path.join(targetPath, `.write-test-${Date.now()}.tmp`);
-    await fs.writeFile(testFile, 'ok', 'utf-8');
-    await fs.unlink(testFile);
-    return { success: true, message: `Scrittura riuscita su ${targetPath}` };
+    return troubleshootService.testStorageAccess(rootPath);
   }
 
   async testHttpsFiles(certPath, keyPath) {
-    const trimmedCertPath = typeof certPath === 'string' ? certPath.trim() : '';
-    const trimmedKeyPath = typeof keyPath === 'string' ? keyPath.trim() : '';
-    if (!trimmedCertPath || !trimmedKeyPath) {
-      const error = new Error('Percorsi certificato e chiave sono obbligatori');
-      error.statusCode = 400;
-      throw error;
-    }
-    try {
-      await fs.access(trimmedCertPath);
-      await fs.access(trimmedKeyPath);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        const notFoundError = new Error('File HTTPS non trovato. Verifica i percorsi configurati.');
-        notFoundError.statusCode = 400;
-        throw notFoundError;
-      }
-      throw error;
-    }
-    return { success: true, message: 'File HTTPS trovati e accessibili' };
+    return troubleshootService.testHttpsFiles(certPath, keyPath);
   }
 
+  // ========== USER MANAGEMENT SERVICE DELEGATES ==========
   async listLocalUsers() {
-    const allUsers = await userStorage.listAll();
-    return allUsers.map(user => ({
-      userKey: user.userKey,
-      username: user.username,
-      displayName: user.displayName,
-      email: user.email,
-      department: user.department,
-      shift: user.shift,
-      contractPreset: user.contractPreset,
-      userType: user.userType || 'local',
-      createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt
-    }));
+    return userManagementService.listLocalUsers();
   }
 
   async createLocalUser(userData) {
-    const {
-      username,
-      password,
-      displayName,
-      email,
-      department,
-      shift,
-      contractPreset
-    } = userData;
-
-    if (!username || !password) {
-      throw new Error('Username e password sono obbligatori');
-    }
-
-    const existing = await userStorage.findByUsername(username);
-    if (existing) {
-      throw new Error('Username già esistente');
-    }
-
-    const passwordHash = await hashPassword(password);
-    const defaultShift = config.server.defaultUserShift || null;
-    const defaultContractPreset = config.server.defaultUserContractPreset || null;
-
-    const user = await userStorage.create({
-      username,
-      passwordHash,
-      displayName: displayName || username,
-      email: email || null,
-      department: department || null,
-      shift: shift || defaultShift || null,
-      contractPreset: contractPreset || defaultContractPreset || null,
-      userType: 'local'
-    });
-
-    return {
-      userKey: user.userKey,
-      username: user.username,
-      displayName: user.displayName,
-      email: user.email,
-      department: user.department,
-      contractPreset: user.contractPreset,
-      userType: user.userType
-    };
+    return userManagementService.createLocalUser(userData);
   }
 
   async updateUserShift(userKey, shift) {
-    const user = await userStorage.findByUserKey(userKey);
-
-    if (!user) {
-      throw new Error('Utente non trovato');
-    }
-
-    const updatedUser = await userStorage.update(userKey, { shift });
-
-    return {
-      success: true,
-      user: {
-        userKey: updatedUser.userKey,
-        username: updatedUser.username,
-        displayName: updatedUser.displayName,
-        shift: updatedUser.shift
-      },
-      message: 'Turno aggiornato con successo'
-    };
+    return userManagementService.updateUserShift(userKey, shift);
   }
 
   async updateUser(userKey, updates) {
-    const user = await userStorage.findByUserKey(userKey);
-
-    if (!user) {
-      throw new Error('Utente non trovato');
-    }
-
-    if (user.userType === 'ad' && (updates.department || updates.email)) {
-      throw new Error('Non è possibile modificare reparto ed email per utenti AD');
-    }
-
-    const allowedUpdates = {
-      shift: updates.shift
-    };
-
-    if (updates.hasOwnProperty('contractPreset')) {
-      allowedUpdates.contractPreset = updates.contractPreset;
-    }
-
-    if (user.userType !== 'ad') {
-      if (updates.hasOwnProperty('department')) {
-        allowedUpdates.department = updates.department;
-      }
-      if (updates.hasOwnProperty('email')) {
-        allowedUpdates.email = updates.email;
-      }
-      if (updates.hasOwnProperty('displayName')) {
-        allowedUpdates.displayName = updates.displayName;
-      }
-    }
-
-    const updatedUser = await userStorage.update(userKey, allowedUpdates);
-
-    return {
-      success: true,
-      user: {
-        userKey: updatedUser.userKey,
-        username: updatedUser.username,
-        displayName: updatedUser.displayName,
-        shift: updatedUser.shift,
-        contractPreset: updatedUser.contractPreset,
-        department: updatedUser.department,
-        email: updatedUser.email
-      },
-      message: 'Informazioni utente aggiornate con successo'
-    };
+    return userManagementService.updateUser(userKey, updates);
   }
 
   async resetLocalUserPassword(userKey, newPassword) {
-    const user = await userStorage.findByUserKey(userKey);
-
-    if (!user) {
-      throw new Error('Utente non trovato');
-    }
-
-    if (user.userType === 'ad') {
-      throw new Error('Non è possibile reimpostare la password per utenti AD');
-    }
-
-    if (!newPassword) {
-      throw new Error('Nuova password obbligatoria');
-    }
-
-    const passwordHash = await hashPassword(newPassword);
-    const updatedUser = await userStorage.update(userKey, { passwordHash });
-
-    return {
-      success: true,
-      user: {
-        userKey: updatedUser.userKey,
-        username: updatedUser.username
-      },
-      message: 'Password reimpostata con successo'
-    };
+    return userManagementService.resetLocalUserPassword(userKey, newPassword);
   }
 
   async removeUserActivityData(userKey) {
-    const activitiesPath = path.join(config.storage.rootPath, 'activities', userKey);
-    await fs.rm(activitiesPath, { recursive: true, force: true });
+    return userManagementService.removeUserActivityData(userKey);
   }
 
   async collectAuditLogFiles(dirPath) {
-    let entries = [];
-    try {
-      entries = await fs.readdir(dirPath, { withFileTypes: true });
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        return [];
-      }
-      throw error;
-    }
-
-    const files = [];
-    for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        files.push(...await this.collectAuditLogFiles(fullPath));
-      } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
-        files.push(fullPath);
-      }
-    }
-
-    return files;
+    return userManagementService.collectAuditLogFiles(dirPath);
   }
 
   async removeUserAuditLogs(userKey, username) {
-    const auditRoot = path.join(config.storage.rootPath, 'audit');
-    const auditFiles = await this.collectAuditLogFiles(auditRoot);
-
-    for (const filePath of auditFiles) {
-      let content = '';
-      try {
-        content = await fs.readFile(filePath, 'utf8');
-      } catch (error) {
-        continue;
-      }
-
-      const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
-      if (lines.length === 0) {
-        continue;
-      }
-
-      const remaining = [];
-      let changed = false;
-
-      for (const line of lines) {
-        try {
-          const entry = JSON.parse(line);
-          if (entry.userKey === userKey || (username && entry.username === username)) {
-            changed = true;
-            continue;
-          }
-          remaining.push(line);
-        } catch (error) {
-          remaining.push(line);
-        }
-      }
-
-      if (!changed) {
-        continue;
-      }
-
-      if (remaining.length === 0) {
-        await fs.unlink(filePath);
-      } else {
-        await fs.writeFile(filePath, remaining.join('\n') + '\n', 'utf8');
-      }
-    }
+    return userManagementService.removeUserAuditLogs(userKey, username);
   }
 
   async deleteLocalUser(userKey) {
-    const user = await userStorage.findByUserKey(userKey);
-
-    if (!user) {
-      throw new Error('Utente non trovato');
-    }
-
-    const userPath = path.join(config.storage.rootPath, 'users', `${userKey}.json`);
-    await fs.unlink(userPath);
-
-    const index = await userStorage.loadIndex();
-    delete index[user.username.toLowerCase()];
-    await userStorage.saveIndex(index);
-    userStorage.invalidateCache(userKey);
-
-    await this.removeUserActivityData(userKey);
-    await this.removeUserAuditLogs(userKey, user.username);
-
-    return {
-      success: true,
-      message: 'Utente eliminato con successo'
-    };
+    return userManagementService.deleteLocalUser(userKey);
   }
 
-  async exportServerConfiguration(options = {}) {
-    const sections = Array.isArray(options.sections) ? options.sections : null;
-    const includeSection = (name) => !sections || sections.includes(name);
-    const payload = {
-      generatedAt: new Date().toISOString()
-    };
-
-    if (includeSection('settings')) {
-      payload.settings = await this.getCurrentSettings();
-    }
-    if (includeSection('activityTypes')) {
-      payload.activityTypes = await activityTypesService.getActivityTypes();
-    }
-    if (includeSection('shiftTypes')) {
-      payload.shiftTypes = await shiftTypesService.getShiftTypes();
-    }
-    if (includeSection('contractPresets')) {
-      payload.contractPresets = await contractPresetsService.getPresets();
-    }
-    if (includeSection('quickActions')) {
-      payload.quickActions = await this.getQuickActions();
-    }
-
-    return payload;
+  // ========== CONFIG EXPORT SERVICE DELEGATES ==========
+  async exportServerConfiguration(options) {
+    return configExportService.exportServerConfiguration(options);
   }
 
-  async importServerConfiguration(payload, options = {}) {
-    if (!payload || typeof payload !== 'object') {
-      throw new Error('File configurazione impostazioni non valido');
-    }
-
-    const sections = Array.isArray(options.sections) ? options.sections : null;
-    const includeSection = (name) => !sections || sections.includes(name);
-
-    if (includeSection('settings')) {
-      if (!payload.settings) {
-        throw new Error('Configurazione impostazioni priva delle impostazioni server');
-      }
-      await this.applySettingsSnapshot(payload.settings);
-    }
-
-    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
-      await activityTypesService.setActivityTypes(payload.activityTypes);
-    }
-
-    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
-      await shiftTypesService.setShiftTypes(payload.shiftTypes);
-    }
-
-    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
-      await contractPresetsService.setPresets(payload.contractPresets);
-    }
-
-    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
-      await this.setQuickActions(payload.quickActions);
-    }
-
-    return {
-      success: true,
-      message: 'Configurazione impostazioni importata con successo'
-    };
+  async importServerConfiguration(payload, options) {
+    return configExportService.importServerConfiguration(payload, options);
   }
 
-  async exportFullConfiguration(options = {}) {
-    const sections = Array.isArray(options.sections) ? options.sections : null;
-    const includeSection = (name) => !sections || sections.includes(name);
-    const payload = {
-      generatedAt: new Date().toISOString()
-    };
-    const settings = await this.getCurrentSettings();
-
-    const includeSettings = includeSection('settings');
-    const includeLogging = includeSection('logging');
-    const includeLdap = includeSection('ldap');
-    const includeHttps = includeSection('https');
-    const includeAdvanced = includeSection('advanced');
-
-    if (includeSettings) {
-      payload.settings = settings;
-    } else {
-      const partialSettings = {};
-      if (includeLogging) {
-        partialSettings.logging = settings.logging;
-      }
-      if (includeLdap) {
-        partialSettings.ldap = settings.ldap;
-      }
-      if (includeHttps) {
-        partialSettings.https = settings.https;
-      }
-      if (includeAdvanced) {
-        partialSettings.jwt = settings.jwt;
-        partialSettings.storage = settings.storage;
-        partialSettings.admin = settings.admin;
-        partialSettings.security = settings.security;
-        partialSettings.activity = settings.activity;
-      }
-      if (Object.keys(partialSettings).length > 0) {
-        payload.settings = partialSettings;
-      }
-    }
-    if (includeSection('activityTypes')) {
-      payload.activityTypes = await activityTypesService.getActivityTypes();
-    }
-    if (includeSection('shiftTypes')) {
-      payload.shiftTypes = await shiftTypesService.getShiftTypes();
-    }
-    if (includeSection('contractPresets')) {
-      payload.contractPresets = await contractPresetsService.getPresets();
-    }
-    if (includeSection('quickActions')) {
-      payload.quickActions = await this.getQuickActions();
-    }
-    if (includeSection('users')) {
-      payload.users = await userStorage.listAll();
-    }
-    if (includeSection('activities')) {
-      payload.activities = await this.exportActivitiesSnapshot(settings.storage.rootPath);
-    }
-
-    return payload;
+  async exportFullConfiguration(options) {
+    return configExportService.exportFullConfiguration(options);
   }
 
   async exportActivitiesSnapshot(rootPath) {
-    const activitiesPath = path.join(rootPath, 'activities');
-    const snapshot = [];
-
-    let userDirs = [];
-    try {
-      userDirs = await fs.readdir(activitiesPath, { withFileTypes: true });
-    } catch (error) {
-      return snapshot;
-    }
-
-    for (const userDir of userDirs) {
-      if (!userDir.isDirectory()) {
-        continue;
-      }
-
-      const userKey = userDir.name;
-      const userPath = path.join(activitiesPath, userKey);
-      let yearDirs = [];
-
-      try {
-        yearDirs = await fs.readdir(userPath, { withFileTypes: true });
-      } catch (error) {
-        continue;
-      }
-
-      for (const yearDir of yearDirs) {
-        if (!yearDir.isDirectory()) {
-          continue;
-        }
-
-        const year = yearDir.name;
-        const yearPath = path.join(userPath, year);
-        let monthFiles = [];
-
-        try {
-          monthFiles = await fs.readdir(yearPath, { withFileTypes: true });
-        } catch (error) {
-          continue;
-        }
-
-        for (const monthFile of monthFiles) {
-          if (!monthFile.isFile() || !monthFile.name.endsWith('.json')) {
-            continue;
-          }
-
-          const filePath = path.join(yearPath, monthFile.name);
-          const monthData = await fileStorage.readJSON(filePath);
-
-          if (!monthData) {
-            continue;
-          }
-
-          snapshot.push({
-            userKey,
-            year,
-            month: monthFile.name.replace('.json', ''),
-            data: monthData
-          });
-        }
-      }
-    }
-
-    return snapshot;
+    return configExportService.exportActivitiesSnapshot(rootPath);
   }
 
-  async importFullConfiguration(payload, options = {}) {
-    if (!payload || typeof payload !== 'object') {
-      throw new Error('Payload configurazione non valido');
-    }
-
-    const sections = Array.isArray(options.sections) ? options.sections : null;
-    const includeSection = (name) => !sections || sections.includes(name);
-
-    const includeSettings = includeSection('settings');
-    const includeLogging = includeSection('logging');
-    const includeLdap = includeSection('ldap');
-    const includeHttps = includeSection('https');
-    const includeAdvanced = includeSection('advanced');
-    const needsSettings = includeSettings || includeLogging || includeLdap || includeHttps || includeAdvanced;
-
-    if (needsSettings) {
-      if (!payload.settings) {
-        throw new Error('Configurazione completa priva delle impostazioni server');
-      }
-
-      if (includeSettings) {
-        await this.applySettingsSnapshot(payload.settings);
-      } else {
-        const partialSettings = {};
-        if (includeLogging) {
-          if (!payload.settings.logging) {
-            throw new Error('Configurazione completa priva della sezione logging');
-          }
-          partialSettings.logging = payload.settings.logging;
-        }
-        if (includeLdap) {
-          if (!payload.settings.ldap) {
-            throw new Error('Configurazione completa priva della sezione LDAP');
-          }
-          partialSettings.ldap = payload.settings.ldap;
-        }
-        if (includeHttps) {
-          if (!payload.settings.https) {
-            throw new Error('Configurazione completa priva della sezione HTTPS');
-          }
-          partialSettings.https = payload.settings.https;
-        }
-        if (includeAdvanced) {
-          const hasAdvancedSection = payload.settings.jwt
-            || payload.settings.storage
-            || payload.settings.admin
-            || payload.settings.security
-            || payload.settings.activity;
-          if (!hasAdvancedSection) {
-            throw new Error('Configurazione completa priva della sezione impostazioni avanzate');
-          }
-          partialSettings.jwt = payload.settings.jwt;
-          partialSettings.storage = payload.settings.storage;
-          partialSettings.admin = payload.settings.admin;
-          partialSettings.security = payload.settings.security;
-          partialSettings.activity = payload.settings.activity;
-        }
-        await this.applySettingsSnapshot(partialSettings);
-      }
-    }
-
-    if (includeSection('activityTypes') && Array.isArray(payload.activityTypes)) {
-      await activityTypesService.setActivityTypes(payload.activityTypes);
-    }
-
-    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
-      await shiftTypesService.setShiftTypes(payload.shiftTypes);
-    }
-
-    if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
-      await contractPresetsService.setPresets(payload.contractPresets);
-    }
-
-    if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
-      await this.setQuickActions(payload.quickActions);
-    }
-
-    if (includeSection('users')) {
-      if (!Array.isArray(payload.users)) {
-        throw new Error('Configurazione completa priva della sezione utenti');
-      }
-      await this.importUsersSnapshot(payload.users);
-    }
-
-    if (includeSection('activities')) {
-      if (!Array.isArray(payload.activities)) {
-        throw new Error('Configurazione completa priva della sezione attività');
-      }
-      await this.importActivitiesSnapshot(payload.activities, payload.settings?.storage?.rootPath || config.storage.rootPath);
-    }
-
-    return { success: true, message: 'Configurazione importata con successo' };
-  }
-
-  async applySettingsSnapshot(settings) {
-    const updates = {
-      SERVER_HOST: settings.server?.host,
-      SERVER_PORT: settings.server?.port,
-      TRUST_PROXY: settings.server?.trustProxy,
-      DEFAULT_USER_SHIFT: settings.server?.defaultUserShift,
-      DEFAULT_USER_CONTRACT_PRESET: settings.server?.defaultUserContractPreset,
-      LDAP_ENABLED: settings.ldap?.enabled ? 'true' : 'false',
-      LDAP_URL: settings.ldap?.url,
-      LDAP_BASE_DN: settings.ldap?.baseDN,
-      LDAP_BIND_DN: settings.ldap?.bindDN,
-      LDAP_BIND_PASSWORD: settings.ldap?.bindPassword,
-      LDAP_USER_SEARCH_FILTER: settings.ldap?.userSearchFilter,
-      LDAP_GROUP_SEARCH_BASE: settings.ldap?.groupSearchBase,
-      LDAP_REQUIRED_GROUP: settings.ldap?.requiredGroup,
-      LDAP_TIMEOUT: settings.ldap?.timeout,
-      HTTPS_ENABLED: settings.https?.enabled ? 'true' : 'false',
-      HTTPS_CERT_PATH: settings.https?.certPath,
-      HTTPS_KEY_PATH: settings.https?.keyPath,
-      LOG_LEVEL: settings.logging?.level,
-      LOG_TO_FILE: settings.logging?.toFile ? 'true' : 'false',
-      LOG_FILE_PATH: settings.logging?.filePath,
-      JWT_SECRET: settings.jwt?.secret,
-      JWT_EXPIRES_IN: settings.jwt?.expiresIn,
-      JWT_REFRESH_ENABLED: settings.jwt?.refreshEnabled ? 'true' : 'false',
-      DATA_ROOT_PATH: settings.storage?.rootPath,
-      AUDIT_LOG_RETENTION_DAYS: settings.storage?.auditRetentionDays,
-      AUDIT_PAYLOAD_MODE: settings.storage?.auditPayloadMode,
-      ADMIN_SESSION_SECRET: settings.admin?.sessionSecret,
-      ADMIN_SESSION_MAX_AGE: settings.admin?.sessionMaxAge,
-      ADMIN_DEFAULT_USERNAME: settings.admin?.defaultUsername,
-      ADMIN_DEFAULT_PASSWORD: settings.admin?.defaultPassword,
-      RATE_LIMIT_WINDOW_MS: settings.security?.rateLimitWindowMs,
-      RATE_LIMIT_MAX_REQUESTS: settings.security?.rateLimitMaxRequests,
-      LOGIN_RATE_LIMIT_MAX: settings.security?.loginRateLimitMax,
-      LOGIN_LOCKOUT_DURATION_MS: settings.security?.loginLockoutDurationMs,
-      CORS_ORIGIN: settings.security?.corsOrigin,
-      ACTIVITY_STRICT_CONTINUITY: settings.activity?.strictContinuity ? 'true' : 'false',
-      ACTIVITY_REQUIRED_MINUTES: settings.activity?.requiredMinutes
-    };
-
-    Object.keys(updates).forEach(key => {
-      if (updates[key] === undefined || updates[key] === null) {
-        delete updates[key];
-      }
-    });
-
-    await this.updateEnvFile(updates);
+  async importFullConfiguration(payload, options) {
+    return configExportService.importFullConfiguration(payload, options);
   }
 
   async importUsersSnapshot(users) {
-    const usersPath = path.join(config.storage.rootPath, 'users');
-    const index = {};
-
-    await fs.mkdir(usersPath, { recursive: true });
-
-    for (const user of users) {
-      if (!user?.userKey || !user?.username) {
-        continue;
-      }
-
-      const userPath = path.join(usersPath, `${user.userKey}.json`);
-      await fileStorage.writeJSON(userPath, user);
-      index[user.username.toLowerCase()] = user.userKey;
-    }
-
-    await userStorage.saveIndex(index);
-    userStorage.invalidateAllCache();
+    return configExportService.importUsersSnapshot(users);
   }
 
   async importActivitiesSnapshot(entries, rootPath) {
-    const activitiesPath = path.join(rootPath, 'activities');
-
-    for (const entry of entries) {
-      if (!entry?.userKey || !entry?.year || !entry?.month || !entry?.data) {
-        continue;
-      }
-
-      const monthDir = path.join(activitiesPath, entry.userKey, String(entry.year));
-      await fs.mkdir(monthDir, { recursive: true });
-      const filePath = path.join(monthDir, `${entry.month}.json`);
-      await fileStorage.writeJSON(filePath, entry.data);
-    }
+    return configExportService.importActivitiesSnapshot(entries, rootPath);
   }
 
+  // ========== QUICK ACTIONS SERVICE DELEGATES ==========
   async getQuickActions() {
-    try {
-      const configData = await fileStorage.readJSON(this.quickActionsPath);
-      const raw = Array.isArray(configData?.quickActions) ? configData.quickActions : this.defaultQuickActions;
-      return this.normalizeQuickActions(raw);
-    } catch (error) {
-      return this.normalizeQuickActions(this.defaultQuickActions);
-    }
+    return quickActionsService.getQuickActions();
   }
 
   async setQuickActions(actions) {
-    if (!Array.isArray(actions)) {
-      throw new Error('Le quick action devono essere un array');
-    }
-    const normalized = this.normalizeQuickActions(actions);
-    await this.validateQuickActions(normalized);
-    await fileStorage.writeJSON(this.quickActionsPath, {
-      quickActions: normalized,
-      updatedAt: new Date().toISOString()
-    });
-    return normalized;
+    return quickActionsService.setQuickActions(actions);
   }
 
   async addQuickAction(payload) {
-    const actions = await this.getQuickActions();
-    const normalized = this.normalizeQuickActions([payload])[0];
-    await this.validateQuickActions([normalized]);
-    actions.push(normalized);
-    return await this.setQuickActions(actions);
+    return quickActionsService.addQuickAction(payload);
   }
 
   async updateQuickAction(id, payload) {
-    const actions = await this.getQuickActions();
-    const index = actions.findIndex(action => action.id === id);
-    if (index === -1) {
-      throw new Error('Quick action non trovata');
-    }
-    const updated = {
-      ...actions[index],
-      ...payload
-    };
-    const normalized = this.normalizeQuickActions([updated])[0];
-    await this.validateQuickActions([normalized]);
-    actions[index] = normalized;
-    return await this.setQuickActions(actions);
+    return quickActionsService.updateQuickAction(id, payload);
   }
 
   async removeQuickAction(id) {
-    const actions = await this.getQuickActions();
-    const filtered = actions.filter(action => action.id !== id);
-    if (filtered.length === actions.length) {
-      throw new Error('Quick action non trovata');
-    }
-    return await this.setQuickActions(filtered);
+    return quickActionsService.removeQuickAction(id);
   }
 
   normalizeQuickActions(actions) {
-    const pauseLabels = new Set(['pausa', 'pause']);
-    return actions
-      .filter(action => action && action.label)
-      .filter(action => action.activityType !== 'pausa' && action.isPause !== true)
-      .filter(action => !pauseLabels.has(String(action.label).trim().toLowerCase()))
-      .map((action) => {
-        const label = String(action.label).trim();
-        const activityType = 'altro';
-        return {
-          id: action.id || this.generateQuickActionId(label, activityType),
-          label,
-          activityType: 'altro',
-          notes: action.notes ? String(action.notes) : ''
-        };
-      });
+    return quickActionsService.normalizeQuickActions(actions);
   }
 
   async validateQuickActions(actions) {
-    const allowedTypes = new Set(['altro']);
-
-    actions.forEach((action) => {
-      if (!action.label) {
-        throw new Error('Ogni quick action deve avere un\'etichetta');
-      }
-      if (!allowedTypes.has(action.activityType)) {
-        throw new Error(`Tipo attività non valido per quick action: ${action.activityType}`);
-      }
-    });
+    return quickActionsService.validateQuickActions(actions);
   }
 
   generateQuickActionId(label, activityType) {
-    const base = `${activityType}-${label}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
-    const suffix = Math.random().toString(36).slice(2, 8);
-    return `${base}-${Date.now()}-${suffix}`;
+    return quickActionsService.generateQuickActionId(label, activityType);
   }
 }
 

@@ -544,6 +544,59 @@
       return Array.from(checkboxes).map(item => item.value);
     }
 
+    async function detectConfigSections(fileInput) {
+      if (!fileInput?.files?.length) {
+        return;
+      }
+
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const config = JSON.parse(text);
+
+        // Map of JSON keys to checkbox values
+        const sectionMap = {
+          settings: 'settings',
+          logging: 'logging',
+          ldap: 'ldap',
+          https: 'https',
+          advanced: 'advanced',
+          activityTypes: 'activityTypes',
+          shiftTypes: 'shiftTypes',
+          contractPresets: 'contractPresets',
+          quickActions: 'quickActions',
+          users: 'users',
+          activities: 'activities'
+        };
+
+        // First, uncheck all checkboxes
+        const allCheckboxes = document.querySelectorAll('input[name="fullConfigSection"]');
+        allCheckboxes.forEach(cb => {
+          cb.checked = false;
+        });
+
+        // Then, check only the ones present in the config file
+        let detectedSections = [];
+        Object.keys(sectionMap).forEach(key => {
+          if (config[key] !== undefined) {
+            const checkbox = document.querySelector(`input[name="fullConfigSection"][value="${sectionMap[key]}"]`);
+            if (checkbox) {
+              checkbox.checked = true;
+              detectedSections.push(sectionMap[key]);
+            }
+          }
+        });
+
+        if (detectedSections.length > 0) {
+          showAlert(`Rilevate ${detectedSections.length} sezioni nel file: ${detectedSections.join(', ')}`, 'info');
+        } else {
+          showAlert('Nessuna sezione riconosciuta nel file JSON', 'danger');
+        }
+      } catch (error) {
+        showAlert('Impossibile leggere il file JSON. Verifica che sia un file valido.', 'danger');
+      }
+    }
+
     async function exportConfiguration(anchor) {
       setLastActionAnchor(anchor);
       try {
@@ -1078,6 +1131,11 @@
 
       document.getElementById('btnImportConfig')?.addEventListener('click', function() {
         importConfiguration(this);
+      });
+
+      // Auto-detect sections when a config file is selected
+      document.getElementById('configImportFile')?.addEventListener('change', function() {
+        detectConfigSections(this);
       });
 
       document.getElementById('btnLoadServerInfo')?.addEventListener('click', function() {
