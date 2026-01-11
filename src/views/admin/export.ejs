@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -236,6 +237,8 @@
         });
       });
     });
+
+    helpSystem.init(adminExportHelp);
   </script>
 </body>
 </html>

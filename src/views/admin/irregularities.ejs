@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -43,7 +44,7 @@
     </div>
 
     <% if (irregularities.length === 0) { %>
-      <p class="text-muted mt-10">Nessuna irregolarità rilevata nel periodo selezionato.</p>
+      <p class="text-muted mt-4">Nessuna irregolarità rilevata nel periodo selezionato.</p>
     <% } else { %>
       <table class="data-table">
         <thead>

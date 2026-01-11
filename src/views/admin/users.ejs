@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -49,7 +50,7 @@
 
       <button id="btnShowCreateUser" class="btn btn-success mb-16">+ Nuovo Utente Locale</button>
 
-      <div id="createUserForm" class="panel mb-16" style="display: none;">
+      <div id="createUserForm" class="panel mb-4" style="display: none;">
         <h4>Crea Nuovo Utente</h4>
         <form id="userCreateForm">
           <div class="form-grid">
@@ -92,7 +93,7 @@
               </select>
             </div>
           </div>
-          <div class="flex gap-8">
+          <div class="flex gap-2">
             <button type="submit" class="btn btn-primary">Crea Utente</button>
             <button type="button" id="btnHideCreateUser" class="btn">Annulla</button>
           </div>
@@ -400,6 +401,8 @@
         deleteUser(userKey, username, btn);
       }
     });
+
+    helpSystem.init(adminUsersHelp);
   </script>
 </body>
 </html>

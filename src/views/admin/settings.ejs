@@ -35,11 +35,11 @@
       <div class="alert alert-info">
         Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
       </div>
-      <div class="mb-20">
+      <div class="mb-5">
         <button type="button" id="btnRestartServer" class="btn btn-danger">
           🔄 Riavvia Server
         </button>
-        <span class="ml-10 text-muted text-small">
+        <span class="ml-3 text-muted text-small">
           Tutti gli utenti verranno temporaneamente disconnessi
         </span>
       </div>
@@ -86,12 +86,12 @@
         </div>
         <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
       </form>
-      <div class="settings-subsection mt-20">
+      <div class="settings-subsection mt-5">
         <h4>Import / Export Configurazione</h4>
-        <p class="text-muted mb-12">
+        <p class="text-muted mb-3">
           Esporta o reimporta una o più sezioni di configurazione, inclusi utenti e attività, in un unico file JSON.
         </p>
-        <div class="form-grid mb-12" id="fullConfigSections">
+        <div class="form-grid mb-3" id="fullConfigSections">
           <label class="checkbox-inline">
             <input type="checkbox" name="fullConfigSection" value="settings" checked>
             Impostazioni server
@@ -146,7 +146,7 @@
             ⬆️ Importa configurazione
           </button>
         </div>
-        <p class="settings-warning mt-10">
+        <p class="settings-warning mt-3">
           L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
         </p>
       </div>
@@ -221,11 +221,11 @@
             <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
           </div>
         </div>
-        <div class="flex gap-12 align-center mt-12">
+        <div class="flex gap-3 align-center mt-3">
           <button type="button" id="btnTestLdapBind" class="btn btn-success">Test Bind LDAP</button>
           <span class="text-muted text-small">Esegui il test prima di salvare le modifiche LDAP.</span>
         </div>
-        <div class="mt-12">
+        <div class="mt-3">
           <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
         </div>
       </form>
@@ -247,7 +247,7 @@
           <div class="form-group">
             <label for="httpsCertPath">Percorso Certificato
             </label>
-            <div class="flex gap-8 align-center">
+            <div class="flex gap-2 align-center">
               <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
               <button type="button" class="btn btn-sm" data-browse-target="httpsCertPath">Esplora</button>
             </div>
@@ -256,7 +256,7 @@
           <div class="form-group">
             <label for="httpsKeyPath">Percorso Chiave Privata
             </label>
-            <div class="flex gap-8 align-center">
+            <div class="flex gap-2 align-center">
               <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
               <button type="button" class="btn btn-sm" data-browse-target="httpsKeyPath">Esplora</button>
             </div>
@@ -273,8 +273,8 @@
         Configura le categorie di logging disponibili.
       </div>
       <form id="loggingForm">
-        <h4 style="margin-bottom: 0.75rem;">Categorie di Log</h4>
-        <div class="field-help" style="margin-bottom: 1rem;">Seleziona le categorie di log da abilitare. Ogni checkbox controlla una sezione specifica senza sovrapposizioni.</div>
+        <h4 class="mb-3">Categorie di Log</h4>
+        <div class="field-help mb-4">Seleziona le categorie di log da abilitare. Ogni checkbox controlla una sezione specifica senza sovrapposizioni.</div>
 
         <div class="form-grid">
           <div class="form-group">
@@ -549,10 +549,11 @@
         return;
       }
 
+      setLastActionAnchor(fileInput);
       const file = fileInput.files[0];
       try {
         const text = await file.text();
-        const config = JSON.parse(text);
+        const data = JSON.parse(text);
 
         const allCheckboxes = document.querySelectorAll('input[name="fullConfigSection"]');
         allCheckboxes.forEach(cb => {
@@ -560,38 +561,39 @@
         });
 
         const detectedSections = new Set();
-        const settings = config.settings || {};
-        if (settings.server) {
+        const settings = data.settings || {};
+
+        if (settings.server && Object.keys(settings.server).length > 0) {
           detectedSections.add('settings');
         }
-        if (settings.logging) {
+        if (settings.logging && Object.keys(settings.logging).length > 0) {
           detectedSections.add('logging');
         }
-        if (settings.ldap) {
+        if (settings.ldap && Object.keys(settings.ldap).length > 0) {
           detectedSections.add('ldap');
         }
-        if (settings.https) {
+        if (settings.https && Object.keys(settings.https).length > 0) {
           detectedSections.add('https');
         }
         if (settings.jwt || settings.storage || settings.admin || settings.security || settings.activity) {
           detectedSections.add('advanced');
         }
-        if (config.activityTypes !== undefined) {
+        if (Array.isArray(data.activityTypes) && data.activityTypes.length > 0) {
           detectedSections.add('activityTypes');
         }
-        if (config.shiftTypes !== undefined) {
+        if (Array.isArray(data.shiftTypes) && data.shiftTypes.length > 0) {
           detectedSections.add('shiftTypes');
         }
-        if (config.contractPresets !== undefined) {
+        if (Array.isArray(data.contractPresets) && data.contractPresets.length > 0) {
           detectedSections.add('contractPresets');
         }
-        if (config.quickActions !== undefined) {
+        if (Array.isArray(data.quickActions) && data.quickActions.length > 0) {
           detectedSections.add('quickActions');
         }
-        if (config.users !== undefined) {
+        if (Array.isArray(data.users) && data.users.length > 0) {
           detectedSections.add('users');
         }
-        if (config.activities !== undefined) {
+        if (Array.isArray(data.activities) && data.activities.length > 0) {
           detectedSections.add('activities');
         }
 
@@ -604,12 +606,12 @@
         });
 
         if (detectedList.length > 0) {
-          showAlert(`Rilevate ${detectedList.length} sezioni nel file: ${detectedList.join(', ')}`, 'info');
+          showAlert(`Rilevate ${detectedList.length} sezioni: ${detectedList.join(', ')}`, 'info');
         } else {
           showAlert('Nessuna sezione riconosciuta nel file JSON', 'danger');
         }
       } catch (error) {
-        showAlert('Impossibile leggere il file JSON. Verifica che sia un file valido.', 'danger');
+        showAlert('File JSON non valido. Verifica il formato.', 'danger');
       }
     }
 

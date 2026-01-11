@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -183,6 +184,8 @@
         deleteQuickAction(deleteBtn.dataset.deleteAction, deleteBtn);
       }
     });
+
+    helpSystem.init(adminQuickActionsHelp);
   </script>
 </body>
 </html>

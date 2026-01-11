@@ -178,6 +178,16 @@ const adminSettingsHelp = `
   </div>
 
   <div class="help-section">
+    <h4>Import/Export Configurazione</h4>
+    <p>Esporta o importa sezioni di configurazione selezionate:</p>
+    <ul>
+      <li>Seleziona le sezioni da includere (impostazioni, turni, utenti, attivita, ecc.)</li>
+      <li>L'import sovrascrive i dati esistenti delle sezioni selezionate</li>
+      <li>Effettua sempre un backup prima dell'import</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
     <h4>Gestione Categorie Attivita</h4>
     <p>Configura le categorie disponibili nel menu a tendina degli utenti:</p>
     <ul>
@@ -191,15 +201,171 @@ const adminSettingsHelp = `
   </div>
 
   <div class="help-section">
-    <h4>Gestione Utenti Locali</h4>
-    <p>Crea e gestisci utenti con autenticazione locale:</p>
+    <h4>Logging</h4>
+    <p>Configura le categorie di log per il debugging:</p>
     <ul>
-      <li><strong>Nuovo Utente:</strong> Clicca "+ Nuovo Utente Locale" per creare un account</li>
-      <li><strong>Eliminazione:</strong> Solo utenti locali possono essere eliminati</li>
-      <li><strong>Utenti AD:</strong> Vengono creati automaticamente al primo login e non possono essere eliminati manualmente</li>
+      <li><strong>LDAP/AD:</strong> Autenticazione e ricerche Active Directory</li>
+      <li><strong>HTTP:</strong> Richieste e risposte HTTP</li>
+      <li><strong>Server:</strong> Eventi di avvio/arresto server</li>
+      <li><strong>Settings:</strong> Modifiche alle configurazioni</li>
+      <li><strong>Errors:</strong> Errori applicativi</li>
+      <li><strong>Audit:</strong> Azioni utente (login, modifiche dati)</li>
+    </ul>
+  </div>
+`;
+
+const adminExportHelp = `
+  <div class="help-section">
+    <h3>Export Dati Attivita</h3>
+    <p>Esporta i dati delle attivita in vari formati per analisi e reportistica.</p>
+  </div>
+
+  <div class="help-section">
+    <h4>Range Rapido</h4>
+    <p>Usa i pulsanti rapidi per selezionare periodi comuni:</p>
+    <ul>
+      <li><strong>Oggi/Ieri:</strong> Singola giornata</li>
+      <li><strong>Settimana:</strong> Corrente o scorsa (Lun-Dom)</li>
+      <li><strong>Mese:</strong> Corrente o precedente</li>
+      <li><strong>Anno:</strong> Da inizio anno ad oggi</li>
+      <li><strong>Tutti:</strong> Tutti i dati disponibili</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h4>Selezione Utenti</h4>
+    <p>Seleziona gli utenti da includere nell'export:</p>
+    <ul>
+      <li>Usa "Tutti gli utenti" per un export completo</li>
+      <li>Deseleziona per scegliere utenti specifici</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h4>Tipi di Export</h4>
+    <ul>
+      <li><strong>Dettagliato:</strong> Ogni attivita come riga separata</li>
+      <li><strong>Riepilogo:</strong> Totali aggregati per utente/giorno</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h4>Formati Disponibili</h4>
+    <ul>
+      <li><strong>XLSX:</strong> Excel, ideale per analisi e pivot table</li>
+      <li><strong>CSV:</strong> Compatibile con tutti i software, streaming per grandi dataset</li>
+      <li><strong>JSON:</strong> Per integrazioni e automazioni</li>
+    </ul>
+    <div class="help-note">
+      <strong>Consiglio:</strong> Per dataset molto grandi preferisci CSV che usa streaming.
+    </div>
+  </div>
+`;
+
+const adminShiftsHelp = `
+  <div class="help-section">
+    <h3>Gestione Turni</h3>
+    <p>Configura i tipi di turno e i preset contrattuali disponibili nel sistema.</p>
+  </div>
+
+  <div class="help-section">
+    <h4>Tipi di Turno</h4>
+    <p>Ogni turno definisce:</p>
+    <ul>
+      <li><strong>Giorni lavorativi:</strong> Quali giorni della settimana sono attivi</li>
+      <li><strong>Weekend:</strong> Se includere sabato e domenica</li>
+      <li><strong>Festivita:</strong> Se includere giorni festivi</li>
+      <li><strong>Contratto:</strong> Ore settimanali previste</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h4>Predefiniti Nuovi Utenti</h4>
+    <p>Seleziona turno e contratto da assegnare automaticamente:</p>
+    <ul>
+      <li>Al primo accesso di utenti AD</li>
+      <li>Alla creazione di utenti locali</li>
     </ul>
     <div class="help-warning">
-      <strong>Attenzione:</strong> L'eliminazione di un utente locale e permanente. I dati delle attivita dell'utente verranno mantenuti.
+      <strong>Attenzione:</strong> Le modifiche ai predefiniti richiedono il riavvio del server.
     </div>
+  </div>
+
+  <div class="help-section">
+    <h4>Preset Contratti</h4>
+    <p>Definisci preset riutilizzabili per i turni:</p>
+    <ul>
+      <li><strong>Full-time:</strong> Tipicamente 40h/settimana</li>
+      <li><strong>Part-time:</strong> Ore ridotte personalizzabili</li>
+      <li><strong>Personalizzato:</strong> Configurazione libera</li>
+    </ul>
+  </div>
+`;
+
+const adminUsersHelp = `
+  <div class="help-section">
+    <h3>Gestione Utenti</h3>
+    <p>Visualizza, crea e gestisci gli utenti del sistema.</p>
+  </div>
+
+  <div class="help-section">
+    <h4>Tipi di Utente</h4>
+    <ul>
+      <li><strong>AD:</strong> Autenticati tramite Active Directory, creati al primo login</li>
+      <li><strong>Locale:</strong> Credenziali gestite localmente</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h4>Creazione Utente Locale</h4>
+    <ol>
+      <li>Clicca "Nuovo Utente Locale"</li>
+      <li>Compila username, password e nome visualizzato</li>
+      <li>Seleziona turno e preset contratto</li>
+      <li>Clicca "Crea Utente"</li>
+    </ol>
+  </div>
+
+  <div class="help-section">
+    <h4>Gestione Profilo</h4>
+    <ul>
+      <li><strong>Modifica:</strong> Aggiorna turno, contratto e dettagli</li>
+      <li><strong>Reset Password:</strong> Solo per utenti locali</li>
+      <li><strong>Elimina:</strong> Solo utenti locali (i dati attivita vengono mantenuti)</li>
+    </ul>
+    <div class="help-warning">
+      <strong>Attenzione:</strong> Gli utenti AD non possono essere eliminati manualmente.
+    </div>
+  </div>
+`;
+
+const adminQuickActionsHelp = `
+  <div class="help-section">
+    <h3>Quick Action</h3>
+    <p>Configura le azioni rapide disponibili nel calendario utenti.</p>
+  </div>
+
+  <div class="help-section">
+    <h4>Cosa sono le Quick Action</h4>
+    <p>Permettono agli utenti di impostare rapidamente una giornata intera con un singolo click dal calendario mensile.</p>
+  </div>
+
+  <div class="help-section">
+    <h4>Creazione Quick Action</h4>
+    <ol>
+      <li>Inserisci un'etichetta descrittiva (es: "Smart working")</li>
+      <li>Aggiungi note opzionali</li>
+      <li>Clicca "Salva"</li>
+    </ol>
+  </div>
+
+  <div class="help-section">
+    <h4>Utilizzo da parte degli Utenti</h4>
+    <p>Nella dashboard utente:</p>
+    <ul>
+      <li>Seleziona un giorno dal calendario</li>
+      <li>Clicca su una quick action per applicarla</li>
+      <li>L'attivita viene registrata per l'intera giornata</li>
+    </ul>
   </div>
 `;

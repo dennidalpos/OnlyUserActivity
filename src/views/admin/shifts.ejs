@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -58,7 +59,7 @@
         Configura i tipi di turno disponibili nel sistema. I turni configurati qui saranno disponibili per l'assegnazione agli utenti.
       </div>
 
-      <div class="mb-20 panel">
+      <div class="mb-5 panel">
         <h4>Predefiniti nuovi utenti</h4>
         <p class="text-muted">
           Seleziona il turno e il preset contratto da applicare al primo accesso degli utenti.
@@ -114,7 +115,7 @@
         <p class="text-muted text-small">Le modifiche richiedono il riavvio del server per essere applicate.</p>
       </div>
 
-      <div class="mb-20">
+      <div class="mb-5">
         <button type="button" id="btnAddShift" class="btn btn-success">
           ➕ Aggiungi Nuovo Turno
         </button>
@@ -566,6 +567,8 @@
         deleteContractPreset(deleteBtn.dataset.deletePreset, deleteBtn);
       }
     });
+
+    helpSystem.init(adminShiftsHelp);
   </script>
 </body>
 </html>

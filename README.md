@@ -1,30 +1,46 @@
 # Activity Tracker
 
-Sistema Node.js/Express con dashboard EJS per tracciare attività giornaliere, gestire turni e configurazioni amministrative, con esportazione dati in CSV/JSON/XLSX.
+Sistema Node.js/Express con dashboard EJS per tracciare attivita giornaliere, gestire turni e configurazioni amministrative, con esportazione dati in CSV/JSON/XLSX.
 
 ## Panoramica
 
-L'applicazione è pensata per team che registrano attività quotidiane e per amministratori che monitorano avanzamento, compliance e reportistica. Sono previste due aree principali:
+L'applicazione e pensata per team che registrano attivita quotidiane e per amministratori che monitorano avanzamento, compliance e reportistica. Sono previste due aree principali:
 
-- **Dashboard utente**: inserimento attività, gestione del calendario mensile, quick action e riepiloghi.
+- **Dashboard utente**: inserimento attivita, gestione del calendario mensile, quick action e riepiloghi.
 - **Dashboard admin**: monitoraggio giornaliero, gestione utenti, turni, impostazioni avanzate e logging.
 
 ## Architettura e stack
 
 - **Backend**: Express con middleware per sicurezza (helmet), rate limiting e logging.
 - **View layer**: EJS con script client-side in `public/js`.
-- **Storage**: file JSON in `data/` (attività, utenti, configurazioni).
-- **Auth**: LDAP/Active Directory opzionale, più credenziali locali.
+- **Storage**: file JSON in `data/` (attivita, utenti, configurazioni).
+- **Auth**: LDAP/Active Directory opzionale, piu credenziali locali.
+- **UI**: CSS modulare con design system basato su token (shared.css + admin.css/user.css).
 
 ## Struttura del progetto
 
-- `src/app.js`: bootstrap Express, middleware, route principali.
-- `src/routes/`: endpoint API e pagine admin/user.
-- `src/services/`: logica di business (attività, utenti, export, logging, settings).
-- `src/views/`: template EJS per dashboard admin e user.
-- `public/`: asset statici CSS/JS.
-- `data/`: archivio JSON persistente (deve essere scrivibile).
-- `scripts/`: utility per operazioni manuali.
+```
+src/
+  app.js           # Bootstrap Express, middleware, route principali
+  routes/          # Endpoint API e pagine admin/user
+  services/        # Logica di business (attivita, utenti, export, logging, settings)
+  views/           # Template EJS per dashboard admin e user
+    admin/         # Dashboard, export, turni, utenti, impostazioni
+    user/          # Dashboard utente, calendario, attivita
+
+public/
+  css/
+    shared.css     # Token, componenti base, utility classes
+    admin.css      # Stili specifici admin
+    user.css       # Stili specifici utente
+  js/
+    dashboard.js   # Logica dashboard utente
+    help.js        # Sistema guida contestuale
+    ui-helper.js   # Notifiche e feedback UI
+
+data/              # Archivio JSON persistente (deve essere scrivibile)
+scripts/           # Utility per operazioni manuali
+```
 
 ## Requisiti
 
@@ -40,13 +56,13 @@ npm install
 
 ## Avvio
 
-### Modalità sviluppo
+### Modalita sviluppo
 
 ```bash
 npm run dev
 ```
 
-### Modalità produzione
+### Modalita produzione
 
 ```bash
 npm start
@@ -94,8 +110,8 @@ LDAP_REQUIRED_GROUP=Domain Users
 ```
 
 Note LDAP:
-- `LDAP_REQUIRED_GROUP` può essere nome semplice o DN completo.
-- È supportato il primary group (es. "Domain Users").
+- `LDAP_REQUIRED_GROUP` puo essere nome semplice o DN completo.
+- E supportato il primary group (es. "Domain Users").
 
 ### HTTPS
 
@@ -130,19 +146,21 @@ Abilitare categorie specifiche permette di osservare eventi mirati senza increme
 - Dashboard utenti: `http://localhost:3001/user/auth/login`
 - Dashboard admin: `http://localhost:3001/admin/auth/login` (default: admin/admin)
 
-## Funzionalità principali
+## Funzionalita principali
 
-### Gestione attività (utente)
+### Gestione attivita (utente)
 
-- Inserimento attività con durata (ore/minuti) o intervalli (HH:MM, step 15 minuti).
-- Tipo attività `altro` con specifica custom.
-- Calendario mensile con indicatori di completamento.
+- Inserimento attivita con durata (ore/minuti) o intervalli (HH:MM, step 15 minuti).
+- Tipo attivita `altro` con specifica custom.
+- Calendario mensile con indicatori di completamento e quick action.
+- Guida contestuale accessibile dal pulsante "?" in ogni pagina.
 
 ### Monitoraggio e export (admin)
 
-- Stato giornaliero utenti e aggregati di periodo.
+- Stato giornaliero utenti e aggregati di periodo (giorno/settimana/mese/anno).
+- Filtri per username e stato completamento.
 - Export CSV/JSON/XLSX con report dettagliati o riepilogativi.
-- Parametri esportati: email, reparto, turno, metadata, timestamp principali, attività.
+- Parametri esportati: email, reparto, turno, metadata, timestamp principali, attivita.
 
 ### Gestione utenti e turni (admin)
 
@@ -150,20 +168,39 @@ Abilitare categorie specifiche permette di osservare eventi mirati senza increme
 - Creazione utenti locali con turno e preset contratto.
 - Reset password e aggiornamenti profilo.
 - Gestione turni, preset contratti e predefiniti di onboarding.
+- Configurazione quick action per il calendario utenti.
 
 ### Import/Export configurazione (admin)
 
-Dalla sezione **Configurazione** è possibile esportare o importare un file JSON selezionando le sezioni desiderate:
+Dalla sezione **Configurazione** e possibile esportare o importare un file JSON selezionando le sezioni desiderate:
 
 - Impostazioni server
-- Tipi attività
+- Tipi attivita
 - Turni
 - Preset contratti
 - Quick action
 - Utenti
-- Attività
+- Attivita
 
 Le sezioni selezionate vengono sovrascritte durante l'import. Effettuare un export di backup prima di procedere.
+
+## UI e design system
+
+L'interfaccia utilizza un design system modulare basato su CSS custom properties:
+
+- **Token**: colori, spaziature, tipografia, ombre definiti in `:root`
+- **Componenti base**: `.btn`, `.card`, `.panel`, `.alert`, `.badge`
+- **Utility classes**: margini, padding, flex, gap, allineamento testo
+- **Varianti pulsanti**: `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-outline`, `.btn-toggle`
+- **Checkbox**: `.checkbox-inline`, `.checkbox-group` per allineamento consistente
+
+## Guida contestuale
+
+Ogni pagina admin include un pulsante "?" (in basso a destra) che apre una guida specifica per quella sezione. Le guide spiegano:
+
+- Funzionalita disponibili
+- Passaggi per le operazioni comuni
+- Note e avvertenze importanti
 
 ## Script utili
 
@@ -183,10 +220,10 @@ I dati sono persistiti in `data/` come file JSON. Assicurarsi che la directory s
 - **LDAP**: controllare URL, Base DN e Bind DN, e usare `ldaps://` per connessioni sicure.
 - **HTTPS**: verificare che i path di certificato e chiave siano accessibili dal server.
 - **Export**: per dataset grandi preferire CSV con streaming.
+- **UI**: se gli stili non si caricano, verificare che `public/css/` sia accessibile.
 
 ## Sicurezza e raccomandazioni
 
 - Impostare segreti lunghi e non riutilizzati (`JWT_SECRET`, `ADMIN_SESSION_SECRET`).
 - Usare HTTPS in ambienti produttivi.
 - Limitare l'accesso alla dashboard admin a reti fidate o tramite reverse proxy.
-

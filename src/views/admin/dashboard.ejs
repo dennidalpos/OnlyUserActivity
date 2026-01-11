@@ -6,6 +6,7 @@
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -191,5 +192,9 @@
       </tbody>
     </table>
   </main>
+
+  <script nonce="<%= cspNonce %>">
+    helpSystem.init(adminDashboardHelp);
+  </script>
 </body>
 </html>
