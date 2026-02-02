@@ -102,7 +102,7 @@ router.get('/dashboard/users/:userKey/irregularities', async (req, res) => {
 });
 
 function calculateDateRange(date, viewMode) {
-  const d = new Date(date);
+  const d = new Date(`${date}T00:00:00`);
   let fromDate, toDate;
 
   if (viewMode === 'week') {

@@ -54,7 +54,7 @@ function validateDateFormat(dateString) {
     return { valid: false, error: 'Formato data non valido. Usare YYYY-MM-DD' };
   }
 
-  const date = new Date(dateString);
+  const date = new Date(`${dateString}T00:00:00`);
   if (isNaN(date.getTime())) {
     return { valid: false, error: 'Data non valida' };
   }
