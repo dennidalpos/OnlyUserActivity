@@ -1,0 +1,253 @@
+const Joi = require('joi');
+const { AppError } = require('./errorHandler');
+const activityTypesService = require('../services/admin/activityTypesService');
+const { validateTimeStep } = require('../services/utils/timeUtils');
+
+let ACTIVITY_TYPES = [
+  'lavoro',
+  'meeting',
+  'formazione',
+  'supporto',
+  'ferie',
+  'festività',
+  'malattia',
+  'permesso',
+  'riposo',
+  'trasferta',
+  'altro'
+];
+
+async function loadActivityTypes() {
+  try {
+    ACTIVITY_TYPES = await activityTypesService.getActivityTypes();
+  } catch (error) {
+    console.error('Error loading activity types, using defaults:', error);
+  }
+}
+
+loadActivityTypes();
+
+const loginSchema = Joi.object({
+  username: Joi.string()
+    .pattern(/^[a-zA-Z0-9._-]+$/)
+    .min(3)
+    .max(50)
+    .required()
+    .messages({
+      'string.pattern.base': 'Username può contenere solo lettere, numeri, punti, trattini e underscore',
+      'string.min': 'Username deve essere lungo almeno 3 caratteri',
+      'any.required': 'Username è obbligatorio'
+    }),
+  password: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'Password è obbligatoria'
+    })
+});
+
+const timeStepSchema = Joi.string()
+  .custom((value, helpers) => {
+    const result = validateTimeStep(value);
+    if (!result.valid) {
+      return helpers.error('any.custom', { message: result.error });
+    }
+    return value;
+  })
+  .messages({
+    'any.custom': '{{#message}}'
+  });
+
+const buildActivitySchema = () => Joi.object({
+  date: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Formato data non valido. Usare YYYY-MM-DD',
+      'any.required': 'Data è obbligatoria'
+    }),
+  durationHours: Joi.number()
+    .integer()
+    .min(0)
+    .max(24)
+    .messages({
+      'number.base': 'Le ore devono essere un numero',
+      'number.min': 'Le ore non possono essere negative',
+      'number.max': 'Le ore non possono superare 24'
+    }),
+  durationMinutes: Joi.number()
+    .integer()
+    .valid(0, 15, 30, 45)
+    .messages({
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45',
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
+    }),
+  startTime: timeStepSchema,
+  endTime: timeStepSchema,
+  activityType: Joi.string()
+    .valid(...ACTIVITY_TYPES, 'pausa')
+    .required()
+    .messages({
+      'any.only': `Tipo attività non valido. Valori ammessi: ${ACTIVITY_TYPES.join(', ')}`,
+      'any.required': 'Tipo attività è obbligatorio'
+    }),
+  customType: Joi.string()
+    .max(100)
+    .allow(null, '')
+    .messages({
+      'string.max': 'Tipo personalizzato troppo lungo (max 100 caratteri)'
+    }),
+  notes: Joi.string()
+    .max(500)
+    .allow('')
+    .messages({
+      'string.max': 'Note troppo lunghe (max 500 caratteri)'
+    })
+}).custom((value, helpers) => {
+  const hasDuration = value.durationHours !== undefined || value.durationMinutes !== undefined;
+  const hasTimes = value.startTime || value.endTime;
+
+  if (hasDuration && hasTimes) {
+    return helpers.error('any.custom', { message: 'Inserire durata oppure orari, non entrambi' });
+  }
+
+  if (!hasDuration && !hasTimes) {
+    return helpers.error('any.custom', { message: 'Inserire durata oppure orari di inizio/fine' });
+  }
+
+  if (hasDuration && (value.durationHours === undefined || value.durationMinutes === undefined)) {
+    return helpers.error('any.custom', { message: 'Ore e minuti devono essere specificati insieme' });
+  }
+
+  if (hasTimes && (!value.startTime || !value.endTime)) {
+    return helpers.error('any.custom', { message: 'Orario di inizio e fine devono essere specificati insieme' });
+  }
+
+  return value;
+}).messages({
+  'any.custom': '{{#message}}'
+});
+
+const buildActivityUpdateSchema = () => Joi.object({
+  durationHours: Joi.number()
+    .integer()
+    .min(0)
+    .max(24)
+    .messages({
+      'number.base': 'Le ore devono essere un numero',
+      'number.min': 'Le ore non possono essere negative',
+      'number.max': 'Le ore non possono superare 24'
+    }),
+  durationMinutes: Joi.number()
+    .integer()
+    .valid(0, 15, 30, 45)
+    .messages({
+      'any.only': 'I minuti devono essere 0, 15, 30 o 45'
+    })
+    .custom((value, helpers) => {
+      const { durationHours } = helpers.state.ancestors[0];
+      if (Number(durationHours) === 0 && value === 0) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'La durata totale deve essere maggiore di 0'
+    }),
+  startTime: timeStepSchema,
+  endTime: timeStepSchema,
+  activityType: Joi.string()
+    .valid(...ACTIVITY_TYPES, 'pausa')
+    .messages({
+      'any.only': `Tipo attività non valido`
+    }),
+  customType: Joi.string()
+    .max(100)
+    .allow(null, ''),
+  notes: Joi.string()
+    .max(500)
+    .allow('')
+}).custom((value, helpers) => {
+  const hasDuration = value.durationHours !== undefined || value.durationMinutes !== undefined;
+  const hasTimes = value.startTime || value.endTime;
+
+  if (hasDuration && (value.durationHours === undefined || value.durationMinutes === undefined)) {
+    return helpers.error('any.custom', { message: 'Ore e minuti devono essere specificati insieme' });
+  }
+
+  if (hasTimes && (!value.startTime || !value.endTime)) {
+    return helpers.error('any.custom', { message: 'Orario di inizio e fine devono essere specificati insieme' });
+  }
+
+  if (hasDuration && hasTimes) {
+    return helpers.error('any.custom', { message: 'Aggiorna durata oppure orari, non entrambi' });
+  }
+
+  return value;
+}).messages({
+  'any.custom': '{{#message}}'
+}).min(1);
+
+function validate(schemaOrFactory) {
+  return (req, res, next) => {
+    const schema = typeof schemaOrFactory === 'function' ? schemaOrFactory() : schemaOrFactory;
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true
+    });
+
+    if (error) {
+      const details = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message,
+        value: detail.context.value
+      }));
+
+      return next(new AppError(
+        'Errori di validazione',
+        400,
+        'VALIDATION_ERROR',
+        details
+      ));
+    }
+
+    req.body = value;
+    next();
+  };
+}
+
+function getActivityTypes() {
+  return ACTIVITY_TYPES;
+}
+
+async function reloadActivityTypes() {
+  await loadActivityTypes();
+  return ACTIVITY_TYPES;
+}
+
+function getActivitySchema() {
+  return buildActivitySchema();
+}
+
+function getActivityUpdateSchema() {
+  return buildActivityUpdateSchema();
+}
+
+module.exports = {
+  ACTIVITY_TYPES,
+  getActivityTypes,
+  reloadActivityTypes,
+  getActivitySchema,
+  getActivityUpdateSchema,
+  loginSchema,
+  validate
+};

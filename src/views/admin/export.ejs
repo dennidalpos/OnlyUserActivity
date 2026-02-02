@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export" class="active">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h2>Export Dati Attività</h2>
+
+    <div class="date-info">
+      <strong>Dati disponibili dal:</strong> <%= minDate %> ad oggi
+    </div>
+
+    <div class="export-section">
+      <h3>Range Rapido</h3>
+      <div class="quick-range-buttons">
+        <button type="button" class="quick-btn" data-range="today">Oggi</button>
+        <button type="button" class="quick-btn" data-range="yesterday">Ieri</button>
+        <button type="button" class="quick-btn" data-range="thisWeek">Questa Settimana</button>
+        <button type="button" class="quick-btn" data-range="lastWeek">Settimana Scorsa</button>
+        <button type="button" class="quick-btn" data-range="thisMonth">Questo Mese</button>
+        <button type="button" class="quick-btn" data-range="lastMonth">Mese Scorso</button>
+        <button type="button" class="quick-btn" data-range="thisYear">Quest'Anno</button>
+        <button type="button" class="quick-btn" data-range="all">Tutti i Dati</button>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/api/export" id="exportForm">
+      <input type="hidden" name="rangeType" id="rangeType" value="custom">
+
+      <div class="form-group">
+        <label for="fromDate">Data Inizio:</label>
+        <input type="date" id="fromDate" name="fromDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="toDate">Data Fine:</label>
+        <input type="date" id="toDate" name="toDate" required>
+      </div>
+
+      <div class="form-group">
+        <label>Selezione Utenti:</label>
+        <div class="user-selection-box">
+          <div class="user-selection-header">
+            <input type="checkbox" id="selectAllUsers" checked>
+            <label for="selectAllUsers" class="label-inline">Tutti gli utenti (<%= users.length %>)</label>
+          </div>
+          <div class="user-list" id="userList">
+            <% users.forEach(user => { %>
+            <label class="user-checkbox">
+              <input type="checkbox" name="userKeys" value="<%= user.userKey %>" class="user-key-checkbox">
+              <strong><%= user.username %></strong> - <%= user.displayName %>
+              <span class="text-muted text-xs">(<%= user.userType === 'ad' ? 'AD' : 'Locale' %>)</span>
+            </label>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="exportType">Tipo Export:</label>
+        <select id="exportType" name="exportType">
+          <option value="detailed">Dettagliato (tutte le attività)</option>
+          <option value="summary">Riepilogo (totali per utente)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="format">Formato:</label>
+        <select id="format" name="format">
+          <option value="xlsx">Excel (XLSX)</option>
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Esporta Dati</button>
+    </form>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    const minDateAvailable = '<%= minDate %>';
+
+    let lastActionAnchor = null;
+
+    function toggleAllUsers(anchor) {
+      lastActionAnchor = anchor || document.getElementById('selectAllUsers');
+      const selectAll = document.getElementById('selectAllUsers');
+      const checkboxes = document.querySelectorAll('input[name="userKeys"]');
+
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+      });
+    }
+
+    function updateSelectAll(anchor) {
+      lastActionAnchor = anchor || document.getElementById('userList');
+      const checkboxes = document.querySelectorAll('input[name="userKeys"]');
+      const selectAll = document.getElementById('selectAllUsers');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+
+      selectAll.checked = allChecked;
+      selectAll.indeterminate = someChecked && !allChecked;
+    }
+
+    function setRange(rangeType, anchor) {
+      lastActionAnchor = anchor || document.getElementById('fromDate');
+      const today = new Date();
+      let fromDate, toDate;
+
+      document.getElementById('rangeType').value = rangeType;
+
+      switch(rangeType) {
+        case 'today':
+          fromDate = toDate = today;
+          break;
+        case 'yesterday':
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          fromDate = toDate = yesterday;
+          break;
+        case 'thisWeek':
+          const startOfWeek = new Date(today);
+          const dayOfWeek = today.getDay();
+          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          startOfWeek.setDate(today.getDate() - diff);
+          fromDate = startOfWeek;
+          toDate = today;
+          break;
+        case 'lastWeek':
+          const lastWeekStart = new Date(today);
+          const lastWeekDiff = today.getDay() === 0 ? 13 : today.getDay() + 6;
+          lastWeekStart.setDate(today.getDate() - lastWeekDiff);
+          const lastWeekEnd = new Date(lastWeekStart);
+          lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+          fromDate = lastWeekStart;
+          toDate = lastWeekEnd;
+          break;
+        case 'thisMonth':
+          fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          toDate = today;
+          break;
+        case 'lastMonth':
+          const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+          fromDate = lastMonth;
+          toDate = lastMonthEnd;
+          break;
+        case 'thisYear':
+          fromDate = new Date(today.getFullYear(), 0, 1);
+          toDate = today;
+          break;
+        case 'all':
+          fromDate = new Date(minDateAvailable);
+          toDate = today;
+          break;
+      }
+
+      document.getElementById('fromDate').value = formatDate(fromDate);
+      document.getElementById('toDate').value = formatDate(toDate);
+    }
+
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+      lastActionAnchor = e.submitter || document.querySelector('#exportForm button[type="submit"]');
+      const selectAll = document.getElementById('selectAllUsers');
+      const checkboxes = document.querySelectorAll('input[name="userKeys"]');
+
+      if (selectAll.checked) {
+        checkboxes.forEach(cb => cb.checked = false);
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'userKeys';
+        hiddenInput.value = 'all';
+        this.appendChild(hiddenInput);
+      } else {
+        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+        if (!anyChecked) {
+          e.preventDefault();
+          if (window.uiHelper && window.uiHelper.enabled) {
+            window.uiHelper.notify({
+              anchor: lastActionAnchor || document.getElementById('userList'),
+              message: 'Seleziona almeno un utente per l\'export',
+              severity: 'warn'
+            });
+          } else {
+            alert('Seleziona almeno un utente per l\'export');
+          }
+          return false;
+        }
+      }
+    });
+
+    window.addEventListener('load', function() {
+      setRange('thisMonth');
+
+      document.querySelectorAll('[data-range]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          setRange(this.dataset.range, this);
+        });
+      });
+
+      document.getElementById('selectAllUsers')?.addEventListener('change', function() {
+        toggleAllUsers(this);
+      });
+
+      document.querySelectorAll('.user-key-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+          updateSelectAll(this);
+        });
+      });
+    });
+
+    helpSystem.init(adminExportHelp);
+  </script>
+</body>
+</html>

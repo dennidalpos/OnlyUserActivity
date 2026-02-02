@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/ui-helper.js"></script>
+  <script src="/js/help.js"></script>
+</head>
+<body data-ui-help-enabled="<%= uiHelpEnabled ? 'true' : 'false' %>">
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
+        <li><a href="/admin/settings" class="active">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container settings-container">
+    <h2><%= title %></h2>
+
+    <div id="alertContainer"></div>
+
+    <div class="settings-section">
+      <h3>Gestione Server</h3>
+      <div class="alert alert-info">
+        Riavvia il server dopo aver modificato le configurazioni per applicare le modifiche.
+      </div>
+      <div class="mb-5">
+        <button type="button" id="btnRestartServer" class="btn btn-danger">
+          🔄 Riavvia Server
+        </button>
+        <span class="ml-3 text-muted text-small">
+          Tutti gli utenti verranno temporaneamente disconnessi
+        </span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione Server</h3>
+      <div class="alert alert-info">
+        Le modifiche alla configurazione server richiedono il riavvio del server per essere applicate.
+      </div>
+      <form id="serverForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="serverPort">Porta Server
+              <span class="ui-help-icon" data-ui-help="Porta di ascolto HTTP/HTTPS (1-65535). Su Windows Server 2022 usare una porta libera.">ⓘ</span>
+            </label>
+            <input type="number" id="serverPort" value="<%= settings.server.port %>" placeholder="3001" min="1" max="65535">
+          </div>
+          <div class="form-group">
+            <label for="serverHost">Host Server
+              <span class="ui-help-icon" data-ui-help="Interfaccia di ascolto. Usa 0.0.0.0 per tutte le interfacce o 127.0.0.1 per locale.">ⓘ</span>
+            </label>
+            <input type="text" id="serverHost" value="<%= settings.server.host %>" placeholder="0.0.0.0">
+          </div>
+          <div class="form-group">
+            <label for="serverTrustProxy">Trust Proxy
+              <span class="ui-help-icon" data-ui-help="Numero di proxy attendibili per ottenere l'IP reale e gestire cookie secure dietro proxy/terminazione TLS.">ⓘ</span>
+            </label>
+            <input type="number" id="serverTrustProxy" value="<%= settings.server.trustProxy %>" min="0" max="10">
+          </div>
+          <div class="form-group">
+            <label for="defaultUserShift">Turno predefinito nuovi utenti
+              <span class="ui-help-icon" data-ui-help="Turno da assegnare automaticamente al primo login degli utenti LDAP.">ⓘ</span>
+            </label>
+            <select id="defaultUserShift">
+              <option value="" <%= !settings.server.defaultUserShift ? 'selected' : '' %>>- Nessuno -</option>
+              <% shiftTypes.forEach(shiftType => { %>
+                <option value="<%= shiftType.name %>" <%= settings.server.defaultUserShift === shiftType.name ? 'selected' : '' %>>
+                  <%= shiftType.name %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva Configurazione Server</button>
+      </form>
+      <div class="settings-subsection mt-5">
+        <h4>Import / Export Configurazione</h4>
+        <p class="text-muted mb-3">
+          Esporta o reimporta una o più sezioni di configurazione, inclusi utenti e attività, in un unico file JSON.
+        </p>
+        <div class="form-grid mb-3" id="fullConfigSections">
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="settings" checked>
+            Impostazioni server
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="logging" checked>
+            Logging
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="ldap" checked>
+            LDAP/Active Directory
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="https" checked>
+            HTTPS
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="advanced" checked>
+            Impostazioni avanzate
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activityTypes" checked>
+            Categorie attività
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="shiftTypes" checked>
+            Turni
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="contractPresets" checked>
+            Preset contratti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="quickActions" checked>
+            Quick action
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="users" checked>
+            Utenti
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" name="fullConfigSection" value="activities" checked>
+            Attività
+          </label>
+        </div>
+        <div class="settings-actions">
+          <button type="button" id="btnExportConfig" class="btn btn-primary">
+            ⬇️ Esporta configurazione
+          </button>
+          <input type="file" id="configImportFile" accept=".json" class="file-input">
+          <button type="button" id="btnImportConfig" class="btn btn-primary">
+            ⬆️ Importa configurazione
+          </button>
+        </div>
+        <p class="settings-warning mt-3">
+          L'importazione sovrascrive i dati presenti. Effettua un export di backup prima di procedere.
+        </p>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Informazioni Server</h3>
+      <div class="alert alert-info">
+        Visualizza lo stato del server applicativo e dell'ambiente in esecuzione.
+      </div>
+      <div class="settings-actions">
+        <button type="button" id="btnLoadServerInfo" class="btn btn-primary">
+          📋 Carica informazioni server
+        </button>
+      </div>
+      <div id="serverInfoContainer" class="server-info-grid"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione LDAP/Active Directory</h3>
+      <div class="alert alert-info">
+        Le modifiche alla configurazione LDAP richiedono il riavvio del server per essere applicate.
+        <br><strong>LDAPS:</strong> Usa <code>ldaps://</code> invece di <code>ldap://</code> per connessioni sicure (porta 636).
+      </div>
+      <form id="ldapForm">
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="ldapEnabled" <%= settings.ldap.enabled ? 'checked' : '' %>>
+            Abilita autenticazione LDAP/AD
+          </label>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="ldapUrl">URL LDAP/LDAPS
+            </label>
+            <input type="text" id="ldapUrl" value="<%= settings.ldap.url %>" placeholder="ldaps://dc.company.local:636">
+          </div>
+          <div class="form-group">
+            <label for="ldapBaseDN">Base DN
+            </label>
+            <input type="text" id="ldapBaseDN" value="<%= settings.ldap.baseDN %>" placeholder="DC=company,DC=local">
+          </div>
+          <div class="form-group">
+            <label for="ldapBindDN">Bind DN
+            </label>
+            <input type="text" id="ldapBindDN" value="<%= settings.ldap.bindDN %>" placeholder="CN=ServiceAccount,CN=Users,DC=company,DC=local">
+          </div>
+          <div class="form-group">
+            <label for="ldapBindPassword">Bind Password
+            </label>
+            <input type="password" id="ldapBindPassword" value="<%= settings.ldap.bindPassword %>" placeholder="********">
+            <div class="field-help">Usato per il test bind e la ricerca utenti.</div>
+          </div>
+          <div class="form-group">
+            <label for="ldapUserSearchFilter">User Search Filter
+            </label>
+            <input type="text" id="ldapUserSearchFilter" value="<%= settings.ldap.userSearchFilter %>" placeholder="(sAMAccountName={{username}})">
+          </div>
+          <div class="form-group">
+            <label for="ldapGroupSearchBase">Group Search Base
+            </label>
+            <input type="text" id="ldapGroupSearchBase" value="<%= settings.ldap.groupSearchBase %>" placeholder="OU=Groups,DC=company,DC=local">
+          </div>
+          <div class="form-group">
+            <label for="ldapRequiredGroup">Gruppo Richiesto
+            </label>
+            <input type="text" id="ldapRequiredGroup" value="<%= settings.ldap.requiredGroup %>" placeholder="Domain Users">
+          </div>
+          <div class="form-group">
+            <label for="ldapTimeout">Timeout (ms)
+            </label>
+            <input type="number" id="ldapTimeout" value="<%= settings.ldap.timeout %>" placeholder="5000" min="1000" max="60000">
+          </div>
+        </div>
+        <div class="flex gap-3 align-center mt-3">
+          <button type="button" id="btnTestLdapBind" class="btn btn-success">Test Bind LDAP</button>
+          <span class="text-muted text-small">Esegui il test prima di salvare le modifiche LDAP.</span>
+        </div>
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary">Salva Configurazione LDAP</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Configurazione HTTPS</h3>
+      <div class="alert alert-info">
+        Raccomandato usare un reverse proxy (nginx/Apache) invece di HTTPS diretto. Le modifiche richiedono il riavvio del server.
+      </div>
+      <form id="httpsForm">
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="httpsEnabled" <%= settings.https.enabled ? 'checked' : '' %>>
+            Abilita HTTPS diretto
+          </label>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="httpsCertPath">Percorso Certificato
+            </label>
+            <div class="flex gap-2 align-center">
+              <input type="text" id="httpsCertPath" value="<%= settings.https.certPath || defaultHttpsCertPath %>" placeholder="<%= defaultHttpsCertPath %>">
+              <button type="button" class="btn btn-sm" data-browse-target="httpsCertPath">Esplora</button>
+            </div>
+            <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsCertPath %></code></div>
+          </div>
+          <div class="form-group">
+            <label for="httpsKeyPath">Percorso Chiave Privata
+            </label>
+            <div class="flex gap-2 align-center">
+              <input type="text" id="httpsKeyPath" value="<%= settings.https.keyPath || defaultHttpsKeyPath %>" placeholder="<%= defaultHttpsKeyPath %>">
+              <button type="button" class="btn btn-sm" data-browse-target="httpsKeyPath">Esplora</button>
+            </div>
+            <div class="field-help">Precompilato dalla root progetto: <code><%= defaultHttpsKeyPath %></code></div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva Configurazione HTTPS</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Logging</h3>
+      <div class="alert alert-info">
+        Configura le categorie di logging disponibili.
+      </div>
+      <form id="loggingForm">
+        <h4 class="mb-3">Categorie di Log</h4>
+        <div class="field-help mb-4">Seleziona le categorie di log da abilitare. Ogni checkbox controlla una sezione specifica senza sovrapposizioni.</div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logLdap" <%= settings.logging.categories.ldap ? 'checked' : '' %>>
+              LDAP/AD
+            </label>
+            <div class="field-help">Autenticazione, gruppi, ricerche LDAP</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logHttp" <%= settings.logging.categories.http ? 'checked' : '' %>>
+              HTTP Requests
+            </label>
+            <div class="field-help">Richieste HTTP fallite (4xx, 5xx)</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logServer" <%= settings.logging.categories.server ? 'checked' : '' %>>
+              Server
+            </label>
+            <div class="field-help">Avvio, arresto, riavvio server</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logSettings" <%= settings.logging.categories.settings ? 'checked' : '' %>>
+              Settings
+            </label>
+            <div class="field-help">Modifiche configurazione e .env</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logErrors" <%= settings.logging.categories.errors ? 'checked' : '' %>>
+              Errors
+            </label>
+            <div class="field-help">Eccezioni non gestite ed errori critici</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="logAudit" <%= settings.logging.categories.audit ? 'checked' : '' %>>
+              Audit Log
+            </label>
+            <div class="field-help">Log di audit strutturato (login, attività)</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salva Logging</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Test di Troubleshooting</h3>
+      <div class="alert alert-info">
+        Esegui i controlli per verificare connettività e permessi prima di applicare modifiche.
+        I test non cambiano la configurazione: simulano l'accesso a file e cartelle sul server Windows.
+      </div>
+      <div class="field-help">I risultati vengono mostrati come alert e confermano che il server può accedere ai percorsi indicati.</div>
+      <div class="settings-card-grid">
+        <div class="settings-card">
+          <h4>Test permessi storage</h4>
+          <p>Verifica la possibilità di creare un file temporaneo nella directory dati configurata.</p>
+          <div class="field-help">Usa il percorso impostato in "Storage".</div>
+          <button type="button" id="btnStorageTest" class="btn btn-primary">Esegui test</button>
+        </div>
+        <div class="settings-card">
+          <h4>Verifica file HTTPS</h4>
+          <p>Controlla che i file certificato/chiave siano accessibili dal server.</p>
+          <div class="field-help">Usa i percorsi indicati in "Configurazione HTTPS".</div>
+          <button type="button" id="btnHttpsTest" class="btn btn-primary">Esegui test</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <details>
+        <summary class="collapsible-summary">Impostazioni Avanzate</summary>
+        <div class="alert alert-info">
+          Tutti i parametri server sono modificabili da qui. Salva e riavvia il server per applicare le modifiche.
+        </div>
+        <div class="field-help">Le impostazioni LDAP/AD rimangono nella sezione dedicata per evitare duplicazioni.</div>
+        <form id="advancedSettingsForm">
+        <div class="settings-subsection">
+          <h4>JWT</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedJwtSecret">JWT Secret
+              </label>
+              <input type="password" id="advancedJwtSecret" value="<%= settings.jwt.secret %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedJwtExpiresIn">JWT Expires In
+              </label>
+              <input type="text" id="advancedJwtExpiresIn" value="<%= settings.jwt.expiresIn %>">
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="advancedJwtRefreshEnabled" <%= settings.jwt.refreshEnabled ? 'checked' : '' %>>
+                Abilita refresh token
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Storage</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedStorageRootPath">Percorso dati
+              </label>
+              <input type="text" id="advancedStorageRootPath" value="<%= settings.storage.rootPath %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAuditRetentionDays">Retention audit (giorni)
+              </label>
+              <input type="number" id="advancedAuditRetentionDays" value="<%= settings.storage.auditRetentionDays %>" min="1" max="3650">
+            </div>
+            <div class="form-group">
+              <label for="advancedAuditPayloadMode">Modalità payload audit
+              </label>
+              <input type="text" id="advancedAuditPayloadMode" value="<%= settings.storage.auditPayloadMode %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Admin</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedAdminSessionSecret">Session Secret
+              </label>
+              <input type="password" id="advancedAdminSessionSecret" value="<%= settings.admin.sessionSecret %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminSessionMaxAge">Session Max Age (ms)
+              </label>
+              <input type="number" id="advancedAdminSessionMaxAge" value="<%= settings.admin.sessionMaxAge %>" min="60000" max="86400000">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminDefaultUsername">Username default
+              </label>
+              <input type="text" id="advancedAdminDefaultUsername" value="<%= settings.admin.defaultUsername %>">
+            </div>
+            <div class="form-group">
+              <label for="advancedAdminDefaultPassword">Password default
+              </label>
+              <input type="password" id="advancedAdminDefaultPassword" value="<%= settings.admin.defaultPassword %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Sicurezza</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedRateLimitWindowMs">Rate limit window (ms)
+              </label>
+              <input type="number" id="advancedRateLimitWindowMs" value="<%= settings.security.rateLimitWindowMs %>" min="1000" max="3600000">
+            </div>
+            <div class="form-group">
+              <label for="advancedRateLimitMaxRequests">Rate limit max richieste
+              </label>
+              <input type="number" id="advancedRateLimitMaxRequests" value="<%= settings.security.rateLimitMaxRequests %>" min="1" max="10000">
+            </div>
+            <div class="form-group">
+              <label for="advancedLoginRateLimitMax">Login max tentativi
+              </label>
+              <input type="number" id="advancedLoginRateLimitMax" value="<%= settings.security.loginRateLimitMax %>" min="1" max="50">
+            </div>
+            <div class="form-group">
+              <label for="advancedLoginLockoutDurationMs">Durata lockout login (ms)
+              </label>
+              <input type="number" id="advancedLoginLockoutDurationMs" value="<%= settings.security.loginLockoutDurationMs %>" min="1000" max="3600000">
+            </div>
+            <div class="form-group">
+              <label for="advancedCorsOrigin">CORS Origin
+              </label>
+              <input type="text" id="advancedCorsOrigin" value="<%= settings.security.corsOrigin %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <h4>Attività</h4>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="advancedActivityStrictContinuity" <%= settings.activity.strictContinuity ? 'checked' : '' %>>
+              Abilita continuità stretta
+            </label>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="advancedActivityRequiredMinutes">Minuti richiesti
+              </label>
+              <input type="number" id="advancedActivityRequiredMinutes" value="<%= settings.activity.requiredMinutes %>" min="1" max="1440">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salva Impostazioni Avanzate</button>
+        </form>
+      </details>
+    </div>
+
+    <div class="settings-section">
+      <h3>Categorie Attività</h3>
+      <p>Gestisci le categorie disponibili nel menu a tendina per l'inserimento delle attività.</p>
+
+      <div class="activity-types-list" id="activityTypesList">
+        <% activityTypes.forEach(type => { %>
+        <div class="activity-type-tag">
+          <%= type %>
+          <button data-remove-type="<%= type %>" title="Rimuovi">&times;</button>
+        </div>
+        <% }); %>
+      </div>
+
+      <form id="addActivityTypeForm" class="inline-form">
+        <input type="text" id="newActivityType" placeholder="Nuova categoria...">
+        <button type="submit" class="btn btn-success">Aggiungi</button>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <h3>Reset Password Admin</h3>
+      <p>Imposta una nuova password per l'account admin attualmente autenticato.</p>
+      <button id="btnResetAdminPassword" class="btn btn-warning">Reset Password Admin</button>
+    </div>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    let ldapBindTestFingerprint = null;
+    let lastActionAnchor = null;
+
+    function setLastActionAnchor(anchor) {
+      if (anchor) {
+        lastActionAnchor = anchor;
+      }
+    }
+
+    function showAlert(message, type = 'success') {
+      if (window.uiHelper && window.uiHelper.enabled) {
+        const severityMap = {
+          success: 'info',
+          info: 'info',
+          danger: 'error'
+        };
+        window.uiHelper.notify({
+          anchor: lastActionAnchor || document.getElementById('alertContainer'),
+          message,
+          severity: severityMap[type] || 'info'
+        });
+        return;
+      }
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      alertContainer.appendChild(alert);
+
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    function getFullConfigSections() {
+      const checkboxes = document.querySelectorAll('input[name="fullConfigSection"]:checked');
+      return Array.from(checkboxes).map(item => item.value);
+    }
+
+    async function detectConfigSections(fileInput) {
+      if (!fileInput?.files?.length) {
+        return;
+      }
+
+      setLastActionAnchor(fileInput);
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        const allCheckboxes = document.querySelectorAll('input[name="fullConfigSection"]');
+        allCheckboxes.forEach(cb => {
+          cb.checked = false;
+        });
+
+        const detectedSections = new Set();
+        const settings = data.settings || {};
+
+        if (settings.server && Object.keys(settings.server).length > 0) {
+          detectedSections.add('settings');
+        }
+        if (settings.logging && Object.keys(settings.logging).length > 0) {
+          detectedSections.add('logging');
+        }
+        if (settings.ldap && Object.keys(settings.ldap).length > 0) {
+          detectedSections.add('ldap');
+        }
+        if (settings.https && Object.keys(settings.https).length > 0) {
+          detectedSections.add('https');
+        }
+        if (settings.jwt || settings.storage || settings.admin || settings.security || settings.activity) {
+          detectedSections.add('advanced');
+        }
+        if (Array.isArray(data.activityTypes) && data.activityTypes.length > 0) {
+          detectedSections.add('activityTypes');
+        }
+        if (Array.isArray(data.shiftTypes) && data.shiftTypes.length > 0) {
+          detectedSections.add('shiftTypes');
+        }
+        if (Array.isArray(data.contractPresets) && data.contractPresets.length > 0) {
+          detectedSections.add('contractPresets');
+        }
+        if (Array.isArray(data.quickActions) && data.quickActions.length > 0) {
+          detectedSections.add('quickActions');
+        }
+        if (Array.isArray(data.users) && data.users.length > 0) {
+          detectedSections.add('users');
+        }
+        if (Array.isArray(data.activities) && data.activities.length > 0) {
+          detectedSections.add('activities');
+        }
+
+        const detectedList = Array.from(detectedSections);
+        detectedList.forEach(section => {
+          const checkbox = document.querySelector(`input[name="fullConfigSection"][value="${section}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+
+        if (detectedList.length > 0) {
+          showAlert(`Rilevate ${detectedList.length} sezioni: ${detectedList.join(', ')}`, 'info');
+        } else {
+          showAlert('Nessuna sezione riconosciuta nel file JSON', 'danger');
+        }
+      } catch (error) {
+        showAlert('File JSON non valido. Verifica il formato.', 'danger');
+      }
+    }
+
+    async function exportConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const selectedSections = getFullConfigSections();
+        if (selectedSections.length === 0) {
+          showAlert('Seleziona almeno una sezione da esportare', 'danger');
+          return;
+        }
+        const query = new URLSearchParams({ sections: selectedSections.join(',') });
+        const link = document.createElement('a');
+        link.href = `/admin/api/settings/configuration/export?${query.toString()}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showAlert('Export avviato', 'success');
+      } catch (error) {
+        showAlert('Errore durante l\'export della configurazione', 'danger');
+      }
+    }
+
+    async function importConfiguration(anchor) {
+      setLastActionAnchor(anchor);
+      const fileInput = document.getElementById('configImportFile');
+      if (!fileInput?.files?.length) {
+        showAlert('Seleziona un file JSON da importare', 'danger');
+        return;
+      }
+
+      const selectedSections = getFullConfigSections();
+      if (selectedSections.length === 0) {
+        showAlert('Seleziona almeno una sezione da importare', 'danger');
+        return;
+      }
+
+      if (!confirm('L\'importazione sovrascriverà utenti, attività e impostazioni. Continuare?')) {
+        return;
+      }
+
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        const response = await fetch('/admin/api/settings/configuration/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload, sections: selectedSections })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message || 'Import completato', 'success');
+          if (confirm('Import completato. È consigliato riavviare il server per applicare le impostazioni. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error || 'Errore durante l\'import', 'danger');
+        }
+      } catch (error) {
+        showAlert('File JSON non valido o errore durante l\'import', 'danger');
+      }
+    }
+
+    document.getElementById('serverForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#serverForm button[type="submit"]'));
+
+      const data = {
+        port: document.getElementById('serverPort').value,
+        host: document.getElementById('serverHost').value,
+        trustProxy: document.getElementById('serverTrustProxy').value,
+        defaultUserShift: document.getElementById('defaultUserShift').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/server', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione server', 'danger');
+      }
+    });
+
+    document.getElementById('ldapForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#ldapForm button[type="submit"]'));
+
+      const data = {
+        enabled: document.getElementById('ldapEnabled').checked,
+        url: document.getElementById('ldapUrl').value,
+        baseDN: document.getElementById('ldapBaseDN').value,
+        bindDN: document.getElementById('ldapBindDN').value,
+        bindPassword: document.getElementById('ldapBindPassword').value,
+        userSearchFilter: document.getElementById('ldapUserSearchFilter').value,
+        groupSearchBase: document.getElementById('ldapGroupSearchBase').value,
+        requiredGroup: document.getElementById('ldapRequiredGroup').value,
+        timeout: document.getElementById('ldapTimeout').value
+      };
+
+      if (data.enabled && data.bindDN) {
+        const currentFingerprint = JSON.stringify({
+          url: data.url,
+          bindDN: data.bindDN,
+          bindPassword: data.bindPassword,
+          timeout: data.timeout
+        });
+        if (ldapBindTestFingerprint !== currentFingerprint) {
+          showAlert('Esegui il test bind LDAP con le credenziali correnti prima di salvare.', 'danger');
+          return;
+        }
+      }
+
+      try {
+        const response = await fetch('/admin/api/settings/ldap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer(lastActionAnchor);
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione LDAP', 'danger');
+      }
+    });
+
+    async function testLdapBind(anchor) {
+      setLastActionAnchor(anchor);
+      const payload = {
+        url: document.getElementById('ldapUrl').value,
+        bindDN: document.getElementById('ldapBindDN').value,
+        bindPassword: document.getElementById('ldapBindPassword').value,
+        timeout: document.getElementById('ldapTimeout').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/ldap/test-bind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          ldapBindTestFingerprint = JSON.stringify(payload);
+          showAlert(result.data.message || 'Test LDAP riuscito', 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test bind LDAP', 'danger');
+      }
+    }
+
+    document.getElementById('httpsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#httpsForm button[type="submit"]'));
+
+      const data = {
+        enabled: document.getElementById('httpsEnabled').checked,
+        certPath: document.getElementById('httpsCertPath').value,
+        keyPath: document.getElementById('httpsKeyPath').value
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/https', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio della configurazione HTTPS', 'danger');
+      }
+    });
+
+    document.getElementById('addActivityTypeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#addActivityTypeForm button[type="submit"]'));
+
+      const newType = document.getElementById('newActivityType').value.trim();
+      if (!newType) return;
+
+      try {
+        const response = await fetch('/admin/api/settings/activity-types/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activityType: newType })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Categoria aggiunta con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nell\'aggiunta della categoria', 'danger');
+      }
+    });
+
+    async function removeActivityType(type, anchor) {
+      setLastActionAnchor(anchor);
+      if (!confirm(`Sei sicuro di voler rimuovere la categoria "${type}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/settings/activity-types/${encodeURIComponent(type)}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Categoria rimossa con successo', 'success');
+          location.reload();
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nella rimozione della categoria', 'danger');
+      }
+    }
+
+    document.getElementById('advancedSettingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#advancedSettingsForm button[type="submit"]'));
+
+      const data = {
+        jwt: {
+          secret: document.getElementById('advancedJwtSecret').value,
+          expiresIn: document.getElementById('advancedJwtExpiresIn').value,
+          refreshEnabled: document.getElementById('advancedJwtRefreshEnabled').checked
+        },
+        storage: {
+          rootPath: document.getElementById('advancedStorageRootPath').value,
+          auditRetentionDays: document.getElementById('advancedAuditRetentionDays').value,
+          auditPayloadMode: document.getElementById('advancedAuditPayloadMode').value
+        },
+        admin: {
+          sessionSecret: document.getElementById('advancedAdminSessionSecret').value,
+          sessionMaxAge: document.getElementById('advancedAdminSessionMaxAge').value,
+          defaultUsername: document.getElementById('advancedAdminDefaultUsername').value,
+          defaultPassword: document.getElementById('advancedAdminDefaultPassword').value
+        },
+        security: {
+          rateLimitWindowMs: document.getElementById('advancedRateLimitWindowMs').value,
+          rateLimitMaxRequests: document.getElementById('advancedRateLimitMaxRequests').value,
+          loginRateLimitMax: document.getElementById('advancedLoginRateLimitMax').value,
+          loginLockoutDurationMs: document.getElementById('advancedLoginLockoutDurationMs').value,
+          corsOrigin: document.getElementById('advancedCorsOrigin').value
+        },
+        activity: {
+          strictContinuity: document.getElementById('advancedActivityStrictContinuity').checked,
+          requiredMinutes: document.getElementById('advancedActivityRequiredMinutes').value
+        }
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/advanced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni avanzate sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio delle impostazioni avanzate', 'danger');
+      }
+    });
+
+    document.getElementById('loggingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setLastActionAnchor(e.submitter || document.querySelector('#loggingForm button[type="submit"]'));
+
+      const data = {
+        logging: {
+          categories: {
+            ldap: document.getElementById('logLdap').checked,
+            http: document.getElementById('logHttp').checked,
+            server: document.getElementById('logServer').checked,
+            settings: document.getElementById('logSettings').checked,
+            errors: document.getElementById('logErrors').checked,
+            audit: document.getElementById('logAudit').checked
+          }
+        }
+      };
+
+      try {
+        const response = await fetch('/admin/api/settings/advanced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+          if (confirm('Le impostazioni di logging sono state salvate. È necessario riavviare il server per applicare le modifiche. Vuoi riavviare ora?')) {
+            restartServer();
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel salvataggio delle impostazioni di logging', 'danger');
+      }
+    });
+
+    function browseHttpsFile(targetId, anchor) {
+      setLastActionAnchor(anchor);
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.style.display = 'none';
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          const fileName = fileInput.files[0].name;
+          document.getElementById(targetId).value = fileName;
+          showAlert('File selezionato. Inserisci il percorso assoluto sul server Windows se diverso.', 'info');
+        }
+      });
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      document.body.removeChild(fileInput);
+    }
+
+    async function runStorageTest(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const response = await fetch('/admin/api/settings/troubleshoot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'storage',
+            payload: {
+              rootPath: document.getElementById('advancedStorageRootPath')?.value
+            }
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test storage', 'danger');
+      }
+    }
+
+    async function runHttpsTest(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const response = await fetch('/admin/api/settings/troubleshoot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'https',
+            payload: {
+              certPath: document.getElementById('httpsCertPath')?.value,
+              keyPath: document.getElementById('httpsKeyPath')?.value
+            }
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.data.message, 'success');
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore durante il test HTTPS', 'danger');
+      }
+    }
+
+    async function resetAdminPassword(anchor) {
+      setLastActionAnchor(anchor);
+      const newPassword = prompt('Inserisci la nuova password admin:');
+      if (!newPassword) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/api/admin/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert(result.message || 'Password admin aggiornata con successo', 'success');
+          if (result.requiresLogin) {
+            setTimeout(() => {
+              window.location.href = '/admin/auth/login';
+            }, 1000);
+          }
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Errore nel reset della password admin', 'danger');
+      }
+    }
+
+    async function loadServerInfo(anchor) {
+      setLastActionAnchor(anchor);
+      const container = document.getElementById('serverInfoContainer');
+      container.innerHTML = '<div class="text-muted">Caricamento informazioni...</div>';
+
+      try {
+        const response = await fetch('/admin/api/server/info');
+        const result = await response.json();
+        if (!result.success) {
+          container.innerHTML = '';
+          showAlert(result.error || 'Errore nel caricamento delle informazioni server', 'danger');
+          return;
+        }
+
+        const info = result.data || {};
+        const items = [
+          { label: 'Hostname', value: info.hostname },
+          { label: 'Ambiente', value: info.env },
+          { label: 'Versione Node', value: info.nodeVersion },
+          { label: 'Piattaforma', value: info.platform },
+          { label: 'PID', value: info.pid },
+          { label: 'Uptime', value: info.uptime },
+          { label: 'Memoria', value: info.memoryUsage },
+          { label: 'Avvio server', value: info.startTime }
+        ];
+
+        container.innerHTML = items.map(item => `
+          <div class="server-info-card">
+            <div class="server-info-label">${item.label}</div>
+            <div class="server-info-value">${item.value || '-'}</div>
+          </div>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = '';
+        showAlert('Errore nel caricamento delle informazioni server', 'danger');
+      }
+    }
+
+    function confirmRestartServer(anchor) {
+      setLastActionAnchor(anchor);
+      if (confirm('Sei sicuro di voler riavviare il server? Tutti gli utenti verranno disconnessi temporaneamente.')) {
+        restartServer(anchor);
+      }
+    }
+
+    async function restartServer(anchor) {
+      setLastActionAnchor(anchor);
+      try {
+        const response = await fetch('/admin/api/server/restart', {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showAlert('Server in riavvio... Ricarica la pagina tra 5 secondi.', 'success');
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+        } else {
+          showAlert(result.error, 'danger');
+        }
+      } catch (error) {
+        showAlert('Server in riavvio... Ricarica la pagina tra 5 secondi.', 'info');
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      }
+    }
+  </script>
+  <script nonce="<%= cspNonce %>">
+    helpSystem.init(adminSettingsHelp);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadServerInfo();
+
+      document.getElementById('btnRestartServer')?.addEventListener('click', function() {
+        confirmRestartServer(this);
+      });
+
+      document.getElementById('btnExportConfig')?.addEventListener('click', function() {
+        exportConfiguration(this);
+      });
+
+      document.getElementById('btnImportConfig')?.addEventListener('click', function() {
+        importConfiguration(this);
+      });
+
+      document.getElementById('configImportFile')?.addEventListener('change', function() {
+        detectConfigSections(this);
+      });
+
+      document.getElementById('btnLoadServerInfo')?.addEventListener('click', function() {
+        loadServerInfo(this);
+      });
+
+      document.getElementById('btnTestLdapBind')?.addEventListener('click', function() {
+        testLdapBind(this);
+      });
+
+      document.getElementById('btnStorageTest')?.addEventListener('click', function() {
+        runStorageTest(this);
+      });
+
+      document.getElementById('btnHttpsTest')?.addEventListener('click', function() {
+        runHttpsTest(this);
+      });
+
+      document.getElementById('btnResetAdminPassword')?.addEventListener('click', function() {
+        resetAdminPassword(this);
+      });
+
+      document.querySelectorAll('[data-browse-target]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          browseHttpsFile(this.dataset.browseTarget, this);
+        });
+      });
+
+      document.querySelectorAll('[data-remove-type]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          removeActivityType(this.dataset.removeType, this);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/user.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <h1>Activity Tracker</h1>
+    </div>
+    <div class="navbar-user">
+      <span>
+        Login utente: <strong><%= user.username %></strong>
+        <span class="badge badge-<%= user.userType === 'ad' ? 'info' : 'secondary' %> ml-2">
+          <%= user.userType === 'ad' ? 'AD' : 'Locale' %>
+        </span>
+      </span>
+      <a href="/user/auth/logout" class="btn btn-sm">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header">
+      <h2>Le Tue Attività</h2>
+      <div class="date-selector">
+        <input type="date" id="activityDate" value="<%= currentDate %>" class="form-control">
+        <button id="btnLoadActivities" class="btn btn-primary">Carica</button>
+        <button id="btnSetToday" class="btn">Oggi</button>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card">
+        <h3>Ore Lavorate</h3>
+        <p class="stat" id="totalHours">-</p>
+      </div>
+      <div class="card">
+        <h3>Straordinari</h3>
+        <p class="stat" id="overtime">-</p>
+      </div>
+      <div class="card">
+        <h3>Attività</h3>
+        <p class="stat" id="activityCount">-</p>
+      </div>
+      <div class="card">
+        <h3>Completamento Giornata</h3>
+        <p class="stat" id="dayStatus">-</p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+          <span class="progress-text" id="progressText">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="shift-info-card">
+      <div>
+        <h3>Tipo di Turno Associato</h3>
+        <p class="shift-name"><%= userShift ? userShift.name : 'Nessun turno assegnato' %></p>
+        <% if (userShift?.contract) { %>
+          <p class="text-muted text-small">
+            Contratto:
+            <%= userShift.contract.type === 'part-time' ? 'Part-time' : userShift.contract.type === 'full-time' ? 'Full-time' : 'Personalizzato' %>
+            <% if (userShift.contract.weeklyHours) { %>
+              · <%= userShift.contract.weeklyHours %>h/settimana
+            <% } %>
+          </p>
+        <% } %>
+      </div>
+      <% if (userShift) { %>
+      <div class="shift-meta">
+        <span class="shift-badge"><%= userShift.includeWeekends ? 'Include weekend' : 'Esclude weekend' %></span>
+        <span class="shift-badge"><%= userShift.includeHolidays ? 'Include festività' : 'Esclude festività' %></span>
+      </div>
+      <% } %>
+    </div>
+
+    <div class="activity-section">
+      <div class="section-header">
+        <h3>Gestione Attività</h3>
+        <button id="btnShowAddActivity" class="btn btn-primary">+ Nuova Attività</button>
+      </div>
+
+      <div id="addActivityForm" class="activity-form" style="display: none;">
+        <h4>Aggiungi Attività</h4>
+        <form id="activityForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ore</label>
+              <select id="durationHours" required></select>
+            </div>
+            <div class="form-group">
+              <label>Minuti</label>
+              <select id="durationMinutes" required></select>
+            </div>
+            <div class="form-group">
+              <label>Tipo Attività</label>
+              <select id="activityType" required>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" id="customTypeGroup" style="display: none;">
+              <label>Tipo Personalizzato</label>
+              <input type="text" id="customType" placeholder="Specifica il tipo di attività">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Note</label>
+            <textarea id="notes" rows="2" placeholder="Descrizione attività..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salva</button>
+            <button type="button" id="btnCancelAdd" class="btn">Annulla</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="activitiesList" class="activities-list">
+        <p class="loading">Caricamento...</p>
+      </div>
+    </div>
+
+    <div class="calendar-section">
+      <div class="section-header">
+        <h3>Calendario Mensile</h3>
+        <div class="calendar-nav">
+          <button type="button" class="btn btn-sm" id="btnPrevMonth">&larr;</button>
+          <span id="calendarMonthLabel"></span>
+          <button type="button" class="btn btn-sm" id="btnNextMonth">&rarr;</button>
+        </div>
+      </div>
+
+      <div class="calendar-legend">
+        <span class="legend-item legend-ok">OK</span>
+        <span class="legend-item legend-incomplete">Incompleto</span>
+        <span class="legend-item legend-missing">Non inserito</span>
+        <span class="legend-item legend-off">Non richiesto</span>
+      </div>
+
+      <div class="calendar-grid" id="calendarGrid"></div>
+
+      <div class="calendar-actions">
+        <h4>Imposta giornata intera</h4>
+        <div class="quick-actions" id="calendarQuickActions"></div>
+        <p class="calendar-hint">Seleziona un giorno dal calendario per applicare la giornata intera.</p>
+      </div>
+
+      <div class="calendar-irregularities">
+        <h4>Irregolarità fuori mese corrente</h4>
+        <div id="irregularityShortcuts" class="irregularity-shortcuts">
+          <p class="no-data">Nessuna irregolarità trovata.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+  <script nonce="<%= cspNonce %>">
+    initDashboard({
+      token: '<%= token %>',
+      currentDate: '<%= currentDate %>'
+    });
+  </script>
+</body>
+</html>
