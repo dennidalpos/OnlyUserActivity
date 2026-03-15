@@ -1,5 +1,5 @@
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const config = require('../../config');
 const fileStorage = require('./fileStorage');
 
@@ -69,7 +69,7 @@ class UserStorage {
   }
 
   async create(userData) {
-    const userKey = uuidv4();
+    const userKey = randomUUID();
     const now = new Date().toISOString();
 
     const user = {

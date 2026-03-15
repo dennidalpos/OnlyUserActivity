@@ -1,5 +1,5 @@
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const config = require('../../config');
 const fileStorage = require('./fileStorage');
 const { extractYearMonth } = require('../utils/dateUtils');
@@ -56,7 +56,7 @@ class ActivityStorage {
   async create(userKey, activityData) {
     const now = new Date().toISOString();
     const activity = {
-      id: uuidv4(),
+      id: randomUUID(),
       ...activityData,
       createdAt: now,
       updatedAt: now

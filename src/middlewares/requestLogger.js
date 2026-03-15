@@ -1,8 +1,8 @@
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 function requestLogger(logger) {
   return (req, res, next) => {
-    req.id = uuidv4();
+    req.id = randomUUID();
     req.log = logger.child({ requestId: req.id });
 
     const startTime = Date.now();

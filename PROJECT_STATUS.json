@@ -1,0 +1,190 @@
+{
+  "treeview": [
+    ".env.example",
+    ".gitignore",
+    "AGENTS.md",
+    "PROJECT_SPEC.md",
+    "PROJECT_STATUS.json",
+    "README.md",
+    "package-lock.json",
+    "package.json",
+    "public/",
+    "public/css/",
+    "public/css/admin.css",
+    "public/css/shared.css",
+    "public/css/user.css",
+    "public/js/",
+    "public/js/dashboard.js",
+    "public/js/help.js",
+    "public/js/timepicker.js",
+    "public/js/ui-helper.js",
+    "scripts/",
+    "scripts/create-user.js",
+    "scripts/install-windows-service.ps1",
+    "scripts/restart-server.js",
+    "scripts/seed-test-users.js",
+    "src/",
+    "src/app.js",
+    "src/config/",
+    "src/config/index.js",
+    "src/middlewares/",
+    "src/middlewares/adminAuth.js",
+    "src/middlewares/auth.js",
+    "src/middlewares/errorHandler.js",
+    "src/middlewares/rateLimiter.js",
+    "src/middlewares/requestLogger.js",
+    "src/middlewares/userAuth.js",
+    "src/middlewares/validation.js",
+    "src/routes/",
+    "src/routes/admin/",
+    "src/routes/admin/auth.js",
+    "src/routes/admin/dashboard.js",
+    "src/routes/api/",
+    "src/routes/api/activities.js",
+    "src/routes/api/auth.js",
+    "src/routes/user/",
+    "src/routes/user/auth.js",
+    "src/routes/user/dashboard.js",
+    "src/server.js",
+    "src/services/",
+    "src/services/activity/",
+    "src/services/activity/activityService.js",
+    "src/services/activity/validationRules.js",
+    "src/services/admin/",
+    "src/services/admin/activityTypesService.js",
+    "src/services/admin/configExportService.js",
+    "src/services/admin/contractPresetsService.js",
+    "src/services/admin/envService.js",
+    "src/services/admin/exportService.js",
+    "src/services/admin/monitoringService.js",
+    "src/services/admin/quickActionsService.js",
+    "src/services/admin/serverService.js",
+    "src/services/admin/settingsService.js",
+    "src/services/admin/shiftTypesService.js",
+    "src/services/admin/troubleshootService.js",
+    "src/services/admin/userManagementService.js",
+    "src/services/auth/",
+    "src/services/auth/adminAuthService.js",
+    "src/services/auth/localAuth.js",
+    "src/services/auth/tokenService.js",
+    "src/services/ldap/",
+    "src/services/ldap/ldapAuth.js",
+    "src/services/ldap/ldapClient.js",
+    "src/services/storage/",
+    "src/services/storage/activityStorage.js",
+    "src/services/storage/auditLogger.js",
+    "src/services/storage/fileStorage.js",
+    "src/services/storage/lockManager.js",
+    "src/services/storage/userStorage.js",
+    "src/services/utils/",
+    "src/services/utils/dateUtils.js",
+    "src/services/utils/hashUtils.js",
+    "src/services/utils/logUtils.js",
+    "src/services/utils/shiftUtils.js",
+    "src/services/utils/statusUtils.js",
+    "src/services/utils/timeUtils.js",
+    "src/views/",
+    "src/views/admin/",
+    "src/views/admin/dashboard.ejs",
+    "src/views/admin/export.ejs",
+    "src/views/admin/irregularities.ejs",
+    "src/views/admin/login.ejs",
+    "src/views/admin/quick-actions.ejs",
+    "src/views/admin/settings.ejs",
+    "src/views/admin/shifts.ejs",
+    "src/views/admin/users.ejs",
+    "src/views/errors/",
+    "src/views/errors/error.ejs",
+    "src/views/layout.ejs",
+    "src/views/user/",
+    "src/views/user/dashboard.ejs",
+    "src/views/user/login.ejs",
+    "tests/",
+    "tests/app.test.js",
+    "tests/setup.js"
+  ],
+  "files_big": [
+    "package-lock.json:6944",
+    "public/css/admin.css:1108",
+    "src/routes/admin/dashboard.js:1037",
+    "src/views/admin/settings.ejs:1089"
+  ],
+  "tasks": [
+    {
+      "id": "fix-bootstrap-env-defaults",
+      "status": "pending",
+      "description": "Allineare bootstrap configurazione, .env.example e README per evitare failure al primo avvio e rimuovere side effect incoerenti del caricamento config.",
+      "files": [
+        "src/config/index.js",
+        ".env.example",
+        "README.md"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "harden-admin-csrf-and-audit-redaction",
+      "status": "pending",
+      "description": "Proteggere le route admin cookie-auth da CSRF e impedire che audit log e settings log persistano segreti o payload sensibili.",
+      "files": [
+        "src/app.js",
+        "src/routes/admin/dashboard.js",
+        "src/services/storage/auditLogger.js"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "align-auth-login-behavior",
+      "status": "pending",
+      "description": "Rendere coerenti UI, API e README sul login locale/LDAP e applicare rate limiting anche ai login HTML admin e user.",
+      "files": [
+        "src/routes/api/auth.js",
+        "src/routes/user/auth.js",
+        "src/routes/admin/auth.js"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "normalize-admin-api-errors",
+      "status": "pending",
+      "description": "Introdurre validazione e mappatura errori 4xx/5xx per le API admin che oggi rispondono 500 a errori utente o di validazione.",
+      "files": [
+        "src/routes/admin/dashboard.js",
+        "src/middlewares/errorHandler.js",
+        "src/services/admin/settingsService.js"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "decouple-app-bootstrap-and-expand-tests",
+      "status": "pending",
+      "description": "Spostare inizializzazione storage/credenziali e process.exit fuori da app.js e aggiungere test sui flussi critici di auth, admin settings e activity validation.",
+      "files": [
+        "src/app.js",
+        "src/server.js",
+        "tests/app.test.js"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "reduce-admin-route-monolith",
+      "status": "pending",
+      "description": "Spezzare la route admin monolitica per domini operativi durante la correzione dei bug per ridurre regressioni e incoerenze di gestione errori.",
+      "files": [
+        "src/routes/admin/dashboard.js",
+        "src/views/admin/settings.ejs"
+      ],
+      "priority": 4
+    },
+    {
+      "id": "clean-runtime-drift-and-unused-deps",
+      "status": "pending",
+      "description": "Definire la policy di rappresentazione degli artefatti runtime nel PROJECT_STATUS e rimuovere dipendenze dichiarate ma non usate come express-ejs-layouts.",
+      "files": [
+        "PROJECT_STATUS.json",
+        "package.json",
+        "src/app.js"
+      ],
+      "priority": 4
+    }
+  ]
+}

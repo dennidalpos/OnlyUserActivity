@@ -158,6 +158,11 @@ Authorization: Bearer <token>
 npm test
 ```
 
+## Documentation
+
+- `PROJECT_SPEC.md`
+- `PROJECT_STATUS.json`
+
 ## Note operative
 
 - In HTTPS, assicurarsi che `HTTPS_CERT_PATH` e `HTTPS_KEY_PATH` siano validi.
