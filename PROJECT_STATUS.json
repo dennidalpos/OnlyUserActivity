@@ -3,6 +3,7 @@
     ".env.example",
     ".gitignore",
     "AGENTS.md",
+    "LICENSE",
     "PROJECT_SPEC.md",
     "PROJECT_STATUS.json",
     "README.md",
@@ -19,6 +20,7 @@
     "public/js/timepicker.js",
     "public/js/ui-helper.js",
     "scripts/",
+    "scripts/clean.js",
     "scripts/create-user.js",
     "scripts/install-windows-service.ps1",
     "scripts/restart-server.js",
@@ -104,7 +106,6 @@
     "tests/setup.js"
   ],
   "files_big": [
-    "package-lock.json:6944",
     "public/css/admin.css:1108",
     "src/routes/admin/dashboard.js:1037",
     "src/views/admin/settings.ejs:1089"
@@ -112,6 +113,7 @@
   "tasks": [
     {
       "id": "fix-bootstrap-env-defaults",
+      "type": "drift",
       "status": "pending",
       "description": "Allineare bootstrap configurazione, .env.example e README per evitare failure al primo avvio e rimuovere side effect incoerenti del caricamento config.",
       "files": [
@@ -123,6 +125,7 @@
     },
     {
       "id": "harden-admin-csrf-and-audit-redaction",
+      "type": "bug",
       "status": "pending",
       "description": "Proteggere le route admin cookie-auth da CSRF e impedire che audit log e settings log persistano segreti o payload sensibili.",
       "files": [
@@ -134,6 +137,7 @@
     },
     {
       "id": "align-auth-login-behavior",
+      "type": "bug",
       "status": "pending",
       "description": "Rendere coerenti UI, API e README sul login locale/LDAP e applicare rate limiting anche ai login HTML admin e user.",
       "files": [
@@ -145,6 +149,7 @@
     },
     {
       "id": "normalize-admin-api-errors",
+      "type": "refactor",
       "status": "pending",
       "description": "Introdurre validazione e mappatura errori 4xx/5xx per le API admin che oggi rispondono 500 a errori utente o di validazione.",
       "files": [
@@ -156,6 +161,7 @@
     },
     {
       "id": "decouple-app-bootstrap-and-expand-tests",
+      "type": "refactor",
       "status": "pending",
       "description": "Spostare inizializzazione storage/credenziali e process.exit fuori da app.js e aggiungere test sui flussi critici di auth, admin settings e activity validation.",
       "files": [
@@ -167,6 +173,7 @@
     },
     {
       "id": "reduce-admin-route-monolith",
+      "type": "refactor",
       "status": "pending",
       "description": "Spezzare la route admin monolitica per domini operativi durante la correzione dei bug per ridurre regressioni e incoerenze di gestione errori.",
       "files": [
@@ -176,15 +183,80 @@
       "priority": 4
     },
     {
-      "id": "clean-runtime-drift-and-unused-deps",
+      "id": "remove-unused-express-ejs-layouts",
+      "type": "infra",
       "status": "pending",
-      "description": "Definire la policy di rappresentazione degli artefatti runtime nel PROJECT_STATUS e rimuovere dipendenze dichiarate ma non usate come express-ejs-layouts.",
+      "description": "Verificare e rimuovere `express-ejs-layouts` da manifest e lockfile se confermato non usato dal bootstrap EJS corrente.",
       "files": [
-        "PROJECT_STATUS.json",
         "package.json",
+        "package-lock.json",
         "src/app.js"
       ],
       "priority": 4
+    },
+    {
+      "id": "enforce-user-deletion-policy",
+      "type": "bug",
+      "status": "pending",
+      "description": "Bloccare l'eliminazione manuale degli utenti AD e riallineare UI, help e backend sulla semantica di cancellazione degli utenti locali, oggi incoerente con la rimozione di attività e audit log.",
+      "files": [
+        "src/services/admin/userManagementService.js",
+        "src/routes/admin/dashboard.js",
+        "src/views/admin/users.ejs",
+        "public/js/help.js"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "apply-contract-presets-to-workload-calculation",
+      "type": "bug",
+      "status": "pending",
+      "description": "Risolvere i preset contratto assegnati ai turni e usarli davvero per ore settimanali e minuti richiesti giornalieri, evitando che dashboard e monitoring continuino a basarsi sempre sul default globale.",
+      "files": [
+        "src/services/admin/shiftTypesService.js",
+        "src/services/activity/activityService.js",
+        "src/services/admin/monitoringService.js",
+        "src/views/user/dashboard.ejs"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "enforce-shift-and-preset-referential-integrity",
+      "type": "bug",
+      "status": "pending",
+      "description": "Validare i riferimenti a turni e preset contratto in create/update/import e impedire la rimozione di entità ancora referenziate da utenti, default server o contratti dei turni.",
+      "files": [
+        "src/services/admin/shiftTypesService.js",
+        "src/services/admin/contractPresetsService.js",
+        "src/services/admin/userManagementService.js",
+        "src/services/admin/configExportService.js"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "align-configuration-import-storage-root",
+      "type": "bug",
+      "status": "pending",
+      "description": "Rendere coerente l'import completo della configurazione quando cambia `DATA_ROOT_PATH`, evitando che utenti, attività e configurazioni vengano scritti in root storage diverse nello stesso import.",
+      "files": [
+        "src/services/admin/configExportService.js",
+        "src/services/admin/envService.js",
+        "src/services/admin/settingsService.js"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "harden-restart-workflow",
+      "type": "infra",
+      "status": "pending",
+      "description": "Sostituire i riavvii self-managed fragili con un flusso supportato dal supervisore di processo o limitare gli endpoint/script che oggi possono lasciare il servizio fermo o terminare processi Node non correlati.",
+      "files": [
+        "src/services/admin/serverService.js",
+        "src/routes/admin/dashboard.js",
+        "scripts/restart-server.js",
+        "scripts/install-windows-service.ps1"
+      ],
+      "priority": 3
     }
   ]
 }

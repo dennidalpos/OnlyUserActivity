@@ -14,6 +14,12 @@ test-data/
 public/build/
 build/
 dist/
+out/
+publish/
+tmp/
+certs/
+nssm.exe
+tools/nssm/
 *.tmp
 *.swp
 *~

@@ -46,6 +46,10 @@ public/
 npm install
 ```
 
+## Build
+
+Non e' previsto uno step di build dedicato: l'applicazione viene eseguita direttamente con Node.js.
+
 ## Avvio
 
 ### Ambiente di sviluppo
@@ -158,6 +162,35 @@ Authorization: Bearer <token>
 npm test
 ```
 
+Per coverage:
+
+```bash
+npm run test:coverage
+```
+
+## Clean
+
+```bash
+npm run clean
+```
+
+Il comando rimuove gli output locali non versionati (`coverage/`, `logs/`, `test-data/`, `build/`, `dist/`, `out/`, `publish/`, `tmp/`, `public/build/`) e preserva `data/`, che contiene lo stato applicativo file-based.
+
+## Publish o packaging
+
+Il repository non include una pipeline di packaging dedicata. Per l'esecuzione in produzione sono supportati:
+
+- `npm start` come avvio diretto del server;
+- `scripts/install-windows-service.ps1` per installazione come servizio Windows tramite NSSM.
+
+Lo script PowerShell cerca `nssm.exe` in uno di questi percorsi locali:
+
+- `tools/nssm/win64/nssm.exe`
+- `tools/nssm/win32/nssm.exe`
+- `nssm.exe` nella root del progetto
+
+`tools/nssm/` e `nssm.exe` sono trattati come binari locali e non vengono versionati.
+
 ## Documentation
 
 - `PROJECT_SPEC.md`
@@ -171,4 +204,4 @@ npm test
 
 ## Licenza
 
-ISC (vedi `package.json`).
+ISC (vedi `LICENSE`).
