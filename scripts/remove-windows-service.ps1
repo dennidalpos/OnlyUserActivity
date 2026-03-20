@@ -1,10 +1,12 @@
 param(
   [string]$ServiceName = "OnlyUserActivity",
   [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
+  [string]$ConfigRoot = "",
   [string]$NssmPath = "",
   [string]$LogDir = "",
   [int]$StopTimeoutSeconds = 15,
-  [switch]$RemoveLogs
+  [switch]$RemoveLogs,
+  [switch]$RemoveConfigRoot
 )
 
 $ErrorActionPreference = "Stop"
@@ -57,48 +59,51 @@ function Invoke-Nssm {
   }
 }
 
-$NssmPath = Resolve-NssmPath -ProjectRoot $ProjectRoot -PreferredPath $NssmPath
-
 if (-not (Test-IsAdministrator)) {
   throw "La rimozione di un servizio Windows richiede una sessione PowerShell avviata come amministratore."
 }
 
+if ([string]::IsNullOrWhiteSpace($ConfigRoot)) {
+  $ConfigRoot = $ProjectRoot
+}
+
 if ([string]::IsNullOrWhiteSpace($LogDir)) {
-  $LogDir = Join-Path $ProjectRoot "logs"
+  $LogDir = Join-Path $ConfigRoot "logs"
 }
 
 $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-if (-not $service) {
-  Write-Host "Servizio '$ServiceName' non trovato. Nessuna rimozione necessaria."
-  return
-}
+if ($service) {
+  $NssmPath = Resolve-NssmPath -ProjectRoot $ProjectRoot -PreferredPath $NssmPath
 
-if ($service.Status -ne 'Stopped') {
-  Write-Host "Arresto del servizio '$ServiceName'..."
-  try {
-    Stop-Service -Name $ServiceName -ErrorAction Stop
-  } catch {
-    Write-Warning "Stop-Service ha fallito, provo con NSSM stop."
+  if ($service.Status -ne 'Stopped') {
+    Write-Host "Arresto del servizio '$ServiceName'..."
     try {
-      Invoke-Nssm -Executable $NssmPath -Arguments @('stop', $ServiceName)
+      Stop-Service -Name $ServiceName -ErrorAction Stop
     } catch {
-      Write-Warning "NSSM stop ha fallito: $($_.Exception.Message)"
+      Write-Warning "Stop-Service ha fallito, provo con NSSM stop."
+      try {
+        Invoke-Nssm -Executable $NssmPath -Arguments @('stop', $ServiceName)
+      } catch {
+        Write-Warning "NSSM stop ha fallito: $($_.Exception.Message)"
+      }
+    }
+
+    try {
+      $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds($StopTimeoutSeconds))
+    } catch {
+      Write-Warning "Il servizio non si è arrestato entro $StopTimeoutSeconds secondi."
     }
   }
 
+  Write-Host "Rimozione del servizio '$ServiceName'..."
   try {
-    $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds($StopTimeoutSeconds))
+    Invoke-Nssm -Executable $NssmPath -Arguments @('remove', $ServiceName, 'confirm')
   } catch {
-    Write-Warning "Il servizio non si è arrestato entro $StopTimeoutSeconds secondi."
+    Write-Warning "Rimozione via NSSM fallita, provo con sc.exe delete."
+    & sc.exe delete $ServiceName | Out-Null
   }
-}
-
-Write-Host "Rimozione del servizio '$ServiceName'..."
-try {
-  Invoke-Nssm -Executable $NssmPath -Arguments @('remove', $ServiceName, 'confirm')
-} catch {
-  Write-Warning "Rimozione via NSSM fallita, provo con sc.exe delete."
-  & sc.exe delete $ServiceName | Out-Null
+} else {
+  Write-Host "Servizio '$ServiceName' non trovato. Continuo con l'eventuale cleanup dei file."
 }
 
 if ($RemoveLogs) {
@@ -107,4 +112,8 @@ if ($RemoveLogs) {
   Remove-Item $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "Servizio '$ServiceName' rimosso."
+if ($RemoveConfigRoot -and (Test-Path $ConfigRoot)) {
+  Remove-Item $ConfigRoot -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host "Cleanup del servizio '$ServiceName' completato."

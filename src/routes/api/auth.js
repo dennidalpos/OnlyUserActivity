@@ -11,11 +11,14 @@ const config = require('../../config');
 
 router.post('/login', loginLimiter, validate(loginSchema), async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, authMethod: requestedAuthMethod } = req.body;
 
     let user;
+    const authMethod = config.ldap.enabled && requestedAuthMethod === 'local'
+      ? 'local'
+      : (config.ldap.enabled ? 'ldap' : 'local');
 
-    if (config.ldap.enabled) {
+    if (authMethod === 'ldap') {
       try {
         user = await ldapAuth.authenticate(username, password);
       } catch (error) {
@@ -40,7 +43,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res, next
     await auditLogger.log(
       'LOGIN',
       user.userKey,
-      { username, authMethod: config.ldap.enabled ? 'ldap' : 'local' },
+      { username, authMethod },
       req.id,
       req.ip,
       username

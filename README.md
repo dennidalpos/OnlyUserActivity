@@ -7,6 +7,7 @@ Sistema web per il tracciamento delle attività giornaliere degli utenti con aut
 - **Autenticazione utente**: locale con password hashate oppure LDAP/AD.
 - **Dashboard utente**: inserimento attività, calendario mensile, riepilogo giornaliero e quick actions.
 - **Pannello admin**: monitoraggio presenze, gestione utenti locali, turni, preset contratti, tipi attività e impostazioni server.
+- **Carico orario per utente**: minuti richiesti giornalieri calcolati dai preset contratto assegnati a turno o utente.
 - **Log audit**: registrazione eventi in formato JSONL con opzione di redazione payload.
 - **Export dati**: CSV/JSON/XLSX con riepiloghi o dettagli.
 - **Sicurezza**: rate limiting, CSP con nonce, sessioni separate admin/utente, JWT per API.
@@ -22,6 +23,8 @@ Sistema web per il tracciamento delle attività giornaliere degli utenti con aut
 ## Struttura del progetto
 
 ```
+scripts/
+  *.ps1                 # Automazione locale e packaging MSI Windows
 src/
   app.js                # Configurazione Express, middleware, route
   server.js             # Avvio server HTTP/HTTPS
@@ -30,9 +33,13 @@ src/
   routes/               # API e pagine admin/utente
   services/             # Logica business e storage
   views/                # Template EJS
+tests/
+  *.test.js             # Test automatici Jest e integrazione
 public/
   css/                  # Stili
   js/                   # Script frontend
+tools/
+  msi/                  # Template WiX del pacchetto MSI
 ```
 
 ## Requisiti
@@ -44,7 +51,10 @@ public/
 
 ```bash
 npm install
+copy .env.example .env
 ```
+
+Compilare poi `.env` prima del primo avvio. Il bootstrap non copia più automaticamente `.env.example`, così l'ambiente iniziale resta esplicito e verificabile.
 
 ## Build
 
@@ -68,7 +78,7 @@ Il server è configurato per avviarsi su `SERVER_HOST` e `SERVER_PORT`.
 
 ## Configurazione (variabili d'ambiente)
 
-Il progetto usa `.env`. Se mancante, viene copiato da `.env.example` automaticamente al primo avvio.
+Il progetto usa `.env`. Partire da `.env.example`, copiarlo manualmente in `.env` e completare i valori richiesti prima dell'avvio.
 
 ### Principali variabili
 
@@ -89,9 +99,10 @@ Il progetto usa `.env`. Se mancante, viene copiato da `.env.example` automaticam
 | `ADMIN_DEFAULT_PASSWORD` | Password admin predefinita | `admin` |
 | `RATE_LIMIT_MAX_REQUESTS` | Rate limit API | `100` |
 | `LOGIN_RATE_LIMIT_MAX` | Max tentativi login | `5` |
+| `ALLOW_PROCESS_SUPERVISOR_RESTART` | Abilita restart remoto solo sotto supervisore | `false` |
 | `ACTIVITY_REQUIRED_MINUTES` | Minuti richiesti/giorno | `480` |
 
-> **Nota**: in `production` è obbligatorio cambiare `JWT_SECRET` e `ADMIN_SESSION_SECRET`.
+> **Nota**: in `production` è obbligatorio cambiare `JWT_SECRET` e `ADMIN_SESSION_SECRET`; con i valori di default l'applicazione fallisce intenzionalmente il bootstrap.
 
 ## Storage e file generati
 
@@ -106,9 +117,10 @@ I dati sono salvati in `DATA_ROOT_PATH` (default `./data`):
 ## Flusso di autenticazione
 
 - **Utenti**: login via `/user/auth/login`.
-  - Se LDAP attivo, la UI permette scelta del metodo.
+  - Se LDAP attivo, UI e API permettono scelta esplicita tra login locale e LDAP.
   - La sessione contiene JWT per le chiamate API.
 - **Admin**: login via `/admin/auth/login` con credenziali archiviate in `data/admin/credentials.json`.
+  - Le mutazioni admin cookie-auth sono protette da token CSRF di sessione.
 
 ## API principali
 
@@ -120,7 +132,7 @@ Authorization: Bearer <token>
 
 ### Autenticazione API
 
-- `POST /api/auth/login` — login utente (LDAP o local)
+- `POST /api/auth/login` — login utente; con LDAP attivo accetta `authMethod=local|ldap`
 
 ### Attività
 
@@ -149,12 +161,12 @@ Authorization: Bearer <token>
 - `/admin/api/settings/*` — configurazioni server e diagnostica
 - `/admin/api/users` — CRUD utenti locali
 - `/admin/api/server/info` — info server
-- `/admin/api/server/restart` — riavvio server
+- `/admin/api/server/restart` — richiesta riavvio solo se il processo gira sotto supervisore configurato
 
 ## Log e audit
 
 - I log applicativi possono essere scritti su file (`LOG_TO_FILE=true`).
-- Gli audit log sono salvati come righe JSON (`.jsonl`) e possono redigere i payload con `AUDIT_PAYLOAD_MODE=redacted`.
+- Gli audit log sono salvati come righe JSON (`.jsonl`) e redigono password, secret, token e payload sensibili anche in modalità `partial`.
 
 ## Testing
 
@@ -178,18 +190,68 @@ Il comando rimuove gli output locali non versionati (`coverage/`, `logs/`, `test
 
 ## Publish o packaging
 
-Il repository non include una pipeline di packaging dedicata. Per l'esecuzione in produzione sono supportati:
+Il repository include una pipeline MSI per Windows:
 
-- `npm start` come avvio diretto del server;
-- `scripts/install-windows-service.ps1` per installazione come servizio Windows tramite NSSM.
+```bash
+npm run package:msi
+```
 
-Lo script PowerShell cerca `nssm.exe` in uno di questi percorsi locali:
+La build usa:
+
+- `scripts/stage-windows-package.ps1` per creare uno stage installabile con dipendenze production;
+- `scripts/build-msi.ps1` per harvesting WiX e generazione del pacchetto;
+- `tools/msi/OnlyUserActivity.wxs` come template WiX principale;
+- `tools/wix314-binaries/` come sorgente locale preferita per `heat.exe`, `candle.exe` e `light.exe`;
+- `tools/nssm/` come binari locali NSSM inclusi nel pacchetto.
+
+Output predefinito:
+
+- MSI in `dist/onlyuseractivity-<version>-x64.msi`
+- stage e file intermedi in `build/windows-msi/`
+
+### Layout installazione MSI
+
+- File applicativi in `C:\Program Files\OnlyUserActivity`
+- Configurazione e stato runtime in `%ProgramData%\Danny Perondi\OnlyUserActivity`
+  - `.env`
+  - `data/`
+  - `logs/`
+
+Alla prima installazione, se `%ProgramData%\Danny Perondi\OnlyUserActivity\.env` non esiste, viene creato copiando `.env.example`. Il servizio NSSM riceve inoltre queste variabili runtime:
+
+- `ONLYUSERACTIVITY_ENV_PATH`
+- `DATA_ROOT_PATH`
+- `LOG_FILE_PATH`
+- `ALLOW_PROCESS_SUPERVISOR_RESTART=true`
+
+In questo modo aggiornamenti MSI futuri possono sostituire i file applicativi senza perdere configurazione e dati, mentre la disinstallazione completa rimuove servizio, log e contenuto residuo sotto `%ProgramData%\Danny Perondi\OnlyUserActivity`.
+
+### Installazione silenziosa MSI
+
+```powershell
+msiexec /i dist\onlyuseractivity-1.0.0-x64.msi /qn START_SERVICE=0
+```
+
+Proprieta' supportate:
+
+- `INSTALL_SERVICE=1|0` per installare o meno il servizio NSSM
+- `START_SERVICE=1|0` per avviare o meno il servizio al termine dell'installazione
+
+La pipeline MSI e il servizio richiedono:
+
+- Node.js 18+ installato sul sistema target;
+- permessi amministrativi per installazione/rimozione del servizio Windows.
+
+Per gestione manuale del servizio restano disponibili:
+
+- `scripts/install-windows-service.ps1`
+- `scripts/remove-windows-service.ps1`
+
+Gli script cercano `nssm.exe` in:
 
 - `tools/nssm/win64/nssm.exe`
 - `tools/nssm/win32/nssm.exe`
 - `nssm.exe` nella root del progetto
-
-`tools/nssm/` e `nssm.exe` sono trattati come binari locali e non vengono versionati.
 
 ## Documentation
 
@@ -201,6 +263,8 @@ Lo script PowerShell cerca `nssm.exe` in uno di questi percorsi locali:
 - In HTTPS, assicurarsi che `HTTPS_CERT_PATH` e `HTTPS_KEY_PATH` siano validi.
 - Per ambienti dietro reverse proxy impostare `TRUST_PROXY` adeguatamente.
 - Il sistema applica rate limiting alle API e ai login.
+- La cancellazione di un utente locale rimuove anche attività e audit log associati; gli utenti AD non sono eliminabili manualmente.
+- In deployment MSI, se `HTTPS_CERT_PATH` o `HTTPS_KEY_PATH` puntano a file fuori dalla cartella installata, usare percorsi assoluti nel file `%ProgramData%\Danny Perondi\OnlyUserActivity\.env`.
 
 ## Licenza
 

@@ -11,7 +11,7 @@ const {
 } = require('./validationRules');
 
 class ActivityService {
-  async getDayActivities(userKey, date) {
+  async getDayActivities(userKey, date, options = {}) {
     const activities = await activityStorage.findByDate(userKey, date);
 
     activities.sort((a, b) =>
@@ -23,7 +23,10 @@ class ActivityService {
       durationMinutes: calculateDuration(act.startTime, act.endTime)
     }));
 
-    const summary = calculateDailySummary(activitiesWithDuration);
+    const summary = calculateDailySummary(
+      activitiesWithDuration,
+      options.requiredMinutes || config.activity.requiredMinutes
+    );
 
     return {
       date,
@@ -193,7 +196,7 @@ class ActivityService {
     return await activityStorage.delete(userKey, activityId, date);
   }
 
-  async getActivitiesRange(userKey, fromDate, toDate) {
+  async getActivitiesRange(userKey, fromDate, toDate, options = {}) {
     const activities = await activityStorage.findByRange(userKey, fromDate, toDate);
 
     const activitiesWithDuration = activities.map(act => ({
@@ -210,7 +213,10 @@ class ActivityService {
     });
 
     Object.keys(dailySummaries).forEach(date => {
-      dailySummaries[date] = calculateDailySummary(dailySummaries[date]);
+      dailySummaries[date] = calculateDailySummary(
+        dailySummaries[date],
+        options.requiredMinutes || config.activity.requiredMinutes
+      );
     });
 
     return {
@@ -221,9 +227,10 @@ class ActivityService {
     };
   }
 
-  async getMonthCalendar(userKey, year, month, shiftType) {
+  async getMonthCalendar(userKey, year, month, shiftType, options = {}) {
     const { firstDay, lastDay } = getMonthRange(year, month);
-    const rangeData = await this.getActivitiesRange(userKey, firstDay, lastDay);
+    const requiredMinutes = options.requiredMinutes || config.activity.requiredMinutes;
+    const rangeData = await this.getActivitiesRange(userKey, firstDay, lastDay, { requiredMinutes });
     const summaries = rangeData.dailySummaries || {};
     const activitiesByDate = {};
 
@@ -248,7 +255,7 @@ class ActivityService {
     while (cursor <= lastDay) {
       const summary = summaries[cursor] || {
         totalMinutes: 0,
-        requiredMinutes: config.activity.requiredMinutes,
+        requiredMinutes,
         isComplete: false
       };
 
@@ -275,7 +282,7 @@ class ActivityService {
         date: cursor,
         status,
         totalMinutes: summary.totalMinutes,
-        requiredMinutes: summary.requiredMinutes,
+      requiredMinutes: summary.requiredMinutes,
         isRequired,
         isFuture,
         activities: activitiesByDate[cursor] || []
@@ -288,14 +295,15 @@ class ActivityService {
       year,
       month,
       days,
-      requiredMinutes: config.activity.requiredMinutes
+      requiredMinutes
     };
   }
 
-  async getIrregularDaysOutsideMonth(userKey, year, month, shiftType) {
+  async getIrregularDaysOutsideMonth(userKey, year, month, shiftType, options = {}) {
     const startOfYear = `${year}-01-01`;
     const today = getCurrentDate();
-    const rangeData = await this.getActivitiesRange(userKey, startOfYear, today);
+    const requiredMinutes = options.requiredMinutes || config.activity.requiredMinutes;
+    const rangeData = await this.getActivitiesRange(userKey, startOfYear, today, { requiredMinutes });
     const summaries = rangeData.dailySummaries || {};
     const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
 
@@ -306,7 +314,7 @@ class ActivityService {
       if (!cursor.startsWith(monthPrefix) && isWorkingDay(cursor, shiftType)) {
         const summary = summaries[cursor] || {
           totalMinutes: 0,
-          requiredMinutes: config.activity.requiredMinutes,
+          requiredMinutes,
           isComplete: false
         };
 

@@ -61,6 +61,8 @@ class ConfigExportService {
     const sections = Array.isArray(options.sections) ? options.sections : null;
     const includeSection = (name) => !sections || sections.includes(name);
 
+    await this.validateImportReferences(payload, options);
+
     if (includeSection('settings')) {
       if (!payload.settings) {
         throw new Error('Configurazione impostazioni priva delle impostazioni server');
@@ -72,12 +74,12 @@ class ConfigExportService {
       await activityTypesService.setActivityTypes(payload.activityTypes);
     }
 
-    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
-      await shiftTypesService.setShiftTypes(payload.shiftTypes);
-    }
-
     if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
       await contractPresetsService.setPresets(payload.contractPresets);
+    }
+
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
+      await shiftTypesService.setShiftTypes(payload.shiftTypes);
     }
 
     if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
@@ -231,6 +233,8 @@ class ConfigExportService {
     const includeAdvanced = includeSection('advanced');
     const needsSettings = includeSettings || includeLogging || includeLdap || includeHttps || includeAdvanced;
 
+    await this.validateImportReferences(payload, options);
+
     if (needsSettings) {
       if (!payload.settings) {
         throw new Error('Configurazione completa priva delle impostazioni server');
@@ -281,12 +285,12 @@ class ConfigExportService {
       await activityTypesService.setActivityTypes(payload.activityTypes);
     }
 
-    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
-      await shiftTypesService.setShiftTypes(payload.shiftTypes);
-    }
-
     if (includeSection('contractPresets') && Array.isArray(payload.contractPresets)) {
       await contractPresetsService.setPresets(payload.contractPresets);
+    }
+
+    if (includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)) {
+      await shiftTypesService.setShiftTypes(payload.shiftTypes);
     }
 
     if (includeSection('quickActions') && Array.isArray(payload.quickActions)) {
@@ -297,7 +301,7 @@ class ConfigExportService {
       if (!Array.isArray(payload.users)) {
         throw new Error('Configurazione completa priva della sezione utenti');
       }
-      await this.importUsersSnapshot(payload.users);
+      await this.importUsersSnapshot(payload.users, payload.settings?.storage?.rootPath || config.storage.rootPath);
     }
 
     if (includeSection('activities')) {
@@ -310,8 +314,9 @@ class ConfigExportService {
     return { success: true, message: 'Configurazione importata con successo' };
   }
 
-  async importUsersSnapshot(users) {
-    const usersPath = path.join(config.storage.rootPath, 'users');
+  async importUsersSnapshot(users, rootPath = config.storage.rootPath) {
+    const usersPath = path.join(rootPath, 'users');
+    const indexPath = path.join(usersPath, 'index.json');
     const index = {};
 
     await fs.mkdir(usersPath, { recursive: true });
@@ -326,7 +331,7 @@ class ConfigExportService {
       index[user.username.toLowerCase()] = user.userKey;
     }
 
-    await userStorage.saveIndex(index);
+    await fileStorage.writeJSON(indexPath, index);
     userStorage.invalidateAllCache();
   }
 
@@ -342,6 +347,71 @@ class ConfigExportService {
       await fs.mkdir(monthDir, { recursive: true });
       const filePath = path.join(monthDir, `${entry.month}.json`);
       await fileStorage.writeJSON(filePath, entry.data);
+    }
+  }
+
+  async validateImportReferences(payload, options = {}) {
+    const snapshot = await this.buildReferenceSnapshot(payload, options);
+    this.validateReferenceSnapshot(snapshot);
+  }
+
+  async buildReferenceSnapshot(payload, options = {}) {
+    const sections = Array.isArray(options.sections) ? options.sections : null;
+    const includeSection = (name) => !sections || sections.includes(name);
+    const currentSettings = await this.envService.getCurrentSettings();
+
+    return {
+      settings: {
+        server: {
+          ...currentSettings.server,
+          ...(payload.settings?.server || {})
+        },
+        storage: {
+          ...currentSettings.storage,
+          ...(payload.settings?.storage || {})
+        }
+      },
+      shiftTypes: includeSection('shiftTypes') && Array.isArray(payload.shiftTypes)
+        ? payload.shiftTypes
+        : await shiftTypesService.getShiftTypes(),
+      contractPresets: includeSection('contractPresets') && Array.isArray(payload.contractPresets)
+        ? payload.contractPresets
+        : await contractPresetsService.getPresets(),
+      users: includeSection('users') && Array.isArray(payload.users)
+        ? payload.users
+        : await userStorage.listAll()
+    };
+  }
+
+  validateReferenceSnapshot(snapshot) {
+    const shiftValues = new Set(
+      (snapshot.shiftTypes || []).flatMap(shiftType => [shiftType.id, shiftType.name].filter(Boolean))
+    );
+    const presetIds = new Set(
+      (snapshot.contractPresets || []).map(preset => preset.id).filter(Boolean)
+    );
+
+    for (const user of snapshot.users || []) {
+      if (user.shift && !shiftValues.has(user.shift)) {
+        throw new Error(`Turno non valido per l'utente "${user.username || user.userKey}". Seleziona un turno esistente.`);
+      }
+      if (user.contractPreset && !presetIds.has(user.contractPreset)) {
+        throw new Error(`Preset contratto non valido per l'utente "${user.username || user.userKey}". Seleziona un preset esistente.`);
+      }
+    }
+
+    for (const shiftType of snapshot.shiftTypes || []) {
+      if (shiftType.contract?.presetId && !presetIds.has(shiftType.contract.presetId)) {
+        throw new Error(`Il turno "${shiftType.name || shiftType.id}" referenzia un preset contratto inesistente.`);
+      }
+    }
+
+    if (snapshot.settings.server?.defaultUserShift && !shiftValues.has(snapshot.settings.server.defaultUserShift)) {
+      throw new Error('Turno predefinito non valido. Seleziona un turno esistente.');
+    }
+
+    if (snapshot.settings.server?.defaultUserContractPreset && !presetIds.has(snapshot.settings.server.defaultUserContractPreset)) {
+      throw new Error('Preset contratto predefinito non valido. Seleziona un preset esistente.');
     }
   }
 }

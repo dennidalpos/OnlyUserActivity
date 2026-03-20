@@ -10,8 +10,7 @@ router.use(requireUserAuth);
 router.get('/dashboard', async (req, res) => {
   try {
     const storedUser = await userStorage.findByUserKey(req.user.userKey);
-    const shiftTypes = await shiftTypesService.getShiftTypes();
-    const userShift = shiftTypes.find(type => type.name === storedUser?.shift || type.id === storedUser?.shift) || null;
+    const workSettings = await shiftTypesService.resolveUserWorkSettings(storedUser || req.user);
 
     res.render('user/dashboard', {
       title: 'Dashboard',
@@ -22,7 +21,8 @@ router.get('/dashboard', async (req, res) => {
       },
       token: req.session.user.token,
       currentDate: getCurrentDate(),
-      userShift
+      userShift: workSettings.shiftType,
+      requiredMinutes: workSettings.requiredMinutes
     });
   } catch (error) {
     res.render('errors/error', {

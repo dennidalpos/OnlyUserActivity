@@ -36,12 +36,38 @@ class AuditLogger {
       return payload;
     }
 
-    if (!payload || typeof payload !== 'object') {
-      return payload;
+    return this.sanitizeValue(payload);
+  }
+
+  sanitizeValue(value, key = '') {
+    if (value === null || value === undefined) {
+      return value;
     }
 
-    const { password, token, ...safe } = payload;
-    return safe;
+    if (this.isSensitiveKey(key)) {
+      return '[REDACTED]';
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sanitizeValue(item, key));
+    }
+
+    if (typeof value === 'object') {
+      return Object.entries(value).reduce((safe, [entryKey, entryValue]) => {
+        safe[entryKey] = this.sanitizeValue(entryValue, entryKey);
+        return safe;
+      }, {});
+    }
+
+    if (typeof value === 'string' && value.length > 500) {
+      return `${value.slice(0, 200)}...[TRUNCATED]`;
+    }
+
+    return value;
+  }
+
+  isSensitiveKey(key) {
+    return /pass(word)?|secret|token|cookie|authorization|bindpassword/i.test(key || '');
   }
 
   getLogPath(date) {

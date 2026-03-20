@@ -1,6 +1,8 @@
 const path = require('path');
 const fileStorage = require('../storage/fileStorage');
 const config = require('../../config');
+const userStorage = require('../storage/userStorage');
+const { findShiftType } = require('../utils/shiftUtils');
 
 class ShiftTypesService {
   constructor() {
@@ -69,6 +71,7 @@ class ShiftTypesService {
 
   async addShiftType(shiftType) {
     const shiftTypes = await this.getShiftTypes();
+    await this.validateContractPresetReference(shiftType.contract?.presetId);
 
     const existingIndex = shiftTypes.findIndex(st => st.id === shiftType.id);
     if (existingIndex !== -1) {
@@ -112,6 +115,8 @@ class ShiftTypesService {
       throw new Error(`Tipo di turno "${id}" non trovato`);
     }
 
+    await this.validateContractPresetReference(updates.contract?.presetId);
+
     const base = shiftTypes[index];
     const workingDays = updates.workingDays !== undefined
       ? this.normalizeWorkingDays(updates.workingDays, updates.includeWeekends ?? base.includeWeekends)
@@ -144,6 +149,17 @@ class ShiftTypesService {
       throw new Error(`Tipo di turno "${id}" non trovato`);
     }
 
+    const shiftType = shiftTypes[index];
+    const users = await userStorage.listAll();
+
+    if (config.server.defaultUserShift === shiftType.name || config.server.defaultUserShift === shiftType.id) {
+      throw new Error(`Non è possibile eliminare il turno "${id}" perché è configurato come predefinito server`);
+    }
+
+    if (users.some(user => user.shift === shiftType.name || user.shift === shiftType.id)) {
+      throw new Error(`Non è possibile eliminare il turno "${id}" perché è assegnato ad almeno un utente`);
+    }
+
     shiftTypes.splice(index, 1);
     await this.setShiftTypes(shiftTypes);
 
@@ -173,6 +189,73 @@ class ShiftTypesService {
       type,
       weeklyHours: Number.isFinite(weeklyHours) && weeklyHours > 0 ? weeklyHours : null,
       presetId: contract.presetId || ''
+    };
+  }
+
+  async validateContractPresetReference(presetId) {
+    if (!presetId) {
+      return;
+    }
+
+    const contractPresetsService = require('./contractPresetsService');
+    const preset = await contractPresetsService.getPresetById(presetId);
+    if (!preset) {
+      throw new Error('Preset contratto non valido. Seleziona un preset esistente.');
+    }
+  }
+
+  async resolveEffectiveContract(shiftType, userContractPreset = '') {
+    const contractPresetsService = require('./contractPresetsService');
+    const preferredPresetId = userContractPreset || shiftType?.contract?.presetId || '';
+
+    if (preferredPresetId) {
+      const preset = await contractPresetsService.getPresetById(preferredPresetId);
+      if (preset) {
+        return {
+          type: preset.type,
+          weeklyHours: preset.weeklyHours,
+          presetId: preset.id,
+          presetName: preset.name
+        };
+      }
+    }
+
+    return {
+      type: shiftType?.contract?.type || 'full-time',
+      weeklyHours: shiftType?.contract?.weeklyHours || null,
+      presetId: shiftType?.contract?.presetId || '',
+      presetName: ''
+    };
+  }
+
+  calculateRequiredMinutes(shiftType, contract) {
+    const workingDays = Array.isArray(shiftType?.workingDays) && shiftType.workingDays.length > 0
+      ? this.normalizeWorkingDays(shiftType.workingDays, shiftType?.includeWeekends)
+      : [];
+    const weeklyHours = Number(contract?.weeklyHours);
+
+    if (workingDays.length > 0 && Number.isFinite(weeklyHours) && weeklyHours > 0) {
+      return Math.round((weeklyHours * 60) / workingDays.length);
+    }
+
+    return config.activity.requiredMinutes;
+  }
+
+  async resolveUserWorkSettings(user, shiftTypes = null) {
+    const availableShiftTypes = shiftTypes || await this.getShiftTypes();
+    const shiftType = findShiftType(availableShiftTypes, user?.shift);
+    const contract = await this.resolveEffectiveContract(shiftType, user?.contractPreset);
+    const requiredMinutes = this.calculateRequiredMinutes(shiftType, contract);
+
+    return {
+      shiftType: shiftType
+        ? {
+            ...shiftType,
+            contract
+          }
+        : null,
+      contract,
+      requiredMinutes
     };
   }
 }

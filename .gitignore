@@ -20,6 +20,7 @@ tmp/
 certs/
 nssm.exe
 tools/nssm/
+tools/wix314-binaries/
 *.tmp
 *.swp
 *~

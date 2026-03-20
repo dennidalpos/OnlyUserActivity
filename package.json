@@ -9,20 +9,42 @@
     "dev": "nodemon src/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "package:msi": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dennidalpos/OnlyUserActivity.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Danny Perondi",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/dennidalpos/OnlyUserActivity/issues"
   },
   "homepage": "https://github.com/dennidalpos/OnlyUserActivity#readme",
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/build/",
+      "<rootDir>/dist/",
+      "<rootDir>/publish/",
+      "<rootDir>/out/",
+      "<rootDir>/tmp/",
+      "<rootDir>/coverage/",
+      "<rootDir>/logs/"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/build/",
+      "<rootDir>/dist/",
+      "<rootDir>/publish/",
+      "<rootDir>/out/",
+      "<rootDir>/tmp/"
+    ]
+  },
   "dependencies": {
     "@fast-csv/format": "^5.0.5",
     "bcrypt": "^6.0.0",
@@ -31,7 +53,6 @@
     "ejs": "^3.1.10",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "express-ejs-layouts": "^2.5.1",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
     "helmet": "^8.1.0",

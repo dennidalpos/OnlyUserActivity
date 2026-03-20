@@ -10,7 +10,6 @@ const { validate, getActivitySchema, getActivityUpdateSchema, getActivityTypes }
 const { AppError } = require('../../middlewares/errorHandler');
 const { validateDateFormat } = require('../../services/utils/timeUtils');
 const { extractYearMonth } = require('../../services/utils/dateUtils');
-const { findShiftType } = require('../../services/utils/shiftUtils');
 
 router.use(authenticateToken);
 
@@ -29,14 +28,15 @@ router.get('/init', async (req, res, next) => {
     const { year, month } = extractYearMonth(date);
     const user = await userStorage.findByUserKey(req.user.userKey);
     const shiftTypes = await shiftTypesService.getShiftTypes();
-    const shiftType = findShiftType(shiftTypes, user?.shift);
+    const workSettings = await shiftTypesService.resolveUserWorkSettings(user, shiftTypes);
+    const shiftType = workSettings.shiftType;
 
     const [types, quickActions, dayData, monthData, irregularities] = await Promise.all([
       getActivityTypes(),
       settingsService.getQuickActions(),
-      activityService.getDayActivities(req.user.userKey, date),
-      activityService.getMonthCalendar(req.user.userKey, year, month, shiftType),
-      activityService.getIrregularDaysOutsideMonth(req.user.userKey, year, month, shiftType)
+      activityService.getDayActivities(req.user.userKey, date, { requiredMinutes: workSettings.requiredMinutes }),
+      activityService.getMonthCalendar(req.user.userKey, year, month, shiftType, { requiredMinutes: workSettings.requiredMinutes }),
+      activityService.getIrregularDaysOutsideMonth(req.user.userKey, year, month, shiftType, { requiredMinutes: workSettings.requiredMinutes })
     ]);
 
     res.set('Cache-Control', 'private, max-age=30');
@@ -102,10 +102,23 @@ router.get('/month', async (req, res, next) => {
     const { year, month } = extractYearMonth(date);
     const user = await userStorage.findByUserKey(req.user.userKey);
     const shiftTypes = await shiftTypesService.getShiftTypes();
-    const shiftType = findShiftType(shiftTypes, user?.shift);
+    const workSettings = await shiftTypesService.resolveUserWorkSettings(user, shiftTypes);
+    const shiftType = workSettings.shiftType;
 
-    const monthData = await activityService.getMonthCalendar(req.user.userKey, year, month, shiftType);
-    const irregularities = await activityService.getIrregularDaysOutsideMonth(req.user.userKey, year, month, shiftType);
+    const monthData = await activityService.getMonthCalendar(
+      req.user.userKey,
+      year,
+      month,
+      shiftType,
+      { requiredMinutes: workSettings.requiredMinutes }
+    );
+    const irregularities = await activityService.getIrregularDaysOutsideMonth(
+      req.user.userKey,
+      year,
+      month,
+      shiftType,
+      { requiredMinutes: workSettings.requiredMinutes }
+    );
 
     res.json({
       success: true,
@@ -135,7 +148,13 @@ router.get('/:date', async (req, res, next) => {
       throw new AppError(dateValidation.error, 400, 'INVALID_DATE');
     }
 
-    const result = await activityService.getDayActivities(userKey, date);
+    const user = await userStorage.findByUserKey(userKey);
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const workSettings = await shiftTypesService.resolveUserWorkSettings(user, shiftTypes);
+
+    const result = await activityService.getDayActivities(userKey, date, {
+      requiredMinutes: workSettings.requiredMinutes
+    });
 
     res.json({
       success: true,
@@ -282,7 +301,13 @@ router.get('/', async (req, res, next) => {
       throw new AppError('La data "from" deve essere precedente o uguale a "to"', 400, 'INVALID_DATE_RANGE');
     }
 
-    const result = await activityService.getActivitiesRange(userKey, from, to);
+    const user = await userStorage.findByUserKey(userKey);
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const workSettings = await shiftTypesService.resolveUserWorkSettings(user, shiftTypes);
+
+    const result = await activityService.getActivitiesRange(userKey, from, to, {
+      requiredMinutes: workSettings.requiredMinutes
+    });
 
     res.json({
       success: true,

@@ -9,6 +9,7 @@ const config = require('./config');
 const requestLogger = require('./middlewares/requestLogger');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimiter');
+const { attachAdminCsrf } = require('./middlewares/adminCsrf');
 
 const apiAuthRoutes = require('./routes/api/auth');
 const apiActivitiesRoutes = require('./routes/api/activities');
@@ -96,6 +97,8 @@ app.use('/user', session({
   }
 }));
 
+app.use('/admin', attachAdminCsrf);
+
 app.use(requestLogger(logger));
 
 app.get('/favicon.ico', (req, res) => {
@@ -142,24 +145,25 @@ app.use((req, res) => {
 
 app.use(errorHandler(logger));
 
-async function initialize() {
-  try {
-    logger.info('Inizializzazione storage...');
-    await fileStorage.initialize();
+let initializationPromise = null;
 
-    logger.info('Inizializzazione credenziali admin...');
-    await adminAuthService.initialize();
+async function initializeApp() {
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      logger.info('Inizializzazione storage...');
+      await fileStorage.initialize();
 
-    logger.info('Inizializzazione completata');
-  } catch (error) {
-    logger.error({ err: error }, 'Errore durante inizializzazione');
-    process.exit(1);
+      logger.info('Inizializzazione credenziali admin...');
+      await adminAuthService.initialize();
+
+      logger.info('Inizializzazione completata');
+    })();
   }
+
+  return initializationPromise;
 }
 
-initialize().catch(err => {
-  logger.error({ err }, 'Fatal initialization error');
-  process.exit(1);
-});
+app.initialize = initializeApp;
+app.logger = logger;
 
 module.exports = app;

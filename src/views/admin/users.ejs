@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="admin-csrf-token" content="<%= adminCsrfToken %>">
   <title><%= title %> - Activity Tracker</title>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/admin-csrf.js"></script>
   <script src="/js/help.js"></script>
 </head>
 <body>
@@ -31,7 +33,7 @@
 
     <div class="settings-section">
       <h3>Gestione Utenti</h3>
-      <p>Gestisci utenti AD e locali, con possibilità di modificare turno e preset contratti.</p>
+      <p>Gestisci utenti AD e locali, con possibilità di modificare turno e preset contratti. La cancellazione è consentita solo per utenti locali e rimuove anche attività e audit log collegati.</p>
 
       <div class="form-grid mb-16">
         <div class="form-group">
@@ -185,7 +187,9 @@
                 <% if (user.userType !== 'ad') { %>
                 <button data-action="reset-password" data-user-key="<%= user.userKey %>" data-username="<%= user.username %>" class="btn btn-warning btn-sm">Reset Password</button>
                 <% } %>
+                <% if (user.userType !== 'ad') { %>
                 <button data-action="delete" data-user-key="<%= user.userKey %>" data-username="<%= user.username %>" class="btn btn-danger btn-sm">Elimina</button>
+                <% } %>
               </div>
             </td>
           </tr>
@@ -294,7 +298,7 @@
 
     async function deleteUser(userKey, username, anchor) {
       setLastActionAnchor(anchor);
-      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) {
+      if (!confirm(`Sei sicuro di voler eliminare l'utente locale "${username}"? Verranno rimossi anche attività e audit log associati.`)) {
         return;
       }
 

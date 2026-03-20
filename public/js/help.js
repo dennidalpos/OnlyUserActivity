@@ -337,7 +337,7 @@ const adminUsersHelp = `
     <ul>
       <li><strong>Modifica:</strong> Aggiorna turno, contratto e dettagli</li>
       <li><strong>Reset Password:</strong> Solo per utenti locali</li>
-      <li><strong>Elimina:</strong> Solo utenti locali (i dati attivita vengono mantenuti)</li>
+      <li><strong>Elimina:</strong> Solo utenti locali; la cancellazione rimuove anche attivita e audit log associati</li>
     </ul>
     <div class="help-warning">
       <strong>Attenzione:</strong> Gli utenti AD non possono essere eliminati manualmente.

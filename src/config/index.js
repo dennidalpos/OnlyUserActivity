@@ -1,21 +1,7 @@
 const path = require('path');
-const fs = require('fs');
 
-function ensureEnvFileSync() {
-  const envPath = path.join(process.cwd(), '.env');
-  if (fs.existsSync(envPath)) {
-    return;
-  }
-  const examplePath = path.join(process.cwd(), '.env.example');
-  if (!fs.existsSync(examplePath)) {
-    return;
-  }
-  const content = fs.readFileSync(examplePath, 'utf-8');
-  fs.writeFileSync(envPath, content, 'utf-8');
-}
-
-ensureEnvFileSync();
-require('dotenv').config();
+const envFilePath = process.env.ONLYUSERACTIVITY_ENV_PATH || process.env.ENV_FILE_PATH || path.join(process.cwd(), '.env');
+require('dotenv').config({ path: envFilePath, quiet: true });
 
 const config = {
   env: process.env.NODE_ENV || 'development',
@@ -83,7 +69,8 @@ const config = {
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
     loginRateLimitMax: parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10) || 5,
     loginLockoutDurationMs: parseInt(process.env.LOGIN_LOCKOUT_DURATION_MS, 10) || 300000,
-    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3001'
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    allowSupervisorRestart: process.env.ALLOW_PROCESS_SUPERVISOR_RESTART === 'true'
   },
 
   activity: {
@@ -119,12 +106,9 @@ function validateConfig() {
 }
 
 if (config.env === 'production' || process.env.VALIDATE_CONFIG === 'true') {
-  try {
-    validateConfig();
-  } catch (error) {
-    console.error('FATAL:', error.message);
-    process.exit(1);
-  }
+  validateConfig();
 }
+
+config.validateConfig = validateConfig;
 
 module.exports = config;

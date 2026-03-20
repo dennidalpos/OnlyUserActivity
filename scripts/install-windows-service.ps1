@@ -3,6 +3,9 @@ param(
   [string]$DisplayName = "OnlyUserActivity",
   [string]$Description = "OnlyUserActivity web service",
   [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
+  [string]$ConfigRoot = "",
+  [string]$EnvPath = "",
+  [string]$DataRootPath = "",
   [string]$NodePath = (Get-Command node -ErrorAction Stop).Source,
   [string]$NssmPath = "",
   [string]$LogDir = "",
@@ -99,9 +102,9 @@ function Get-EnvValue {
   return $DefaultValue
 }
 
-function Resolve-RepoPath {
+function Resolve-BasePath {
   param(
-    [string]$ProjectRoot,
+    [string]$BasePath,
     [string]$Value
   )
 
@@ -113,17 +116,19 @@ function Resolve-RepoPath {
     return $Value
   }
 
-  return Join-Path $ProjectRoot $Value
+  return Join-Path $BasePath $Value
 }
 
 function Assert-RuntimeConfiguration {
   param(
     [string]$ProjectRoot,
-    [string]$EnvPath
+    [string]$EnvPath,
+    [string]$ConfigRoot
   )
 
   $envMap = Get-EnvMap -EnvPath $EnvPath
   $nodeEnv = Get-EnvValue -EnvMap $envMap -Key 'NODE_ENV' -DefaultValue 'development'
+  $envRoot = Split-Path -Parent $EnvPath
 
   if ($nodeEnv -eq 'production') {
     if ((Get-EnvValue -EnvMap $envMap -Key 'JWT_SECRET') -eq 'change-me-in-production') {
@@ -136,8 +141,8 @@ function Assert-RuntimeConfiguration {
 
   $httpsEnabled = ((Get-EnvValue -EnvMap $envMap -Key 'HTTPS_ENABLED' -DefaultValue 'false') -eq 'true')
   if ($httpsEnabled) {
-    $certPath = Resolve-RepoPath -ProjectRoot $ProjectRoot -Value (Get-EnvValue -EnvMap $envMap -Key 'HTTPS_CERT_PATH' -DefaultValue '.\certs\cert.pem')
-    $keyPath = Resolve-RepoPath -ProjectRoot $ProjectRoot -Value (Get-EnvValue -EnvMap $envMap -Key 'HTTPS_KEY_PATH' -DefaultValue '.\certs\key.pem')
+    $certPath = Resolve-BasePath -BasePath $envRoot -Value (Get-EnvValue -EnvMap $envMap -Key 'HTTPS_CERT_PATH' -DefaultValue '.\certs\cert.pem')
+    $keyPath = Resolve-BasePath -BasePath $envRoot -Value (Get-EnvValue -EnvMap $envMap -Key 'HTTPS_KEY_PATH' -DefaultValue '.\certs\key.pem')
 
     if (-not (Test-Path $certPath)) {
       throw "Configurazione non valida per il servizio: certificato HTTPS non trovato in '$certPath'."
@@ -165,22 +170,45 @@ if (-not (Test-Path $serverPath)) {
 }
 $serverPath = (Resolve-Path $serverPath).Path
 
+if ([string]::IsNullOrWhiteSpace($ConfigRoot)) {
+  $ConfigRoot = $ProjectRoot
+}
+New-Item -ItemType Directory -Force -Path $ConfigRoot | Out-Null
+$ConfigRoot = (Resolve-Path $ConfigRoot).Path
+
+if ([string]::IsNullOrWhiteSpace($EnvPath)) {
+  $EnvPath = Join-Path $ConfigRoot ".env"
+}
+$envDirectory = Split-Path -Parent $EnvPath
+if (-not [string]::IsNullOrWhiteSpace($envDirectory)) {
+  New-Item -ItemType Directory -Force -Path $envDirectory | Out-Null
+}
+$EnvPath = [System.IO.Path]::GetFullPath($EnvPath)
+
+if ([string]::IsNullOrWhiteSpace($DataRootPath)) {
+  $DataRootPath = Join-Path $ConfigRoot "data"
+}
+New-Item -ItemType Directory -Force -Path $DataRootPath | Out-Null
+$DataRootPath = (Resolve-Path $DataRootPath).Path
+
 if ([string]::IsNullOrWhiteSpace($LogDir)) {
-  $LogDir = Join-Path $ProjectRoot "logs"
+  $LogDir = Join-Path $ConfigRoot "logs"
 }
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $LogDir = (Resolve-Path $LogDir).Path
 
-$envFile = Join-Path $ProjectRoot ".env"
-if (-not (Test-Path $envFile)) {
-  $envExample = Join-Path $ProjectRoot ".env.example"
-  if (Test-Path $envExample) {
-    Copy-Item $envExample $envFile -Force
+$envTemplate = Join-Path $ProjectRoot ".env.example"
+if (-not (Test-Path $EnvPath)) {
+  if (-not (Test-Path $envTemplate)) {
+    throw "File .env mancante e template .env.example non trovato in '$envTemplate'."
   }
+
+  Copy-Item -Path $envTemplate -Destination $EnvPath
+  Write-Host "Creato file ambiente iniziale in '$EnvPath' partendo da .env.example."
 }
 
 if (-not $SkipRuntimeValidation) {
-  Assert-RuntimeConfiguration -ProjectRoot $ProjectRoot -EnvPath $envFile
+  Assert-RuntimeConfiguration -ProjectRoot $ProjectRoot -EnvPath $EnvPath -ConfigRoot $ConfigRoot
 }
 
 $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -203,6 +231,13 @@ Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'AppRotateBy
 Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'AppExit', 'Default', 'Restart')
 Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'AppThrottle', '1500')
 Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'AppRestartDelay', '5000')
+$serviceEnvironment = @(
+  'ALLOW_PROCESS_SUPERVISOR_RESTART=true',
+  "ONLYUSERACTIVITY_ENV_PATH=$EnvPath",
+  "DATA_ROOT_PATH=$DataRootPath",
+  "LOG_FILE_PATH=$(Join-Path $LogDir 'activity-tracker.log')"
+)
+Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'AppEnvironmentExtra', ($serviceEnvironment -join ' '))
 Invoke-Nssm -Executable $NssmPath -Arguments @('set', $ServiceName, 'Start', $StartupType)
 
 & sc.exe config $ServiceName DisplayName= "$DisplayName" | Out-Null

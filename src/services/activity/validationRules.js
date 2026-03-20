@@ -62,8 +62,8 @@ function checkContinuity(newActivity, existingActivities, excludeId = null) {
   return { isContiguous: true };
 }
 
-function calculateDailySummary(activities) {
-  const REQUIRED_MINUTES = config.activity.requiredMinutes;
+function calculateDailySummary(activities, requiredMinutes = config.activity.requiredMinutes) {
+  const REQUIRED_MINUTES = requiredMinutes;
 
   const totalMinutes = activities.reduce((sum, act) => {
     if (act.activityType === 'pausa') {

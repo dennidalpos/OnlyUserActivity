@@ -30,7 +30,19 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  handler: (req, res, next, options) => {
+    if (req.originalUrl.startsWith('/api/')) {
+      return res.status(options.statusCode).json(options.message);
+    }
+
+    const isAdminLogin = req.originalUrl.includes('/admin/auth/login');
+    return res.status(options.statusCode).render(isAdminLogin ? 'admin/login' : 'user/login', {
+      title: isAdminLogin ? 'Login Admin' : 'Login Utente',
+      error: options.message.error.message,
+      ...(isAdminLogin ? {} : { ldapEnabled: config.ldap.enabled })
+    });
+  }
 });
 
 module.exports = {

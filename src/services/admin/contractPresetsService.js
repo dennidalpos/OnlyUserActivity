@@ -16,6 +16,15 @@ class ContractPresetsService {
     }
   }
 
+  async getPresetById(id) {
+    if (!id) {
+      return null;
+    }
+
+    const presets = await this.getPresets();
+    return presets.find((preset) => preset.id === id) || null;
+  }
+
   getDefaultPresets() {
     return [
       {
@@ -58,6 +67,26 @@ class ContractPresetsService {
 
     if (index === -1) {
       throw new Error(`Preset contratto "${id}" non trovato`);
+    }
+
+    const userStorage = require('../storage/userStorage');
+    const shiftTypesService = require('./shiftTypesService');
+
+    const [users, shiftTypes] = await Promise.all([
+      userStorage.listAll(),
+      shiftTypesService.getShiftTypes()
+    ]);
+
+    if (config.server.defaultUserContractPreset === id) {
+      throw new Error(`Non è possibile eliminare il preset contratto "${id}" perché è configurato come predefinito server`);
+    }
+
+    if (users.some(user => user.contractPreset === id)) {
+      throw new Error(`Non è possibile eliminare il preset contratto "${id}" perché è assegnato ad almeno un utente`);
+    }
+
+    if (shiftTypes.some(shiftType => shiftType.contract?.presetId === id)) {
+      throw new Error(`Non è possibile eliminare il preset contratto "${id}" perché è referenziato da almeno un turno`);
     }
 
     presets.splice(index, 1);

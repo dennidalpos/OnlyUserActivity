@@ -6,6 +6,8 @@ const tokenService = require('../../services/auth/tokenService');
 const auditLogger = require('../../services/storage/auditLogger');
 const config = require('../../config');
 const { redirectIfUserAuthenticated } = require('../../middlewares/userAuth');
+const { loginLimiter } = require('../../middlewares/rateLimiter');
+const { loginSchema } = require('../../middlewares/validation');
 
 router.get('/login', redirectIfUserAuthenticated, (req, res) => {
   res.render('user/login', {
@@ -15,12 +17,25 @@ router.get('/login', redirectIfUserAuthenticated, (req, res) => {
   });
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { error, value } = loginSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true
+    });
+
+    if (error) {
+      return res.status(400).render('user/login', {
+        title: 'Login Utente',
+        error: error.details[0]?.message || 'Dati di login non validi',
+        ldapEnabled: config.ldap.enabled
+      });
+    }
+
+    const { username, password, authMethod: requestedAuthMethod } = value;
 
     let user;
-    const authMethod = config.ldap.enabled && req.body.authMethod === 'ldap' ? 'ldap' : 'local';
+    const authMethod = config.ldap.enabled && requestedAuthMethod === 'ldap' ? 'ldap' : 'local';
 
     try {
       if (authMethod === 'ldap') {
@@ -58,7 +73,7 @@ router.post('/login', async (req, res) => {
     res.redirect('/user/dashboard');
 
   } catch (error) {
-    res.render('user/login', {
+    res.status(500).render('user/login', {
       title: 'Login Utente',
       error: 'Errore durante il login',
       ldapEnabled: config.ldap.enabled

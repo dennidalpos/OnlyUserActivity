@@ -9,6 +9,7 @@ Fornire un sistema web per il tracciamento delle attivita' giornaliere degli ute
 - Pannello amministrativo per utenti locali, turni, preset contratti, tipi attivita', impostazioni server, monitoraggio ed export.
 - API protette da JWT per autenticazione e gestione attivita'.
 - Storage file-based per dati applicativi e audit log JSONL.
+- Packaging Windows tramite MSI con supporto ad aggiornamenti major upgrade, installazione come servizio NSSM e cleanup in disinstallazione.
 
 ## Non Scope
 - Database relazionali o NoSQL dedicati.
@@ -25,6 +26,7 @@ Fornire un sistema web per il tracciamento delle attivita' giornaliere degli ute
 - Interfaccia server-rendered con viste EJS in `src/views` e asset statici in `public`.
 - Persistenza su filesystem sotto `DATA_ROOT_PATH` con file JSON/JSONL e lock file per accessi concorrenti.
 - Test presenti con Jest e setup base in `tests/setup.js`.
+- Packaging MSI definito da script PowerShell in `scripts/` e template WiX in `tools/msi/`, con installazione in `Program Files` e configurazione/stato runtime in `ProgramData`.
 
 ## Constraints
 - Ambiente operativo di riferimento Windows.
@@ -32,3 +34,4 @@ Fornire un sistema web per il tracciamento delle attivita' giornaliere degli ute
 - Persistenza locale su filesystem, senza dipendenza da database esterni.
 - HTTPS abilitabile solo con certificato e chiave configurati.
 - In produzione devono essere configurati segreti non di default per JWT e sessione admin.
+- La build MSI richiede tool WiX 3.x disponibili localmente; il target installato richiede Node.js disponibile sul sistema per eseguire il servizio.

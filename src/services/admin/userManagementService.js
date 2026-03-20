@@ -3,6 +3,8 @@ const fs = require('fs').promises;
 const config = require('../../config');
 const userStorage = require('../storage/userStorage');
 const { hashPassword } = require('../utils/hashUtils');
+const shiftTypesService = require('./shiftTypesService');
+const contractPresetsService = require('./contractPresetsService');
 
 class UserManagementService {
   constructor() {}
@@ -43,9 +45,13 @@ class UserManagementService {
       throw new Error('Username già esistente');
     }
 
-    const passwordHash = await hashPassword(password);
     const defaultShift = config.server.defaultUserShift || null;
     const defaultContractPreset = config.server.defaultUserContractPreset || null;
+    const normalizedShift = await this.normalizeAssignedShift(shift || defaultShift || null);
+    const normalizedContractPreset = await this.normalizeAssignedContractPreset(
+      contractPreset || defaultContractPreset || null
+    );
+    const passwordHash = await hashPassword(password);
 
     const user = await userStorage.create({
       username,
@@ -53,8 +59,8 @@ class UserManagementService {
       displayName: displayName || username,
       email: email || null,
       department: department || null,
-      shift: shift || defaultShift || null,
-      contractPreset: contractPreset || defaultContractPreset || null,
+      shift: normalizedShift,
+      contractPreset: normalizedContractPreset,
       userType: 'local'
     });
 
@@ -76,7 +82,8 @@ class UserManagementService {
       throw new Error('Utente non trovato');
     }
 
-    const updatedUser = await userStorage.update(userKey, { shift });
+    const normalizedShift = await this.normalizeAssignedShift(shift);
+    const updatedUser = await userStorage.update(userKey, { shift: normalizedShift });
 
     return {
       success: true,
@@ -104,11 +111,11 @@ class UserManagementService {
     const allowedUpdates = {};
 
     if (updates.hasOwnProperty('shift')) {
-      allowedUpdates.shift = updates.shift;
+      allowedUpdates.shift = await this.normalizeAssignedShift(updates.shift);
     }
 
     if (updates.hasOwnProperty('contractPreset')) {
-      allowedUpdates.contractPreset = updates.contractPreset;
+      allowedUpdates.contractPreset = await this.normalizeAssignedContractPreset(updates.contractPreset);
     }
 
     if (user.userType !== 'ad') {
@@ -249,6 +256,10 @@ class UserManagementService {
       throw new Error('Utente non trovato');
     }
 
+    if ((user.userType || 'local') === 'ad') {
+      throw new Error('Non è possibile eliminare manualmente gli utenti AD');
+    }
+
     const userPath = path.join(config.storage.rootPath, 'users', `${userKey}.json`);
     await fs.unlink(userPath);
 
@@ -264,6 +275,33 @@ class UserManagementService {
       success: true,
       message: 'Utente eliminato con successo'
     };
+  }
+
+  async normalizeAssignedShift(shift) {
+    if (!shift) {
+      return null;
+    }
+
+    const shiftTypes = await shiftTypesService.getShiftTypes();
+    const matched = shiftTypes.find(shiftType => shiftType.name === shift || shiftType.id === shift);
+    if (!matched) {
+      throw new Error('Turno non valido. Seleziona un turno esistente.');
+    }
+
+    return matched.name;
+  }
+
+  async normalizeAssignedContractPreset(contractPreset) {
+    if (!contractPreset) {
+      return null;
+    }
+
+    const matched = await contractPresetsService.getPresetById(contractPreset);
+    if (!matched) {
+      throw new Error('Preset contratto non valido. Seleziona un preset esistente.');
+    }
+
+    return matched.id;
   }
 }
 

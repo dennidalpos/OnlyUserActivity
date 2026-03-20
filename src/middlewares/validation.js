@@ -43,7 +43,10 @@ const loginSchema = Joi.object({
     .required()
     .messages({
       'any.required': 'Password è obbligatoria'
-    })
+    }),
+  authMethod: Joi.string()
+    .valid('local', 'ldap')
+    .optional()
 });
 
 const timeStepSchema = Joi.string()
