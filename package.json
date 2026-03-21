@@ -4,13 +4,19 @@
   "description": "Sistema di tracciamento attività giornaliere utenti con autenticazione LDAP",
   "main": "src/server.js",
   "scripts": {
+    "bootstrap": "node scripts/bootstrap.js",
+    "doctor": "node scripts/doctor.js",
+    "compile": "node scripts/compile.js",
+    "build": "node scripts/build.js",
     "clean": "node scripts/clean.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "package:msi": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-msi.ps1"
+    "test:coverage": "jest --coverage --coverageDirectory=artifacts/test-results/coverage",
+    "pack": "node scripts/pack.js",
+    "package:msi": "node scripts/pack.js",
+    "publish": "node scripts/publish.js"
   },
   "repository": {
     "type": "git",
@@ -29,6 +35,7 @@
       "<rootDir>/tests/setup.js"
     ],
     "modulePathIgnorePatterns": [
+      "<rootDir>/artifacts/",
       "<rootDir>/build/",
       "<rootDir>/dist/",
       "<rootDir>/publish/",
@@ -38,6 +45,7 @@
       "<rootDir>/logs/"
     ],
     "testPathIgnorePatterns": [
+      "<rootDir>/artifacts/",
       "<rootDir>/build/",
       "<rootDir>/dist/",
       "<rootDir>/publish/",

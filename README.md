@@ -50,15 +50,27 @@ tools/
 ## Installazione
 
 ```bash
-npm install
+npm run bootstrap
 copy .env.example .env
+npm run doctor
 ```
 
-Compilare poi `.env` prima del primo avvio. Il bootstrap non copia più automaticamente `.env.example`, così l'ambiente iniziale resta esplicito e verificabile.
+Compilare poi `.env` prima del primo avvio. Il bootstrap installa le dipendenze ma non copia automaticamente `.env.example`, così l'ambiente iniziale resta esplicito e verificabile.
 
 ## Build
 
-Non e' previsto uno step di build dedicato: l'applicazione viene eseguita direttamente con Node.js.
+I comandi canonici del repository sono:
+
+- `npm run bootstrap` - installa le dipendenze di progetto
+- `npm run doctor` - verifica prerequisiti, `.env` e tool locali
+- `npm run compile` - dichiara esplicitamente che non esiste una fase di compilazione separata
+- `npm run build` - esegue `doctor` e `compile`
+- `npm test` - esegue la suite Jest
+- `npm run pack` - genera il pacchetto MSI Windows
+- `npm run publish` - copia gli artefatti pacchettizzati in `artifacts/publish`
+- `npm run clean` - rimuove gli output locali generati
+
+Non e' previsto uno step di compilazione applicativa: il progetto viene eseguito direttamente con Node.js.
 
 ## Avvio
 
@@ -180,20 +192,24 @@ Per coverage:
 npm run test:coverage
 ```
 
+Output coverage:
+
+- `artifacts/test-results/coverage/`
+
 ## Clean
 
 ```bash
 npm run clean
 ```
 
-Il comando rimuove gli output locali non versionati (`coverage/`, `logs/`, `test-data/`, `build/`, `dist/`, `out/`, `publish/`, `tmp/`, `public/build/`) e preserva `data/`, che contiene lo stato applicativo file-based.
+Il comando rimuove gli output locali non versionati (`artifacts/`, `coverage/`, `logs/`, `test-data/`, `build/`, `dist/`, `out/`, `publish/`, `tmp/`, `public/build/`) e preserva `data/`, che contiene lo stato applicativo file-based.
 
 ## Publish o packaging
 
 Il repository include una pipeline MSI per Windows:
 
 ```bash
-npm run package:msi
+npm run pack
 ```
 
 La build usa:
@@ -206,8 +222,19 @@ La build usa:
 
 Output predefinito:
 
-- MSI in `dist/onlyuseractivity-<version>-x64.msi`
-- stage e file intermedi in `build/windows-msi/`
+- MSI in `artifacts/packages/onlyuseractivity-<version>-x64.msi`
+- stage e file intermedi in `artifacts/build/windows-msi/`
+
+Per pubblicare localmente gli artefatti gia' prodotti in una destinazione separata:
+
+```bash
+npm run publish
+```
+
+Output publish:
+
+- artefatti copiati in `artifacts/publish/`
+- manifest locale in `artifacts/publish/manifest.json`
 
 ### Layout installazione MSI
 
@@ -229,7 +256,7 @@ In questo modo aggiornamenti MSI futuri possono sostituire i file applicativi se
 ### Installazione silenziosa MSI
 
 ```powershell
-msiexec /i dist\onlyuseractivity-1.0.0-x64.msi /qn START_SERVICE=0
+msiexec /i artifacts\packages\onlyuseractivity-1.0.0-x64.msi /qn START_SERVICE=0
 ```
 
 Proprieta' supportate:
@@ -257,6 +284,7 @@ Gli script cercano `nssm.exe` in:
 
 - `PROJECT_SPEC.md`
 - `PROJECT_STATUS.json`
+- `docs/setup-iniziale.md`
 
 ## Note operative
 

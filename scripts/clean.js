@@ -2,6 +2,11 @@ const fs = require('fs/promises');
 const path = require('path');
 
 const targets = [
+  path.join('artifacts', 'build'),
+  path.join('artifacts', 'packages'),
+  path.join('artifacts', 'publish'),
+  path.join('artifacts', 'logs'),
+  path.join('artifacts', 'test-results'),
   'coverage',
   'logs',
   'test-data',

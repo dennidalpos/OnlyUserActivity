@@ -46,7 +46,7 @@ function Invoke-ExternalTool {
 }
 
 if ([string]::IsNullOrWhiteSpace($StageRoot)) {
-  $StageRoot = Join-Path $ProjectRoot "build\windows-msi\stage"
+  $StageRoot = Join-Path $ProjectRoot "artifacts\build\windows-msi\stage"
 }
 
 $StageRoot = [System.IO.Path]::GetFullPath($StageRoot)

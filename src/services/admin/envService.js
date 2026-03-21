@@ -4,7 +4,11 @@ const config = require('../../config');
 
 class EnvService {
   constructor() {
-    this.envPath = path.join(process.cwd(), '.env');
+    this.envPath = path.resolve(
+      process.env.ONLYUSERACTIVITY_ENV_PATH
+        || process.env.ENV_FILE_PATH
+        || path.join(process.cwd(), '.env')
+    );
   }
 
   logSettings(message, ...args) {
@@ -155,13 +159,23 @@ class EnvService {
       this.logSettings(' File .env non trovato, provo a copiare da .env.example');
       fileExists = false;
 
-      try {
-        const examplePath = path.join(process.cwd(), '.env.example');
+      const examplePaths = [
+        path.join(path.dirname(this.envPath), '.env.example'),
+        path.join(process.cwd(), '.env.example')
+      ];
+
+      for (const examplePath of examplePaths) {
+        try {
         envContent = await fs.readFile(examplePath, 'utf-8');
         this.logSettings(' Template .env.example caricato');
-      } catch (exampleError) {
+          break;
+        } catch (exampleError) {
+          envContent = '';
+        }
+      }
+
+      if (!envContent) {
         this.logSettings(' .env.example non trovato, creo file vuoto');
-        envContent = '';
       }
     }
 
@@ -204,6 +218,7 @@ class EnvService {
     }
 
     const finalContent = updatedLines.join('\n');
+    await fs.mkdir(path.dirname(this.envPath), { recursive: true });
     await fs.writeFile(this.envPath, finalContent, 'utf-8');
     this.logSettings(' File .env salvato con successo');
     this.logSettings(' Path: ' + this.envPath);

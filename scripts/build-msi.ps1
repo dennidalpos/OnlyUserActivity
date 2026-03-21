@@ -68,10 +68,10 @@ $productName = $package.name
 $productVersion = Get-MsiVersion -PackageVersion $package.version
 
 if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
-  $BuildRoot = Join-Path $ProjectRoot "build\windows-msi"
+  $BuildRoot = Join-Path $ProjectRoot "artifacts\build\windows-msi"
 }
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-  $OutputRoot = Join-Path $ProjectRoot "dist"
+  $OutputRoot = Join-Path $ProjectRoot "artifacts\packages"
 }
 
 $BuildRoot = [System.IO.Path]::GetFullPath($BuildRoot)
