@@ -283,7 +283,7 @@ Gli script cercano `nssm.exe` in:
 ## Documentation
 
 - `PROJECT_SPEC.md`
-- `PROJECT_STATUS.json`
+- `02-areas/products/OnlyUserActivity/tracker.json (nel dossier SecondBrain)`
 - `docs/setup-iniziale.md`
 
 ## Note operative
@@ -296,4 +296,4 @@ Gli script cercano `nssm.exe` in:
 
 ## Licenza
 
-ISC (vedi `LICENSE`).
+Software proprietario, tutti i diritti riservati (vedi `LICENSE`). Le dipendenze di terze parti mantengono le proprie licenze.
