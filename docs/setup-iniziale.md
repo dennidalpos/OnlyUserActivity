@@ -1,127 +1,47 @@
-# Setup iniziale e configurazione
+# Initial setup and configuration
 
-Questa procedura serve per avviare il progetto in locale con la configurazione minima.
+[Italian source](setup-iniziale.it.md) · [Operations guide](GUIDE.md)
 
-## Requisiti
+Use an isolated development checkout and synthetic data first. The application is a Node.js/Express server with JSON/JSONL storage; it does not use SQLite or PostgreSQL.
 
-- Windows con PowerShell
-- Node.js 18 o superiore
-- npm
+## Requirements
 
-## 1. Installa le dipendenze
+Use Node.js 20+ with npm and Windows PowerShell for the packaging/service scripts. The current lockfile includes Joi 18, which requires Node 20 even though doctor currently accepts Node 18. Windows MSI/service deployment additionally needs WiX 3.x, NSSM and administrator rights; those are not prerequisites for the browser client.
 
-Apri PowerShell nella root del repository ed esegui:
+## Install and configure
 
-```powershell
+From the repository root in PowerShell:
+
+~~~powershell
 npm run bootstrap
-```
-
-## 2. Crea il file di configurazione locale
-
-Copia il file di esempio:
-
-```powershell
 Copy-Item .env.example .env
-```
+~~~
 
-## 3. Compila i valori minimi in `.env`
+Bootstrap installs dependencies; it does not create .env. Edit that file before startup. For a local-only trial use SERVER_HOST=127.0.0.1, SERVER_PORT=3001, LDAP_ENABLED=false and HTTPS_ENABLED=false. The code's default bind is 0.0.0.0, which exposes the listener on available interfaces.
 
-Per un avvio locale semplice bastano in genere questi valori:
+Set DATA_ROOT_PATH to the intended storage directory. Set ADMIN_DEFAULT_USERNAME and a strong ADMIN_DEFAULT_PASSWORD before first initialization. Development defaults are not a deployment configuration.
 
-- `NODE_ENV=development`
-- `SERVER_HOST=0.0.0.0`
-- `SERVER_PORT=3001`
-- `DATA_ROOT_PATH=./data`
-- `ADMIN_DEFAULT_USERNAME=admin`
-- `ADMIN_DEFAULT_PASSWORD=admin`
-- `LDAP_ENABLED=false`
-- `HTTPS_ENABLED=false`
+For production set NODE_ENV=production and replace both JWT_SECRET and ADMIN_SESSION_SECRET. Startup rejects the default secret placeholders, but this check is not a general credential-strength policy.
 
-Se l'istanza non e' di sviluppo, cambia subito anche:
-
-- `JWT_SECRET`
-- `ADMIN_SESSION_SECRET`
-- `ADMIN_DEFAULT_PASSWORD`
-
-## 4. Avvia l'applicazione
-
-Prima dell'avvio verifica la configurazione:
-
-```powershell
+~~~powershell
 npm run doctor
-```
-
-Per sviluppo:
-
-```powershell
 npm run dev
-```
+~~~
 
-Per esecuzione normale:
+Use npm start for ordinary execution. User login is /user/auth/login; admin login is /admin/auth/login. First startup creates the configured storage layout and initializes the admin from the configured defaults. Changing the default password variable later is not a substitute for managing an already-created admin credential.
 
-```powershell
-npm start
-```
+## Optional integrations
 
-L'applicazione risponde per default su:
+LDAP requires LDAP_ENABLED, LDAP_URL, LDAP_BASE_DN, LDAP_BIND_DN, LDAP_BIND_PASSWORD and LDAP_USER_SEARCH_FILTER. LDAP_REQUIRED_GROUP limits access by group. Use a separately qualified protected directory connection; do not test with production credentials in fixtures.
 
-- `http://localhost:3001`
+HTTPS requires existing HTTPS_CERT_PATH and HTTPS_KEY_PATH files. For a reverse proxy, configure TRUST_PROXY for the actual trusted hops. Keep environment files, keys, runtime data and logs outside Git.
 
-## 5. Primo accesso
+## Validation and packaging
 
-- Accesso utente: `http://localhost:3001/user/auth/login`
-- Accesso admin: `http://localhost:3001/admin/auth/login`
+~~~powershell
+npm test -- --runInBand
+~~~
 
-Al primo avvio il progetto crea automaticamente le cartelle sotto `DATA_ROOT_PATH` e inizializza l'utente admin predefinito usando i valori presenti in `.env`.
+Tests use their synthetic setup. Packaging uses npm run pack, stage-windows-package.ps1, build-msi.ps1 and tools/msi/OnlyUserActivity.wxs. Default outputs are artifacts/packages and artifacts/build/windows-msi. npm run publish copies already-built packages and writes a local manifest; it is not a GitHub publication.
 
-## Configurazioni opzionali
-
-### LDAP
-
-Attiva LDAP solo se hai gia' i parametri reali del dominio:
-
-- `LDAP_ENABLED=true`
-- `LDAP_URL`
-- `LDAP_BASE_DN`
-- `LDAP_BIND_DN`
-- `LDAP_BIND_PASSWORD`
-- `LDAP_USER_SEARCH_FILTER`
-- `LDAP_REQUIRED_GROUP` se vuoi limitare l'accesso a un gruppo
-
-### HTTPS
-
-Per HTTPS locale o su server:
-
-- `HTTPS_ENABLED=true`
-- `HTTPS_CERT_PATH`
-- `HTTPS_KEY_PATH`
-
-I file indicati devono esistere davvero prima dell'avvio.
-
-## Dati e log
-
-- I dati applicativi vengono salvati in `DATA_ROOT_PATH` (`./data` di default).
-- I log su file vengono scritti solo se `LOG_TO_FILE=true`.
-
-## Pulizia degli output locali
-
-Per rimuovere output temporanei non versionati:
-
-```powershell
-npm run clean
-```
-
-Il comando non cancella `data/`.
-
-## Packaging Windows
-
-Per generare il pacchetto MSI locale:
-
-```powershell
-npm run pack
-```
-
-Output principali:
-
-- `artifacts/packages/`
-- `artifacts/build/windows-msi/`
+Build/package/service lifecycle and real LDAP/HTTPS deployment require separate qualification. Cleanup is destructive: npm run clean removes listed generated output directories and preserves data/, but it must only be run with an explicit reviewed cleanup scope.

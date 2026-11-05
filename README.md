@@ -19,20 +19,20 @@ Node.js with Express, EJS views, JWT, optional LDAP through `ldapts`, and file-b
 
 ## Requirements
 
-- Node.js 18+ and npm 9+ (recommended).
+- Node.js 20+ with npm for the current lockfile (Joi 18 requires Node 20). The existing doctor script still accepts Node 18; that check alone does not establish compatibility.
 - Windows for the MSI and service scripts; the server itself runs wherever Node.js does.
 
 ## Getting started
 
-```bash
+```powershell
 npm run bootstrap
-copy .env.example .env
+Copy-Item .env.example .env
 npm run doctor
 ```
 
 Edit `.env` before the first start (bootstrap does not copy it, so the initial configuration stays explicit). Then:
 
-```bash
+```powershell
 npm run dev     # development, with nodemon
 npm start       # production
 ```
@@ -67,7 +67,7 @@ Set a strong admin password before exposing the server: the default admin passwo
 | `npm test` | Run the Jest suite |
 | `npm run pack` | Build the Windows MSI package |
 | `npm run publish` | Copy packaged artifacts to `artifacts/publish` |
-| `npm run clean` | Remove generated local output |
+| `npm run clean` | Destructively remove generated local output; requires an explicit reviewed cleanup scope |
 
 ## Project structure
 
@@ -77,11 +77,11 @@ Set a strong admin password before exposing the server: the default admin passwo
 | `public/` | Frontend CSS and JavaScript |
 | `tests/` | Jest unit and integration tests |
 | `scripts/`, `tools/msi/` | Automation, Windows service scripts and the WiX MSI template |
-| `docs/` | Documentation (Italian) |
+| `docs/` | English guides and retained Italian sources |
 
 ## Documentation
 
-The detailed guide is in Italian: [docs/GUIDE.it.md](docs/GUIDE.it.md) covers authentication flow, API, storage layout, audit, testing and MSI packaging. See also [PROJECT_SPEC.md](PROJECT_SPEC.md) and [docs/setup-iniziale.md](docs/setup-iniziale.md).
+The [English operations guide](docs/GUIDE.md) covers authentication, API, storage, audit, tests and MSI/service packaging. The [Italian guide](docs/GUIDE.it.md) is retained. See also [PROJECT_SPEC.md](PROJECT_SPEC.md) and [initial setup](docs/setup-iniziale.md).
 
 ## Security
 

@@ -1,37 +1,22 @@
-# Project Specification
+# Project specification
 
-## Goal
-Fornire un sistema web per il tracciamento delle attivita' giornaliere degli utenti con autenticazione locale o LDAP, dashboard utente e pannello amministrativo per configurazione, monitoraggio ed export.
-
-## Scope
-- Autenticazione utente locale e LDAP/AD.
-- Dashboard utente con inserimento attivita', calendario mensile, riepilogo giornaliero e quick actions.
-- Pannello amministrativo per utenti locali, turni, preset contratti, tipi attivita', impostazioni server, monitoraggio ed export.
-- API protette da JWT per autenticazione e gestione attivita'.
-- Storage file-based per dati applicativi e audit log JSONL.
-- Packaging Windows tramite MSI con supporto ad aggiornamenti major upgrade, installazione come servizio NSSM e cleanup in disinstallazione.
-
-## Non Scope
-- Database relazionali o NoSQL dedicati.
-- Integrazioni cloud o servizi esterni oltre a LDAP opzionale.
-- Applicazioni mobile native.
-- Modalita' di deploy self-contained o single-file come default di progetto.
+OnlyUserActivity is a browser-based daily activity tracker with local or optional LDAP authentication. Its current implementation includes user activity entry/calendar/quick actions, administrator monitoring, local-user and shift/contract configuration, exports and protected API routes.
 
 ## Architecture
-- Applicazione Node.js CommonJS con Express come web server.
-- Entry point in `src/server.js` con avvio HTTP o HTTPS in base alla configurazione.
-- Configurazione centralizzata in `src/config/index.js` tramite variabili d'ambiente.
-- Routing separato tra API, area utente e area admin in `src/routes`.
-- Logica business organizzata in `src/services` per autenticazione, attivita', amministrazione, LDAP, storage e utility.
-- Interfaccia server-rendered con viste EJS in `src/views` e asset statici in `public`.
-- Persistenza su filesystem sotto `DATA_ROOT_PATH` con file JSON/JSONL e lock file per accessi concorrenti.
-- Test presenti con Jest e setup base in `tests/setup.js`.
-- Packaging MSI definito da script PowerShell in `scripts/` e template WiX in `tools/msi/`, con installazione in `Program Files` e configurazione/stato runtime in `ProgramData`.
 
-## Constraints
-- Ambiente operativo di riferimento Windows.
-- Runtime richiesto Node.js 18+ con npm.
-- Persistenza locale su filesystem, senza dipendenza da database esterni.
-- HTTPS abilitabile solo con certificato e chiave configurati.
-- In produzione devono essere configurati segreti non di default per JWT e sessione admin.
-- La build MSI richiede tool WiX 3.x disponibili localmente; il target installato richiede Node.js disponibile sul sistema per eseguire il servizio.
+- Node.js CommonJS entrypoint in src/server.js, with Express configured in src/app.js.
+- Environment configuration in src/config/index.js.
+- User/admin/API routes, service logic, EJS views and static browser assets.
+- JSON/JSONL filesystem persistence under DATA_ROOT_PATH, including application settings, activities, audit and lock files.
+- Jest unit/integration fixtures.
+- PowerShell staging and WiX 3.x MSI packaging with optional NSSM service registration.
+
+There is no SQLite, PostgreSQL or external database backend. No native mobile client or self-contained Node runtime is provided by the documented package.
+
+## Operational boundaries
+
+Use Node.js 20+ for the current locked dependency set. Windows is the reference packaging/service platform. HTTPS needs explicit existing certificate/key paths; production startup rejects default JWT/admin-session secret placeholders. Initial admin credentials still require an explicit secure configuration.
+
+MSI files are under tools/msi, not a promised packaging/msi standardization target. Local packaging scripts exist, but installation/upgrade/uninstall, directory connectivity and production security require their own evidence. UI and retained detailed Italian documentation do not imply an English UI.
+
+See the [English operations guide](docs/GUIDE.md) and [initial setup](docs/setup-iniziale.md). The original [Italian specification](PROJECT_SPEC.it.md) is retained for reference.
