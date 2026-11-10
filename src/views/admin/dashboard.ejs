@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard" class="active">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h2>Dashboard Monitoraggio</h2>
+
+    <div class="nav-controls">
+      <div class="nav-buttons">
+        <%
+        const currentViewMode = viewMode || 'day';
+        const currentDate = date;
+
+        function getNavUrl(direction) {
+          const d = new Date(currentDate);
+          let newDate;
+
+          if (currentViewMode === 'day') {
+            d.setDate(d.getDate() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'week') {
+            d.setDate(d.getDate() + (direction === 'prev' ? -7 : 7));
+            newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'month') {
+            d.setMonth(d.getMonth() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
+          } else if (currentViewMode === 'year') {
+            d.setFullYear(d.getFullYear() + (direction === 'prev' ? -1 : 1));
+            newDate = d.toISOString().split('T')[0];
+          }
+
+          return `/admin/dashboard?viewMode=${currentViewMode}&date=${newDate}&username=${filters.username}&status=${filters.status}`;
+        }
+
+        const periodFrom = fromDate || currentDate;
+        const periodTo = toDate || currentDate;
+        %>
+
+        <a href="<%= getNavUrl('prev') %>" class="nav-btn">&larr; Precedente</a>
+        <a href="/admin/dashboard?viewMode=<%= currentViewMode %>" class="nav-btn">Oggi</a>
+        <a href="<%= getNavUrl('next') %>" class="nav-btn">Successivo &rarr;</a>
+      </div>
+
+      <div class="view-mode-selector">
+        <a href="/admin/dashboard?viewMode=day&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'day' ? 'active' : '' %>">Giorno</a>
+        <a href="/admin/dashboard?viewMode=week&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'week' ? 'active' : '' %>">Settimana</a>
+        <a href="/admin/dashboard?viewMode=month&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'month' ? 'active' : '' %>">Mese</a>
+        <a href="/admin/dashboard?viewMode=year&date=<%= currentDate %>"
+           class="view-mode-btn <%= currentViewMode === 'year' ? 'active' : '' %>">Anno corrente</a>
+      </div>
+    </div>
+
+    <div class="period-pill">
+      <strong>
+        <% if (currentViewMode === 'day') { %>
+          <%= currentDate %>
+        <% } else if (fromDate && toDate) { %>
+          Dal <%= fromDate %> al <%= toDate %>
+        <% } %>
+      </strong>
+    </div>
+    <p class="period-note">Le irregolarità non vengono mostrate cambiando anno: per visualizzarle entra nello scope dell'anno desiderato.</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h4>Totale Utenti</h4>
+        <div class="value"><%= summary.totalUsers %></div>
+      </div>
+      <div class="stat-card stat-card--success">
+        <h4>OK</h4>
+        <div class="value"><%= summary.okCount %></div>
+      </div>
+      <div class="stat-card stat-card--warning">
+        <h4>Incompleto</h4>
+        <div class="value"><%= summary.incompleteCount %></div>
+      </div>
+      <div class="stat-card stat-card--danger">
+        <h4>Assente</h4>
+        <div class="value"><%= summary.absentCount %></div>
+      </div>
+    </div>
+
+    <form method="GET" action="/admin/dashboard" class="filter-form filter-form--compact">
+      <input type="hidden" name="viewMode" value="<%= currentViewMode %>">
+      <input type="hidden" name="date" value="<%= currentDate %>">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="username">Cerca Utente:</label>
+          <input type="text" id="username" name="username" value="<%= filters.username %>" placeholder="Username">
+        </div>
+        <div class="form-group">
+          <label for="status">Stato:</label>
+          <select id="status" name="status">
+            <option value="">Tutti</option>
+            <option value="OK" <%= filters.status === 'OK' ? 'selected' : '' %>>OK</option>
+            <option value="INCOMPLETO" <%= filters.status === 'INCOMPLETO' ? 'selected' : '' %>>Incompleto</option>
+            <option value="ASSENTE" <%= filters.status === 'ASSENTE' ? 'selected' : '' %>>Assente</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">Filtra</button>
+          <% if (filters.username || filters.status) { %>
+          <a href="/admin/dashboard?viewMode=<%= currentViewMode %>&date=<%= currentDate %>" class="btn btn-secondary">Reset</a>
+          <% } %>
+        </div>
+      </div>
+    </form>
+
+    <table class="data-table compact-table">
+      <thead>
+        <tr>
+          <th>Utente</th>
+          <th>Nome</th>
+          <th class="text-center">Tipo</th>
+          <th>Turno</th>
+          <% if (currentViewMode === 'day') { %>
+          <th class="text-right">Ore</th>
+          <th class="text-center">Completamento</th>
+          <% } else { %>
+          <th class="text-right">Ore Tot.</th>
+          <th class="text-right">Media/Giorno</th>
+          <th class="text-center">Giorni OK</th>
+          <th class="text-center">Completamento</th>
+          <% } %>
+          <th class="text-center">Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(user => {
+          const status = user.status || user.overallStatus;
+        %>
+        <tr>
+          <td>
+            <a href="/admin/dashboard/users/<%= user.userKey %>/irregularities?from=<%= periodFrom %>&to=<%= periodTo %>" class="nav-btn nav-btn--mini">
+              <%= user.username %>
+            </a>
+          </td>
+          <td><%= user.displayName %></td>
+          <td class="text-center">
+            <span class="mini-badge <%= user.userType === 'ad' ? 'mini-badge--info' : 'mini-badge--secondary' %>">
+              <%= user.userType === 'ad' ? 'AD' : 'Local' %>
+            </span>
+          </td>
+          <td><%= user.shift %></td>
+          <% if (currentViewMode === 'day') { %>
+          <td class="text-right"><%= user.totalHours.toFixed(2) %></td>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completionPercentage.toFixed(0) %>%</span>
+          </td>
+          <% } else { %>
+          <td class="text-right"><%= user.totalHours.toFixed(1) %></td>
+          <td class="text-right"><%= user.avgHoursPerDay.toFixed(1) %></td>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completeDays %>/<%= user.totalDays %></span>
+          </td>
+          <td class="text-center">
+            <span class="text-xs"><%= user.completionRate.toFixed(0) %>%</span>
+          </td>
+          <% } %>
+          <td class="text-center">
+            <span class="mini-badge <%= status === 'OK' ? 'mini-badge--success' : status === 'INCOMPLETO' ? 'mini-badge--warning' : 'mini-badge--danger' %>">
+              <%= status %>
+            </span>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    helpSystem.init(adminDashboardHelp);
+  </script>
+</body>
+</html>

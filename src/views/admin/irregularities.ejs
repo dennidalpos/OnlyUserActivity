@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Activity Tracker</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/help.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>Activity Tracker</h1>
+      <ul class="nav-menu">
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/export">Export</a></li>
+        <li><a href="/admin/shifts">Turni</a></li>
+        <li><a href="/admin/users">Gestione Utenti</a></li>
+        <li><a href="/admin/quick-actions">Quick Action</a></li>
+        <li><a href="/admin/settings">Configurazione</a></li>
+        <li><a href="/admin/auth/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header">
+      <a href="/admin/dashboard" class="btn btn-sm back-link">&larr; Torna alla Dashboard</a>
+    </div>
+    <h2>Irregolarità di <%= user.displayName %> (<%= user.username %>)</h2>
+    <%
+      function formatMinutesAsTime(totalMinutes = 0) {
+        const minutesValue = Number.isFinite(totalMinutes) ? totalMinutes : 0;
+        const hours = Math.floor(minutesValue / 60);
+        const minutes = minutesValue % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+    %>
+
+    <dl class="panel info-grid">
+      <dt>Periodo:</dt>
+      <dd>dal <%= fromDate %> al <%= toDate %></dd>
+      <dt>Turno:</dt>
+      <dd><%= shiftType ? shiftType.name : 'Nessun turno assegnato' %></dd>
+    </dl>
+
+    <% if (irregularities.length === 0) { %>
+      <p class="text-muted mt-4">Nessuna irregolarità rilevata nel periodo selezionato.</p>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Giorno</th>
+            <th class="text-center">Stato</th>
+            <th class="text-right">Ore inserite</th>
+            <th class="text-right">Ore richieste</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% irregularities.forEach(item => { %>
+            <% const dayName = new Date(`${item.date}T00:00:00`).toLocaleDateString('it-IT', { weekday: 'long' }); %>
+            <tr>
+              <td><%= item.date %></td>
+              <td><%= dayName %></td>
+              <td class="text-center">
+                <span class="mini-badge <%= item.status === 'INCOMPLETO' ? 'mini-badge--warning' : 'mini-badge--danger' %>">
+                  <%= item.status %>
+                </span>
+              </td>
+              <td class="text-right"><%= formatMinutesAsTime(item.totalMinutes) %></td>
+              <td class="text-right"><%= formatMinutesAsTime(item.requiredMinutes) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    helpSystem.init(adminDashboardHelp);
+  </script>
+</body>
+</html>

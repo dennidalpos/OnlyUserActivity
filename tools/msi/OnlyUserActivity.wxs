@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product
+    Id="*"
+    Name="$(var.ProductName)"
+    Language="1033"
+    Version="$(var.ProductVersion)"
+    Manufacturer="Danny Perondi"
+    UpgradeCode="{60F99D21-C0D9-47ED-8F44-EB2C37AF82D8}">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <MajorUpgrade
+      AllowDowngrades="no"
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="E' gia' installata una versione piu' recente di [ProductName]." />
+
+    <Property Id="ARPCONTACT" Value="Danny Perondi" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/dennidalpos/OnlyUserActivity" />
+    <Property Id="INSTALL_SERVICE" Value="1" />
+    <Property Id="START_SERVICE" Value="1" />
+    <Property Id="SERVICE_NAME" Value="$(var.ServiceName)" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="OnlyUserActivity" />
+      </Directory>
+      <Directory Id="CommonAppDataFolder">
+        <Directory Id="COMPANYDATADIR" Name="Danny Perondi">
+          <Directory Id="APPDATAROOT" Name="OnlyUserActivity" />
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="APPDATAROOT">
+      <Component Id="ConfigRootComponent" Guid="{1A7D287C-4C28-40A9-9D13-B44A28A5D3F1}">
+        <CreateFolder />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Danny Perondi\OnlyUserActivity"
+          Name="ConfigRoot"
+          Type="string"
+          Value="[APPDATAROOT]"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="OnlyUserActivity" Level="1">
+      <ComponentRef Id="ConfigRootComponent" />
+      <ComponentGroupRef Id="AppFiles" />
+    </Feature>
+
+    <CustomAction Id="SetInstallServiceStart"
+      Property="InstallServiceStart"
+      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\install-windows-service.ps1&quot; -ServiceName &quot;[SERVICE_NAME]&quot; -ConfigRoot &quot;[APPDATAROOT].&quot;"
+      Execute="immediate" />
+    <CustomAction Id="SetInstallServiceNoStart"
+      Property="InstallServiceNoStart"
+      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\install-windows-service.ps1&quot; -ServiceName &quot;[SERVICE_NAME]&quot; -ConfigRoot &quot;[APPDATAROOT].&quot; -NoStart"
+      Execute="immediate" />
+    <CustomAction Id="InstallServiceStart" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="check" Impersonate="no" />
+    <CustomAction Id="InstallServiceNoStart" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="check" Impersonate="no" />
+
+    <CustomAction Id="SetRemoveServiceForUpgrade"
+      Property="RemoveServiceForUpgrade"
+      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\remove-windows-service.ps1&quot; -ServiceName &quot;[SERVICE_NAME]&quot; -ConfigRoot &quot;[APPDATAROOT].&quot;"
+      Execute="immediate" />
+    <CustomAction Id="SetRemoveServiceForUninstall"
+      Property="RemoveServiceForUninstall"
+      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]scripts\remove-windows-service.ps1&quot; -ServiceName &quot;[SERVICE_NAME]&quot; -ConfigRoot &quot;[APPDATAROOT].&quot; -RemoveLogs -RemoveConfigRoot"
+      Execute="immediate" />
+    <CustomAction Id="RemoveServiceForUpgrade" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="check" Impersonate="no" />
+    <CustomAction Id="RemoveServiceForUninstall" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="check" Impersonate="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetInstallServiceStart" After="InstallFiles">NOT REMOVE~="ALL" AND INSTALL_SERVICE=1 AND START_SERVICE=1</Custom>
+      <Custom Action="InstallServiceStart" After="SetInstallServiceStart">NOT REMOVE~="ALL" AND INSTALL_SERVICE=1 AND START_SERVICE=1</Custom>
+      <Custom Action="SetInstallServiceNoStart" After="InstallFiles">NOT REMOVE~="ALL" AND INSTALL_SERVICE=1 AND START_SERVICE&lt;&gt;1</Custom>
+      <Custom Action="InstallServiceNoStart" After="SetInstallServiceNoStart">NOT REMOVE~="ALL" AND INSTALL_SERVICE=1 AND START_SERVICE&lt;&gt;1</Custom>
+
+      <Custom Action="SetRemoveServiceForUpgrade" Before="RemoveFiles">REMOVE~="ALL" AND UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="RemoveServiceForUpgrade" After="SetRemoveServiceForUpgrade">REMOVE~="ALL" AND UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="SetRemoveServiceForUninstall" Before="RemoveFiles">REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="RemoveServiceForUninstall" After="SetRemoveServiceForUninstall">REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>
